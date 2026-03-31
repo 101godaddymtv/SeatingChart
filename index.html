@@ -1,0 +1,1234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Reynolds Hall — Seating Allocator</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Cormorant+Garamond:wght@300;400;500&family=Cinzel:wght@400;600&family=Raleway:wght@300;400;500&display=swap');
+
+  :root {
+    --bg-deep: #0a0810;
+    --bg-mid: #110e1a;
+    --bg-surface: #1a1528;
+    --bg-card: #1f1a30;
+    --gold: #c9a227;
+    --gold-light: #e8c44a;
+    --gold-dim: #7a621a;
+    --purple-vivid: #7b3fa0;
+    --purple-mid: #5a2d78;
+    --purple-dim: #2d1a40;
+    --crimson: #8b1a2f;
+    --teal: #1a6b7a;
+    --text-primary: #f0e8d0;
+    --text-secondary: #a89070;
+    --text-dim: #5a4a35;
+    --border: rgba(201,162,39,0.2);
+    --shadow-gold: 0 0 30px rgba(201,162,39,0.15);
+    --radius: 6px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Raleway', sans-serif;
+    background: var(--bg-deep);
+    color: var(--text-primary);
+    min-height: 100vh;
+    background-image:
+      radial-gradient(ellipse at 50% 0%, rgba(123,63,160,0.12) 0%, transparent 60%),
+      repeating-linear-gradient(0deg, transparent, transparent 60px, rgba(201,162,39,0.02) 60px, rgba(201,162,39,0.02) 61px),
+      repeating-linear-gradient(90deg, transparent, transparent 60px, rgba(201,162,39,0.02) 60px, rgba(201,162,39,0.02) 61px);
+  }
+
+  header {
+    background: linear-gradient(180deg, rgba(17,14,26,0.98) 0%, rgba(10,8,16,0.95) 100%);
+    border-bottom: 1px solid var(--border);
+    padding: 16px 32px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky; top: 0; z-index: 100;
+    box-shadow: 0 4px 40px rgba(0,0,0,0.6);
+  }
+
+  .header-logo {
+    font-family: 'Cinzel', serif;
+    font-size: 22px;
+    color: var(--gold);
+    letter-spacing: 3px;
+    text-shadow: 0 0 20px rgba(201,162,39,0.4);
+  }
+
+  .header-logo span { color: var(--text-secondary); font-size: 13px; display: block; letter-spacing: 5px; font-family: 'Raleway', sans-serif; font-weight: 300; margin-top: 2px; }
+
+  .header-meta {
+    display: flex; gap: 24px; align-items: center;
+  }
+
+  .active-users {
+    background: var(--purple-dim);
+    border: 1px solid var(--purple-mid);
+    color: var(--gold-light);
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-size: 12px;
+    letter-spacing: 1px;
+    display: flex; align-items: center; gap: 8px;
+  }
+
+  .active-dot { width: 8px; height: 8px; border-radius: 50%; background: #4caf50; box-shadow: 0 0 6px #4caf50; animation: pulse 2s infinite; }
+
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+
+  .session-id { font-size: 11px; color: var(--text-dim); font-family: monospace; }
+
+  .stats-bar {
+    background: var(--bg-mid);
+    border-bottom: 1px solid var(--border);
+    padding: 10px 32px;
+    display: flex; gap: 32px;
+    font-size: 12px;
+  }
+
+  .stat { display: flex; flex-direction: column; gap: 2px; }
+  .stat-label { color: var(--text-dim); letter-spacing: 1px; text-transform: uppercase; font-size: 10px; }
+  .stat-value { color: var(--gold); font-family: 'Cinzel', serif; font-size: 16px; }
+
+  .main-layout {
+    display: grid;
+    grid-template-columns: 320px 1fr;
+    gap: 0;
+    min-height: calc(100vh - 120px);
+  }
+
+  .sidebar {
+    background: var(--bg-mid);
+    border-right: 1px solid var(--border);
+    padding: 24px 20px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+  }
+
+  .section-title {
+    font-family: 'Cinzel', serif;
+    font-size: 13px;
+    letter-spacing: 3px;
+    color: var(--gold);
+    text-transform: uppercase;
+    margin-bottom: 14px;
+    display: flex; align-items: center; gap: 10px;
+  }
+
+  .section-title::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+  .form-group { margin-bottom: 14px; }
+  .form-label { font-size: 11px; letter-spacing: 1px; color: var(--text-secondary); text-transform: uppercase; margin-bottom: 6px; display: block; }
+
+  .form-input {
+    width: 100%;
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
+    color: var(--text-primary);
+    padding: 10px 14px;
+    border-radius: var(--radius);
+    font-family: 'Raleway', sans-serif;
+    font-size: 14px;
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+
+  .form-input:focus { outline: none; border-color: var(--gold-dim); box-shadow: 0 0 0 3px rgba(201,162,39,0.1); }
+
+  .door-select {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 8px;
+  }
+
+  .door-btn {
+    padding: 10px;
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
+    color: var(--text-secondary);
+    border-radius: var(--radius);
+    cursor: pointer;
+    font-family: 'Raleway', sans-serif;
+    font-size: 13px;
+    letter-spacing: 1px;
+    transition: all 0.2s;
+    text-align: center;
+  }
+
+  .door-btn:hover { border-color: var(--gold-dim); color: var(--gold); }
+  .door-btn.active { background: var(--purple-dim); border-color: var(--gold); color: var(--gold-light); box-shadow: 0 0 12px rgba(201,162,39,0.2); }
+
+  .btn-primary {
+    width: 100%;
+    padding: 13px;
+    background: linear-gradient(135deg, var(--purple-mid), var(--purple-vivid));
+    border: 1px solid var(--gold-dim);
+    color: var(--gold-light);
+    border-radius: var(--radius);
+    cursor: pointer;
+    font-family: 'Cinzel', serif;
+    font-size: 13px;
+    letter-spacing: 2px;
+    transition: all 0.2s;
+    text-transform: uppercase;
+  }
+
+  .btn-primary:hover { background: linear-gradient(135deg, var(--purple-vivid), #9b4fc0); box-shadow: var(--shadow-gold); }
+  .btn-primary:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  .btn-danger {
+    padding: 5px 10px;
+    background: rgba(139,26,47,0.3);
+    border: 1px solid rgba(139,26,47,0.5);
+    color: #e05070;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 11px;
+    transition: all 0.2s;
+  }
+
+  .btn-danger:hover { background: rgba(139,26,47,0.6); }
+
+  .group-list { display: flex; flex-direction: column; gap: 8px; }
+
+  .group-card {
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 12px 14px;
+    font-size: 13px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .group-card::before {
+    content: '';
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    width: 3px;
+  }
+
+  .group-card.orchestra::before { background: var(--gold); }
+  .group-card.dress-circle::before { background: #a04070; }
+  .group-card.gallery::before { background: #4070a0; }
+  .group-card.balcony::before { background: #408060; }
+  .group-card.parterre::before { background: #a06020; }
+  .group-card.unallocated::before { background: var(--text-dim); }
+
+  .group-card-header { display: flex; align-items: center; justify-content: space-between; }
+  .group-name { font-family: 'Playfair Display', serif; font-weight: 600; color: var(--text-primary); }
+  .group-size { font-size: 11px; color: var(--text-secondary); }
+  .group-location { font-size: 11px; color: var(--gold); font-style: italic; }
+  .group-door { font-size: 10px; color: var(--text-dim); letter-spacing: 1px; }
+
+  .theater-area {
+    padding: 24px;
+    overflow-x: auto;
+    overflow-y: auto;
+  }
+
+  .theater-container {
+    max-width: 1100px;
+    margin: 0 auto;
+  }
+
+  .theater-title {
+    font-family: 'Cinzel', serif;
+    font-size: 15px;
+    letter-spacing: 4px;
+    color: var(--gold);
+    text-align: center;
+    margin-bottom: 20px;
+  }
+
+  .legend {
+    display: flex; flex-wrap: wrap; gap: 14px; justify-content: center; margin-bottom: 20px;
+  }
+
+  .legend-item { display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--text-secondary); }
+  .legend-dot { width: 12px; height: 12px; border-radius: 3px; }
+  .l-empty { background: var(--bg-surface); border: 1px solid var(--border); }
+  .l-reserved { background: var(--text-dim); }
+
+  .section-wrap {
+    margin-bottom: 28px;
+  }
+
+  .section-header {
+    font-family: 'Cinzel', serif;
+    font-size: 11px;
+    letter-spacing: 3px;
+    color: var(--text-secondary);
+    text-align: center;
+    margin-bottom: 10px;
+    text-transform: uppercase;
+  }
+
+  .stage-bar {
+    background: linear-gradient(135deg, var(--gold-dim), var(--gold), var(--gold-dim));
+    color: var(--bg-deep);
+    font-family: 'Cinzel', serif;
+    font-size: 13px;
+    letter-spacing: 6px;
+    text-align: center;
+    padding: 10px;
+    border-radius: 4px;
+    margin-bottom: 16px;
+    text-transform: uppercase;
+    box-shadow: 0 4px 20px rgba(201,162,39,0.3);
+  }
+
+  .orch-grid {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    gap: 6px;
+    align-items: start;
+  }
+
+  .orch-section { display: flex; flex-direction: column; gap: 2px; }
+  .orch-center { display: flex; flex-direction: column; gap: 2px; }
+
+  .seat-row {
+    display: flex;
+    align-items: center;
+    gap: 3px;
+    justify-content: center;
+  }
+
+  .row-label {
+    font-family: 'Cinzel', serif;
+    font-size: 10px;
+    color: var(--text-dim);
+    width: 22px;
+    text-align: center;
+    flex-shrink: 0;
+  }
+
+  .seat {
+    width: 10px;
+    height: 10px;
+    border-radius: 2px;
+    background: var(--bg-surface);
+    border: 1px solid rgba(201,162,39,0.12);
+    cursor: pointer;
+    transition: transform 0.1s, box-shadow 0.1s;
+    position: relative;
+    flex-shrink: 0;
+  }
+
+  .seat:hover { transform: scale(1.4); z-index: 10; }
+  .seat.first-row { background: var(--bg-mid); border-color: rgba(100,80,40,0.2); cursor: not-allowed; opacity: 0.4; }
+  .seat.occupied { cursor: default; }
+
+  .parterre-wrap {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    gap: 16px;
+    margin-top: 6px;
+  }
+
+  .parterre-col { display: flex; flex-direction: column; gap: 2px; }
+  .parterre-center-label { display: flex; align-items: center; font-family: 'Cinzel', serif; font-size: 10px; color: var(--text-dim); letter-spacing: 2px; writing-mode: vertical-rl; text-align: center; }
+
+  .balcony-section { display: flex; flex-direction: column; gap: 2px; align-items: center; }
+
+  .tooltip {
+    position: fixed;
+    background: var(--bg-card);
+    border: 1px solid var(--gold-dim);
+    color: var(--text-primary);
+    padding: 8px 12px;
+    border-radius: var(--radius);
+    font-size: 12px;
+    pointer-events: none;
+    z-index: 9999;
+    white-space: nowrap;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+    display: none;
+  }
+
+  .summary-area {
+    background: var(--bg-mid);
+    border-top: 1px solid var(--border);
+    padding: 16px 24px;
+  }
+
+  .summary-title {
+    font-family: 'Cinzel', serif;
+    font-size: 12px;
+    letter-spacing: 3px;
+    color: var(--gold);
+    margin-bottom: 12px;
+  }
+
+  .summary-grid {
+    display: flex; flex-wrap: wrap; gap: 10px;
+  }
+
+  .summary-chip {
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 5px 14px;
+    font-size: 11px;
+    display: flex; gap: 8px; align-items: center;
+  }
+
+  .chip-color { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+
+  .error-msg {
+    color: #e05070;
+    font-size: 12px;
+    margin-top: 6px;
+    display: none;
+  }
+
+  .no-groups {
+    color: var(--text-dim);
+    font-size: 12px;
+    text-align: center;
+    padding: 20px;
+    font-style: italic;
+  }
+
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: var(--bg-deep); }
+  ::-webkit-scrollbar-thumb { background: var(--purple-dim); border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--purple-mid); }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-logo">
+    Reynolds Hall
+    <span>INTELLIGENT SEATING SYSTEM</span>
+  </div>
+  <div class="header-meta">
+    <div class="active-users">
+      <div class="active-dot"></div>
+      <span id="activeCount">1</span> ACTIVE USER<span id="usersPlural"></span>
+    </div>
+    <div class="session-id" id="sessionDisplay">SESSION: —</div>
+  </div>
+</header>
+
+<div class="stats-bar">
+  <div class="stat"><span class="stat-label">Total Capacity</span><span class="stat-value" id="statTotal">—</span></div>
+  <div class="stat"><span class="stat-label">Occupied</span><span class="stat-value" id="statOccupied">0</span></div>
+  <div class="stat"><span class="stat-label">Available</span><span class="stat-value" id="statAvailable">—</span></div>
+  <div class="stat"><span class="stat-label">Groups Seated</span><span class="stat-value" id="statGroups">0</span></div>
+  <div class="stat"><span class="stat-label">Orchestra</span><span class="stat-value" id="statOrch">—</span></div>
+  <div class="stat"><span class="stat-label">Dress Circle</span><span class="stat-value" id="statDC">—</span></div>
+  <div class="stat"><span class="stat-label">Gallery</span><span class="stat-value" id="statGal">—</span></div>
+  <div class="stat"><span class="stat-label">Balcony</span><span class="stat-value" id="statBal">—</span></div>
+</div>
+
+<div class="main-layout">
+  <div class="sidebar">
+    <div>
+      <div class="section-title">Add Group</div>
+      <div class="form-group">
+        <label class="form-label">Group Name</label>
+        <input class="form-input" id="groupName" type="text" placeholder="e.g. Smith Family" maxlength="40">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Group Size (max 250)</label>
+        <input class="form-input" id="groupSize" type="number" min="1" max="250" placeholder="1–250">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Entry Door</label>
+        <div class="door-select">
+          <button class="door-btn active" id="doorLeft" onclick="selectDoor('Left')">⬅ LEFT</button>
+          <button class="door-btn" id="doorRight" onclick="selectDoor('Right')">RIGHT ➡</button>
+        </div>
+      </div>
+      <div class="error-msg" id="errorMsg">Please fill all fields correctly.</div>
+      <button class="btn-primary" onclick="addGroup()">SEAT GROUP</button>
+    </div>
+
+    <div>
+      <div class="section-title">Group Queue</div>
+      <div class="group-list" id="groupList">
+        <div class="no-groups">No groups added yet</div>
+      </div>
+    </div>
+
+    <div>
+      <div class="section-title">Actions</div>
+      <button class="btn-primary" onclick="resetAll()" style="background: linear-gradient(135deg, var(--crimson), #6b0020); margin-bottom:10px;">RESET THEATER</button>
+    </div>
+  </div>
+
+  <div style="display:flex; flex-direction:column; overflow:hidden;">
+    <div class="theater-area" id="theaterArea">
+      <div class="theater-container">
+        <div class="theater-title">Reynolds Hall — Seating Plan</div>
+
+        <div class="legend">
+          <div class="legend-item"><div class="legend-dot l-empty"></div>Available</div>
+          <div class="legend-item"><div class="legend-dot l-reserved"></div>First Row (Reserved)</div>
+          <div id="legendGroups"></div>
+        </div>
+
+        <!-- ORCHESTRA + PARTERRE -->
+        <div class="section-wrap">
+          <div class="stage-bar">✦ STAGE ✦</div>
+          <div class="section-header">ORCHESTRA & PARTERRE</div>
+          <div class="orch-grid">
+            <div class="orch-section" id="orchLeft"></div>
+            <div class="orch-center" id="orchCenter"></div>
+            <div class="orch-section" id="orchRight" style="align-items:flex-end;"></div>
+          </div>
+          <div class="parterre-wrap" style="margin-top:12px;">
+            <div>
+              <div class="section-header" style="font-size:9px;">PARTERRE LEFT</div>
+              <div class="parterre-col" id="parterreLeft"></div>
+            </div>
+            <div class="parterre-center-label">PARTERRE BOXES</div>
+            <div>
+              <div class="section-header" style="font-size:9px;">PARTERRE RIGHT</div>
+              <div class="parterre-col" id="parterreRight"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- DRESS CIRCLE -->
+        <div class="section-wrap">
+          <div class="section-header">DRESS CIRCLE — LEVEL 2</div>
+          <div style="display:grid; grid-template-columns:1fr auto 1fr; gap:6px;">
+            <div>
+              <div class="section-header" style="font-size:9px;">DRESS CIRCLE LEFT</div>
+              <div id="dcLeft"></div>
+            </div>
+            <div style="width:20px;"></div>
+            <div>
+              <div class="section-header" style="font-size:9px;">DRESS CIRCLE CENTER</div>
+              <div id="dcCenter"></div>
+            </div>
+          </div>
+          <div style="margin-top:8px;">
+            <div class="section-header" style="font-size:9px;">DRESS CIRCLE RIGHT</div>
+            <div id="dcRight"></div>
+          </div>
+        </div>
+
+        <!-- GALLERY -->
+        <div class="section-wrap">
+          <div class="section-header">GALLERY — LEVEL 3</div>
+          <div style="display:grid; grid-template-columns:1fr auto 1fr; gap:6px;">
+            <div>
+              <div class="section-header" style="font-size:9px;">GALLERY LEFT</div>
+              <div id="galLeft"></div>
+            </div>
+            <div style="width:20px;"></div>
+            <div>
+              <div class="section-header" style="font-size:9px;">GALLERY CENTER</div>
+              <div id="galCenter"></div>
+            </div>
+          </div>
+          <div style="margin-top:8px;">
+            <div class="section-header" style="font-size:9px;">GALLERY RIGHT</div>
+            <div id="galRight"></div>
+          </div>
+        </div>
+
+        <!-- BALCONY -->
+        <div class="section-wrap">
+          <div class="section-header">BALCONY — LEVEL 4</div>
+          <div class="balcony-section" id="balconyCenter"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="summary-area">
+      <div class="summary-title">ALLOCATION SUMMARY</div>
+      <div class="summary-grid" id="summaryGrid">
+        <div style="color:var(--text-dim); font-size:12px; font-style:italic;">No groups allocated yet.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="tooltip" id="tooltip"></div>
+
+<script>
+// ═══════════════════════════════════════════
+// THEATER DATA DEFINITIONS
+// ═══════════════════════════════════════════
+
+const ORCH_ROWS = [
+  {num:1,  label:'AA', left:0,  center:16, right:0,  first:true},
+  {num:2,  label:'BB', left:0,  center:15, right:0,  first:false},
+  {num:3,  label:'A',  left:6,  center:16, right:6,  first:false},
+  {num:4,  label:'B',  left:7,  center:15, right:7,  first:false},
+  {num:5,  label:'C',  left:0,  center:16, right:0,  first:false},
+  {num:6,  label:'D',  left:0,  center:15, right:0,  first:false},
+  {num:7,  label:'E',  left:7,  center:16, right:7,  first:false},
+  {num:8,  label:'F',  left:8,  center:15, right:8,  first:false},
+  {num:9,  label:'G',  left:8,  center:16, right:8,  first:false},
+  {num:10, label:'H',  left:8,  center:15, right:8,  first:false},
+  {num:11, label:'J',  left:8,  center:16, right:8,  first:false},
+  {num:12, label:'K',  left:8,  center:15, right:8,  first:false},
+  {num:13, label:'L',  left:8,  center:16, right:8,  first:false},
+  {num:14, label:'M',  left:8,  center:15, right:8,  first:false},
+  {num:15, label:'N',  left:9,  center:16, right:9,  first:false},
+  {num:16, label:'P',  left:9,  center:15, right:9,  first:false},
+  {num:17, label:'Q',  left:9,  center:16, right:9,  first:false},
+  {num:18, label:'R',  left:9,  center:15, right:9,  first:false},
+  {num:19, label:'S',  left:9,  center:16, right:9,  first:false},
+  {num:20, label:'T',  left:8,  center:15, right:8,  first:false},
+  {num:21, label:'U',  left:8,  center:16, right:8,  first:false},
+  {num:22, label:'V',  left:7,  center:15, right:7,  first:false},
+  {num:23, label:'W',  left:6,  center:16, right:6,  first:false},
+  {num:24, label:'X',  left:4,  center:16, right:4,  first:false},
+  {num:25, label:'Y',  left:0,  center:16, right:0,  first:false},
+  {num:26, label:'Z',  left:0,  center:8,  right:0,  first:false},
+  {num:27, label:'WW', left:10, center:18, right:10, first:false},
+  {num:28, label:'XX', left:11, center:19, right:11, first:false},
+  {num:29, label:'YY', left:12, center:20, right:12, first:false},
+  {num:30, label:'ZZ', left:11, center:21, right:11, first:false},
+];
+
+const PARTERRE_LEFT_ROWS = [
+  {label:'E', seats:6,  first:false},
+  {label:'D', seats:8,  first:false},
+  {label:'C', seats:8,  first:false},
+  {label:'B', seats:8,  first:false},
+  {label:'A', seats:8,  first:false},
+];
+const PARTERRE_RIGHT_ROWS = [
+  {label:'V', seats:6,  first:false},
+  {label:'W', seats:8,  first:false},
+  {label:'X', seats:8,  first:false},
+  {label:'Y', seats:8,  first:false},
+  {label:'Z', seats:8,  first:false},
+];
+
+// FIX: Removed duplicate label:'E' key in the last DC row
+const DC_ROWS = [
+  {label:'A', left:0,  center:0,  right:0,  first:true},
+  {label:'B', left:10, center:18, right:10, first:false},
+  {label:'C', left:10, center:19, right:10, first:false},
+  {label:'D', left:9,  center:20, right:9,  first:false},
+  {label:'E', left:9,  center:19, right:9,  first:false},
+];
+
+const GAL_ROWS = [
+  {label:'A', left:0, center:0,  right:0,  first:true},
+  {label:'B', left:9, center:18, right:9,  first:false},
+  {label:'C', left:9, center:19, right:9,  first:false},
+  {label:'D', left:9, center:20, right:9,  first:false},
+  {label:'E', left:9, center:21, right:9,  first:false},
+];
+
+const BAL_ROWS = [
+  {label:'A', seats:0,  first:true},
+  {label:'B', seats:42, first:false},
+  {label:'C', seats:43, first:false},
+  {label:'D', seats:44, first:false},
+  {label:'E', seats:45, first:false},
+  {label:'F', seats:46, first:false},
+  {label:'G', seats:45, first:false},
+  {label:'H', seats:46, first:false},
+  {label:'J', seats:45, first:false},
+  {label:'K', seats:44, first:false},
+];
+
+// ═══════════════════════════════════════════
+// FIX: Compute total capacity from row data rather than hardcoding
+// ═══════════════════════════════════════════
+
+function computeSectionTotal(subSection) {
+  let total = 0;
+  switch(subSection) {
+    case 'OL': ORCH_ROWS.forEach(r => { if (!r.first) total += r.left; }); break;
+    case 'OC': ORCH_ROWS.forEach(r => { if (!r.first) total += r.center; }); break;
+    case 'OR': ORCH_ROWS.forEach(r => { if (!r.first) total += r.right; }); break;
+    case 'PL': PARTERRE_LEFT_ROWS.forEach(r => { if (!r.first) total += r.seats; }); break;
+    case 'PR': PARTERRE_RIGHT_ROWS.forEach(r => { if (!r.first) total += r.seats; }); break;
+    case 'DCL': DC_ROWS.forEach(r => { if (!r.first) total += r.left; }); break;
+    case 'DCC': DC_ROWS.forEach(r => { if (!r.first) total += r.center; }); break;
+    case 'DCR': DC_ROWS.forEach(r => { if (!r.first) total += r.right; }); break;
+    case 'GL': GAL_ROWS.forEach(r => { if (!r.first) total += r.left; }); break;
+    case 'GC': GAL_ROWS.forEach(r => { if (!r.first) total += r.center; }); break;
+    case 'GR': GAL_ROWS.forEach(r => { if (!r.first) total += r.right; }); break;
+    case 'BC': BAL_ROWS.forEach(r => { if (!r.first) total += r.seats; }); break;
+  }
+  return total;
+}
+
+// Pre-computed totals (derived from data, not hardcoded)
+const SECTION_TOTALS = {};
+['OL','OC','OR','PL','PR','DCL','DCC','DCR','GL','GC','GR','BC'].forEach(s => {
+  SECTION_TOTALS[s] = computeSectionTotal(s);
+});
+
+const TOTAL_ORCH_PART = SECTION_TOTALS['OL'] + SECTION_TOTALS['OC'] + SECTION_TOTALS['OR'] + SECTION_TOTALS['PL'] + SECTION_TOTALS['PR'];
+const TOTAL_DC        = SECTION_TOTALS['DCL'] + SECTION_TOTALS['DCC'] + SECTION_TOTALS['DCR'];
+const TOTAL_GAL       = SECTION_TOTALS['GL'] + SECTION_TOTALS['GC'] + SECTION_TOTALS['GR'];
+const TOTAL_BAL       = SECTION_TOTALS['BC'];
+const TOTAL_CAPACITY  = TOTAL_ORCH_PART + TOTAL_DC + TOTAL_GAL + TOTAL_BAL;
+
+// ═══════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════
+
+const GROUP_COLORS = [
+  '#c9a227','#7b3fa0','#1a6b7a','#8b4520','#2a6b40','#6b1a2a','#1a4a8b','#5a6b20',
+  '#8b6020','#1a408b','#6b3a1a','#20608b','#5a1a6b','#1a6b40','#8b201a','#406b1a'
+];
+
+let state = {
+  groups: [],
+  seats: {},
+  nextGroupId: 1,
+  selectedDoor: 'Left',
+  sessionId: Math.random().toString(36).substring(2,8).toUpperCase(),
+};
+
+// ═══════════════════════════════════════════
+// AVAILABILITY HELPERS
+// ═══════════════════════════════════════════
+
+function calcSectionAvail(subSection) {
+  // FIX: Count occupied seats correctly per sub-section using prefix matching,
+  // then subtract from the data-derived total (not a per-section magic number).
+  let used = 0;
+  const prefix = subSection + '_';
+  for (const [sid, data] of Object.entries(state.seats)) {
+    if (data && sid.startsWith(prefix)) used++;
+  }
+  return SECTION_TOTALS[subSection] - used;
+}
+
+function getSectionAvail(sections) {
+  return sections.reduce((sum, s) => sum + calcSectionAvail(s), 0);
+}
+
+// ═══════════════════════════════════════════
+// ALLOCATION ALGORITHM
+// ═══════════════════════════════════════════
+
+function getAvailableSeatsInOrder(subSection) {
+  const available = [];
+  function addSeats(rows, prefix, countFn) {
+    for (const row of rows) {
+      if (row.first) continue;
+      const count = countFn(row);
+      for (let s = 1; s <= count; s++) {
+        const id = `${prefix}_${row.label}_${s}`;
+        if (!state.seats[id]) available.push(id);
+      }
+    }
+  }
+  switch(subSection) {
+    case 'OL':  addSeats(ORCH_ROWS,           'OL',  r => r.left);   break;
+    case 'OC':  addSeats(ORCH_ROWS,           'OC',  r => r.center); break;
+    case 'OR':  addSeats(ORCH_ROWS,           'OR',  r => r.right);  break;
+    case 'PL':  addSeats(PARTERRE_LEFT_ROWS,  'PL',  r => r.seats);  break;
+    case 'PR':  addSeats(PARTERRE_RIGHT_ROWS, 'PR',  r => r.seats);  break;
+    case 'DCL': addSeats(DC_ROWS,             'DCL', r => r.left);   break;
+    case 'DCC': addSeats(DC_ROWS,             'DCC', r => r.center); break;
+    case 'DCR': addSeats(DC_ROWS,             'DCR', r => r.right);  break;
+    case 'GL':  addSeats(GAL_ROWS,            'GL',  r => r.left);   break;
+    case 'GC':  addSeats(GAL_ROWS,            'GC',  r => r.center); break;
+    case 'GR':  addSeats(GAL_ROWS,            'GR',  r => r.right);  break;
+    case 'BC':  addSeats(BAL_ROWS,            'BC',  r => r.seats);  break;
+  }
+  return available;
+}
+
+function allocateSeats(seatIds, count, group) {
+  const allocated = seatIds.slice(0, count);
+  allocated.forEach(id => { state.seats[id] = {groupId: group.id, groupName: group.name}; });
+  return allocated;
+}
+
+const SEC_NAMES = {
+  OL:'Orch Left', OC:'Orch Center', OR:'Orch Right',
+  PL:'Parterre Left', PR:'Parterre Right',
+  DCL:'DC Left', DCC:'DC Center', DCR:'DC Right',
+  GL:'Gallery Left', GC:'Gallery Center', GR:'Gallery Right',
+  BC:'Balcony'
+};
+
+function tryAllocateInSections(sections, size, group) {
+  const combined = [];
+  for (const sec of sections) combined.push(...getAvailableSeatsInOrder(sec));
+  if (combined.length < size) return null;
+  const allocated = allocateSeats(combined, size, group);
+  const used = [...new Set(allocated.map(id => id.split('_')[0]))];
+  return {seats: allocated, location: used.map(u => SEC_NAMES[u] || u).join(' + '), sections: used};
+}
+
+function allocateGroup(group) {
+  const size = group.size;
+  const door = group.door;
+
+  const OC_avail  = calcSectionAvail('OC');
+  const DC_avail  = getSectionAvail(['DCL','DCC','DCR']);
+  const GAL_avail = getSectionAvail(['GL','GC','GR']);
+  const BAL_avail = calcSectionAvail('BC');
+
+  const prioritySide = door === 'Left' ? 'OL' : 'OR';
+  const sideAvail    = calcSectionAvail(prioritySide);
+  const partSide     = door === 'Left' ? 'PL' : 'PR';
+  const partAvail    = calcSectionAvail(partSide);
+  const overflow     = size - sideAvail;
+
+  // STEP 1: Orchestra side fits the whole group
+  if (sideAvail >= size) {
+    return tryAllocateInSections([prioritySide], size, group);
+  }
+
+  // STEP 2: Side has some seats; spill overflow into matching Parterre
+  if (sideAvail > 0 && overflow <= 38 && partAvail >= overflow) {
+    return tryAllocateInSections([prioritySide, partSide], size, group);
+  }
+
+  // STEP 3: Tiny orchestra remnant, small group → seat entirely in Parterre
+  if (sideAvail < 10 && size < 39 && partAvail >= size) {
+    return tryAllocateInSections([partSide], size, group);
+  }
+
+  // STEP 4: Try Orchestra Center
+  if (!(OC_avail < 80 && size > 79) && OC_avail >= size) {
+    return tryAllocateInSections(['OC'], size, group);
+  }
+
+  // STEP 5: Upper levels — Dress Circle → Gallery → Balcony
+  if (DC_avail >= 40 && DC_avail >= size) {
+    const res = tryAllocateInSections(['DCL','DCC','DCR'], size, group);
+    if (res) return res;
+  }
+
+  if (GAL_avail >= 40 && GAL_avail >= size) {
+    const res = tryAllocateInSections(['GL','GC','GR'], size, group);
+    if (res) return res;
+  }
+
+  if (BAL_avail >= size) {
+    return tryAllocateInSections(['BC'], size, group);
+  }
+
+  return null;
+}
+
+// ═══════════════════════════════════════════
+// UI ACTIONS
+// ═══════════════════════════════════════════
+
+function selectDoor(door) {
+  state.selectedDoor = door;
+  document.getElementById('doorLeft').classList.toggle('active', door === 'Left');
+  document.getElementById('doorRight').classList.toggle('active', door === 'Right');
+}
+
+function addGroup() {
+  const name = document.getElementById('groupName').value.trim();
+  const size = parseInt(document.getElementById('groupSize').value);
+  const err = document.getElementById('errorMsg');
+
+  if (!name || isNaN(size) || size < 1 || size > 250) {
+    err.textContent = 'Please enter a valid group name and size (1–250).';
+    err.style.display = 'block';
+    return;
+  }
+  err.style.display = 'none';
+
+  const group = {
+    id: state.nextGroupId++,
+    name,
+    size,
+    door: state.selectedDoor,
+    color: GROUP_COLORS[(state.groups.length) % GROUP_COLORS.length],
+    allocation: null
+  };
+
+  const result = allocateGroup(group);
+  if (!result) {
+    err.textContent = `Could not seat group of ${size}. Not enough contiguous seats available.`;
+    err.style.display = 'block';
+    return;
+  }
+
+  group.allocation = result;
+  state.groups.push(group);
+
+  document.getElementById('groupName').value = '';
+  document.getElementById('groupSize').value = '';
+
+  // FIX: Save state to localStorage for persistence across refreshes
+  saveState();
+  renderAll();
+}
+
+function removeGroup(id) {
+  const group = state.groups.find(g => g.id === id);
+  if (!group) return;
+  for (const [sid, data] of Object.entries(state.seats)) {
+    if (data && data.groupId === id) delete state.seats[sid];
+  }
+  state.groups = state.groups.filter(g => g.id !== id);
+  saveState();
+  renderAll();
+}
+
+function resetAll() {
+  if (!confirm('Reset all seating? This cannot be undone.')) return;
+  state.groups = [];
+  state.seats = {};
+  state.nextGroupId = 1;
+  saveState();
+  renderAll();
+}
+
+// ═══════════════════════════════════════════
+// FIX: localStorage persistence
+// ═══════════════════════════════════════════
+
+function saveState() {
+  try {
+    localStorage.setItem('reynolds-hall-state', JSON.stringify({
+      groups: state.groups,
+      seats: state.seats,
+      nextGroupId: state.nextGroupId,
+    }));
+  } catch(e) { /* storage unavailable, fail silently */ }
+}
+
+function loadState() {
+  try {
+    const raw = localStorage.getItem('reynolds-hall-state');
+    if (!raw) return;
+    const saved = JSON.parse(raw);
+    if (saved.groups)      state.groups      = saved.groups;
+    if (saved.seats)       state.seats       = saved.seats;
+    if (saved.nextGroupId) state.nextGroupId = saved.nextGroupId;
+  } catch(e) { /* corrupt data, start fresh */ }
+}
+
+// ═══════════════════════════════════════════
+// RENDERING
+// ═══════════════════════════════════════════
+
+function getSeatColor(seatId) {
+  const data = state.seats[seatId];
+  if (!data) return null;
+  const group = state.groups.find(g => g.id === data.groupId);
+  return group ? group.color : '#888';
+}
+
+function makeSeat(seatId, isFirst) {
+  const div = document.createElement('div');
+  div.className = 'seat' + (isFirst ? ' first-row' : '');
+  div.dataset.id = seatId;
+
+  const color = getSeatColor(seatId);
+  if (color) {
+    div.style.background = color;
+    div.style.borderColor = color;
+    div.classList.add('occupied');
+  }
+
+  div.addEventListener('mouseover', (e) => showTooltip(e, seatId, isFirst));
+  div.addEventListener('mousemove', (e) => moveTooltip(e));
+  div.addEventListener('mouseout', hideTooltip);
+  return div;
+}
+
+function showTooltip(e, seatId, isFirst) {
+  const tip = document.getElementById('tooltip');
+  const parts = seatId.split('_');
+  const data = state.seats[seatId];
+  let text = `Seat: ${parts.slice(1).join('-')}`;
+  if (isFirst) text += ' [First Row — Reserved]';
+  else if (data) text += ` — ${data.groupName}`;
+  else text += ' — Available';
+  tip.textContent = text;
+  tip.style.display = 'block';
+  moveTooltip(e);
+}
+function moveTooltip(e) {
+  const tip = document.getElementById('tooltip');
+  tip.style.left = (e.clientX + 14) + 'px';
+  tip.style.top  = (e.clientY - 30) + 'px';
+}
+function hideTooltip() { document.getElementById('tooltip').style.display = 'none'; }
+
+function makeRow(prefix, label, seatCount, isFirst) {
+  const row = document.createElement('div');
+  row.className = 'seat-row';
+  const lbl = document.createElement('div');
+  lbl.className = 'row-label';
+  lbl.textContent = label;
+  row.appendChild(lbl);
+  for (let s = 1; s <= seatCount; s++) {
+    const seatId = `${prefix}_${label}_${s}`;
+    row.appendChild(makeSeat(seatId, isFirst));
+  }
+  return row;
+}
+
+function renderOrchestra() {
+  const leftEl   = document.getElementById('orchLeft');
+  const centerEl = document.getElementById('orchCenter');
+  const rightEl  = document.getElementById('orchRight');
+  leftEl.innerHTML = ''; centerEl.innerHTML = ''; rightEl.innerHTML = '';
+
+  for (const row of ORCH_ROWS) {
+    if (row.left > 0)   leftEl.appendChild(makeRow('OL', row.label, row.left,   row.first));
+    centerEl.appendChild(makeRow('OC', row.label, row.center, row.first));
+    if (row.right > 0)  rightEl.appendChild(makeRow('OR', row.label, row.right,  row.first));
+  }
+}
+
+function renderParterre() {
+  const leftEl  = document.getElementById('parterreLeft');
+  const rightEl = document.getElementById('parterreRight');
+  leftEl.innerHTML = ''; rightEl.innerHTML = '';
+  for (const row of PARTERRE_LEFT_ROWS)  leftEl.appendChild(makeRow('PL', row.label, row.seats, row.first));
+  for (const row of PARTERRE_RIGHT_ROWS) rightEl.appendChild(makeRow('PR', row.label, row.seats, row.first));
+}
+
+function renderDressCircle() {
+  const leftEl   = document.getElementById('dcLeft');
+  const centerEl = document.getElementById('dcCenter');
+  const rightEl  = document.getElementById('dcRight');
+  leftEl.innerHTML = ''; centerEl.innerHTML = ''; rightEl.innerHTML = '';
+  for (const row of DC_ROWS) {
+    if (row.left > 0   || row.first) leftEl.appendChild(makeRow('DCL', row.label, row.left,   row.first));
+    if (row.center > 0 || row.first) centerEl.appendChild(makeRow('DCC', row.label, row.center, row.first));
+    if (row.right > 0  || row.first) rightEl.appendChild(makeRow('DCR', row.label, row.right,  row.first));
+  }
+}
+
+function renderGallery() {
+  const leftEl   = document.getElementById('galLeft');
+  const centerEl = document.getElementById('galCenter');
+  const rightEl  = document.getElementById('galRight');
+  leftEl.innerHTML = ''; centerEl.innerHTML = ''; rightEl.innerHTML = '';
+  for (const row of GAL_ROWS) {
+    if (row.left > 0   || row.first) leftEl.appendChild(makeRow('GL', row.label, row.left,   row.first));
+    if (row.center > 0 || row.first) centerEl.appendChild(makeRow('GC', row.label, row.center, row.first));
+    if (row.right > 0  || row.first) rightEl.appendChild(makeRow('GR', row.label, row.right,  row.first));
+  }
+}
+
+function renderBalcony() {
+  const el = document.getElementById('balconyCenter');
+  el.innerHTML = '';
+  for (const row of BAL_ROWS) {
+    el.appendChild(makeRow('BC', row.label, row.seats, row.first));
+  }
+}
+
+function renderGroupList() {
+  const el = document.getElementById('groupList');
+  if (state.groups.length === 0) {
+    el.innerHTML = '<div class="no-groups">No groups added yet</div>';
+    return;
+  }
+  el.innerHTML = '';
+  state.groups.forEach(g => {
+    const card = document.createElement('div');
+    const secClass = g.allocation ? getSectionClass(g.allocation.sections) : 'unallocated';
+    card.className = `group-card ${secClass}`;
+    card.innerHTML = `
+      <div class="group-card-header">
+        <div class="group-name" style="display:flex;align-items:center;gap:8px;">
+          <div style="width:10px;height:10px;border-radius:50%;background:${g.color};flex-shrink:0;"></div>
+          ${escHtml(g.name)}
+        </div>
+        <button class="btn-danger" onclick="removeGroup(${g.id})">✕</button>
+      </div>
+      <div style="display:flex;gap:12px;align-items:center;">
+        <div class="group-size">${g.size} seats</div>
+        <div class="group-door">${g.door.toUpperCase()} DOOR</div>
+      </div>
+      ${g.allocation
+        ? `<div class="group-location">📍 ${g.allocation.location}</div>`
+        : '<div style="color:#e05070;font-size:11px;">⚠ Unallocated</div>'}
+    `;
+    el.appendChild(card);
+  });
+}
+
+function getSectionClass(sections) {
+  if (!sections || sections.length === 0) return 'unallocated';
+  const s = sections[0];
+  if (s === 'OL' || s === 'OC' || s === 'OR') return 'orchestra';
+  if (s === 'PL' || s === 'PR') return 'parterre';
+  if (s.startsWith('DC')) return 'dress-circle';
+  if (s.startsWith('G')) return 'gallery';
+  if (s === 'BC') return 'balcony';
+  return 'unallocated';
+}
+
+function renderSummary() {
+  const el = document.getElementById('summaryGrid');
+  if (state.groups.length === 0) {
+    el.innerHTML = '<div style="color:var(--text-dim); font-size:12px; font-style:italic;">No groups allocated yet.</div>';
+    return;
+  }
+  el.innerHTML = '';
+  state.groups.forEach(g => {
+    const chip = document.createElement('div');
+    chip.className = 'summary-chip';
+    // FIX: Changed "px" label to "seats"
+    chip.innerHTML = `
+      <div class="chip-color" style="background:${g.color}"></div>
+      <strong>${escHtml(g.name)}</strong>
+      <span style="color:var(--text-dim)">${g.size} seats</span>
+      <span style="color:var(--gold)">${g.allocation ? g.allocation.location : '—'}</span>
+    `;
+    el.appendChild(chip);
+  });
+}
+
+function renderLegend() {
+  const el = document.getElementById('legendGroups');
+  el.innerHTML = '';
+  state.groups.forEach(g => {
+    const item = document.createElement('div');
+    item.className = 'legend-item';
+    item.innerHTML = `<div class="legend-dot" style="background:${g.color}"></div>${escHtml(g.name)}`;
+    el.appendChild(item);
+  });
+}
+
+// FIX: Stats now use computed totals from row data instead of hardcoded magic numbers
+function renderStats() {
+  const occupied = Object.values(state.seats).filter(Boolean).length;
+
+  document.getElementById('statTotal').textContent     = TOTAL_CAPACITY;
+  document.getElementById('statOccupied').textContent  = occupied;
+  document.getElementById('statAvailable').textContent = TOTAL_CAPACITY - occupied;
+  document.getElementById('statGroups').textContent    = state.groups.length;
+
+  const orchPartOccupied = TOTAL_ORCH_PART - getSectionAvail(['OL','OC','OR','PL','PR']);
+  const dcOccupied       = TOTAL_DC        - getSectionAvail(['DCL','DCC','DCR']);
+  const galOccupied      = TOTAL_GAL       - getSectionAvail(['GL','GC','GR']);
+  const balOccupied      = TOTAL_BAL       - calcSectionAvail('BC');
+
+  document.getElementById('statOrch').textContent = `${orchPartOccupied} / ${TOTAL_ORCH_PART}`;
+  document.getElementById('statDC').textContent   = `${dcOccupied} / ${TOTAL_DC}`;
+  document.getElementById('statGal').textContent  = `${galOccupied} / ${TOTAL_GAL}`;
+  document.getElementById('statBal').textContent  = `${balOccupied} / ${TOTAL_BAL}`;
+}
+
+function renderAll() {
+  renderOrchestra();
+  renderParterre();
+  renderDressCircle();
+  renderGallery();
+  renderBalcony();
+  renderGroupList();
+  renderSummary();
+  renderLegend();
+  renderStats();
+}
+
+function escHtml(str) {
+  return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ═══════════════════════════════════════════
+// MULTI-TAB SYNC (BroadcastChannel)
+// FIX: Actually wire up broadcast so state changes propagate to other tabs
+// ═══════════════════════════════════════════
+
+const channel = new BroadcastChannel('reynolds-hall-session');
+let activeTabCount = 1;
+
+document.getElementById('sessionDisplay').textContent = `SESSION: ${state.sessionId}`;
+
+channel.onmessage = (e) => {
+  const msg = e.data;
+
+  if (msg.type === 'ping') {
+    // Another tab just opened — respond so they can count us
+    channel.postMessage({type: 'pong', session: state.sessionId});
+  }
+
+  if (msg.type === 'pong' || msg.type === 'ping') {
+    // Each ping/pong from a distinct tab increments known active count
+    activeTabCount = Math.max(activeTabCount, 2);
+    updateActiveCount(activeTabCount);
+  }
+
+  if (msg.type === 'state_update') {
+    // Another tab changed state — sync and re-render
+    state.groups      = msg.state.groups;
+    state.seats       = msg.state.seats;
+    state.nextGroupId = msg.state.nextGroupId;
+    renderAll();
+  }
+
+  if (msg.type === 'tab_closed') {
+    activeTabCount = Math.max(1, activeTabCount - 1);
+    updateActiveCount(activeTabCount);
+  }
+};
+
+function updateActiveCount(count) {
+  document.getElementById('activeCount').textContent  = count;
+  document.getElementById('usersPlural').textContent  = count !== 1 ? 'S' : '';
+}
+
+function broadcastState() {
+  channel.postMessage({
+    type: 'state_update',
+    state: {groups: state.groups, seats: state.seats, nextGroupId: state.nextGroupId}
+  });
+}
+
+// Notify other tabs when this tab closes
+window.addEventListener('beforeunload', () => {
+  channel.postMessage({type: 'tab_closed'});
+});
+
+// Announce presence to other open tabs
+channel.postMessage({type: 'ping', session: state.sessionId});
+
+// ═══════════════════════════════════════════
+// FIX: Wrap mutating actions to also broadcast + persist
+// ═══════════════════════════════════════════
+
+const _origAdd    = addGroup;
+const _origRemove = removeGroup;
+const _origReset  = resetAll;
+
+// Override addGroup to broadcast after state change
+window.addGroup = function() {
+  _origAdd();
+  broadcastState();
+};
+
+window.removeGroup = function(id) {
+  _origRemove(id);
+  broadcastState();
+};
+
+window.resetAll = function() {
+  _origReset();
+  broadcastState();
+};
+
+// ═══════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════
+
+loadState();
+renderAll();
+</script>
+</body>
+</html>
