@@ -835,7 +835,7 @@ function selectDoor(door) {
 function addGroup() {
   const name = document.getElementById('groupName').value.trim();
   const size = parseInt(document.getElementById('groupSize').value);
-  const err = document.getElementById('errorMsg');
+  const err  = document.getElementById('errorMsg');
 
   if (!name || isNaN(size) || size < 1 || size > 250) {
     err.textContent = 'Please enter a valid group name and size (1–250).';
@@ -866,8 +866,7 @@ function addGroup() {
   document.getElementById('groupName').value = '';
   document.getElementById('groupSize').value = '';
 
-  // FIX: Save state to localStorage for persistence across refreshes
-  saveState();
+  commitState(); // persist + broadcast
   renderAll();
 }
 
@@ -878,42 +877,67 @@ function removeGroup(id) {
     if (data && data.groupId === id) delete state.seats[sid];
   }
   state.groups = state.groups.filter(g => g.id !== id);
-  saveState();
+  commitState();
   renderAll();
 }
 
 function resetAll() {
   if (!confirm('Reset all seating? This cannot be undone.')) return;
-  state.groups = [];
-  state.seats = {};
+  state.groups      = [];
+  state.seats       = {};
   state.nextGroupId = 1;
-  saveState();
+  commitState();
   renderAll();
 }
 
 // ═══════════════════════════════════════════
-// FIX: localStorage persistence
+// PERSISTENCE + CROSS-TAB COLLABORATION
+//
+// Strategy: localStorage is the single source of truth.
+//   - commitState() writes to localStorage AND broadcasts via BroadcastChannel.
+//   - The 'storage' event fires in *other* same-origin tabs whenever localStorage
+//     changes, so they re-render automatically — this is the reliable sync path.
+//   - BroadcastChannel carries the same payload as a fast-path supplement, and
+//     also handles ping/pong for the active-user counter.
+//   - On load, each tab reads from localStorage so a refresh never loses state.
 // ═══════════════════════════════════════════
 
-function saveState() {
+const STORAGE_KEY = 'reynolds-hall-state';
+
+function commitState() {
+  const payload = {
+    groups:      state.groups,
+    seats:       state.seats,
+    nextGroupId: state.nextGroupId,
+  };
   try {
-    localStorage.setItem('reynolds-hall-state', JSON.stringify({
-      groups: state.groups,
-      seats: state.seats,
-      nextGroupId: state.nextGroupId,
-    }));
-  } catch(e) { /* storage unavailable, fail silently */ }
+    // Write to localStorage — triggers 'storage' event in other tabs
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+  } catch(e) { /* quota exceeded or private mode — degrade gracefully */ }
+
+  // Also push directly via BroadcastChannel for lower latency
+  try {
+    channel.postMessage({ type: 'state_update', state: payload });
+  } catch(e) {}
+}
+
+function applyRemoteState(payload) {
+  // Merge remote state and re-render without triggering another broadcast
+  state.groups      = payload.groups      ?? state.groups;
+  state.seats       = payload.seats       ?? state.seats;
+  state.nextGroupId = payload.nextGroupId ?? state.nextGroupId;
+  renderAll();
 }
 
 function loadState() {
   try {
-    const raw = localStorage.getItem('reynolds-hall-state');
+    const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return;
     const saved = JSON.parse(raw);
     if (saved.groups)      state.groups      = saved.groups;
     if (saved.seats)       state.seats       = saved.seats;
     if (saved.nextGroupId) state.nextGroupId = saved.nextGroupId;
-  } catch(e) { /* corrupt data, start fresh */ }
+  } catch(e) { /* corrupt data — start fresh */ }
 }
 
 // ═══════════════════════════════════════════
@@ -1142,93 +1166,69 @@ function escHtml(str) {
 }
 
 // ═══════════════════════════════════════════
-// MULTI-TAB SYNC (BroadcastChannel)
-// FIX: Actually wire up broadcast so state changes propagate to other tabs
+// BROADCAST CHANNEL — fast-path sync + tab counter
 // ═══════════════════════════════════════════
 
-const channel = new BroadcastChannel('reynolds-hall-session');
-let activeTabCount = 1;
+const channel        = new BroadcastChannel('reynolds-hall-session');
+let   activeTabCount = 1;
 
-document.getElementById('sessionDisplay').textContent = `SESSION: ${state.sessionId}`;
+function updateActiveCount(count) {
+  activeTabCount = Math.max(1, count);
+  document.getElementById('activeCount').textContent = activeTabCount;
+  document.getElementById('usersPlural').textContent = activeTabCount !== 1 ? 'S' : '';
+}
 
 channel.onmessage = (e) => {
   const msg = e.data;
 
-  if (msg.type === 'ping') {
-    // Another tab just opened — respond so they can count us
-    channel.postMessage({type: 'pong', session: state.sessionId});
-  }
+  switch (msg.type) {
+    case 'ping':
+      // A new tab announced itself — reply so it knows we exist, and increment our count
+      channel.postMessage({ type: 'pong', session: state.sessionId });
+      updateActiveCount(activeTabCount + 1);
+      break;
 
-  if (msg.type === 'pong' || msg.type === 'ping') {
-    // Each ping/pong from a distinct tab increments known active count
-    activeTabCount = Math.max(activeTabCount, 2);
-    updateActiveCount(activeTabCount);
-  }
+    case 'pong':
+      // A tab replied to our ping — we now know at least 2 tabs are open
+      updateActiveCount(activeTabCount + 1);
+      break;
 
-  if (msg.type === 'state_update') {
-    // Another tab changed state — sync and re-render
-    state.groups      = msg.state.groups;
-    state.seats       = msg.state.seats;
-    state.nextGroupId = msg.state.nextGroupId;
-    renderAll();
-  }
+    case 'state_update':
+      // Another tab committed a change — apply it immediately (low-latency path)
+      applyRemoteState(msg.state);
+      break;
 
-  if (msg.type === 'tab_closed') {
-    activeTabCount = Math.max(1, activeTabCount - 1);
-    updateActiveCount(activeTabCount);
+    case 'tab_closed':
+      updateActiveCount(activeTabCount - 1);
+      break;
   }
 };
 
-function updateActiveCount(count) {
-  document.getElementById('activeCount').textContent  = count;
-  document.getElementById('usersPlural').textContent  = count !== 1 ? 'S' : '';
-}
-
-function broadcastState() {
-  channel.postMessage({
-    type: 'state_update',
-    state: {groups: state.groups, seats: state.seats, nextGroupId: state.nextGroupId}
-  });
-}
+// 'storage' event fires in all *other* same-origin tabs when localStorage changes.
+// This is the reliable fallback in case BroadcastChannel misses a message.
+window.addEventListener('storage', (e) => {
+  if (e.key !== STORAGE_KEY || !e.newValue) return;
+  try {
+    applyRemoteState(JSON.parse(e.newValue));
+  } catch(err) {}
+});
 
 // Notify other tabs when this tab closes
 window.addEventListener('beforeunload', () => {
-  channel.postMessage({type: 'tab_closed'});
+  channel.postMessage({ type: 'tab_closed' });
 });
-
-// Announce presence to other open tabs
-channel.postMessage({type: 'ping', session: state.sessionId});
-
-// ═══════════════════════════════════════════
-// FIX: Wrap mutating actions to also broadcast + persist
-// ═══════════════════════════════════════════
-
-const _origAdd    = addGroup;
-const _origRemove = removeGroup;
-const _origReset  = resetAll;
-
-// Override addGroup to broadcast after state change
-window.addGroup = function() {
-  _origAdd();
-  broadcastState();
-};
-
-window.removeGroup = function(id) {
-  _origRemove(id);
-  broadcastState();
-};
-
-window.resetAll = function() {
-  _origReset();
-  broadcastState();
-};
 
 // ═══════════════════════════════════════════
 // INIT
 // ═══════════════════════════════════════════
 
-loadState();
+document.getElementById('sessionDisplay').textContent = `SESSION: ${state.sessionId}`;
+
+loadState();   // restore persisted state before first render
 renderAll();
+
+// Announce presence; other tabs will pong back so we can count them
+channel.postMessage({ type: 'ping', session: state.sessionId });
 </script>
 </body>
 </html>
