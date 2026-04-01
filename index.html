@@ -920,6 +920,23 @@ function allocateGroup(group) {
   if (sideAv > 0 && overflow <= 38 && partAv >= overflow)     return tryAlloc([side, partSide], size, group);
   if (sideAv < 10 && size < 39 && partAv >= size)             return tryAlloc([partSide], size, group);
   if (!(ocAv < 80 && size > 79) && ocAv >= size)              return tryAlloc(['OC'], size, group);
+
+  // ── STEP 4b: Orchestra Center exhausted → spill back to sides ────────────
+  // Only reached when Center cannot fit the group on its own.
+  // Try the fuller side first so seats are used sequentially rather than
+  // split evenly; fall through to upper levels only if the combined sides
+  // still cannot accommodate the group.
+  {
+    const olAv = calcAvail('OL');
+    const orAv = calcAvail('OR');
+    const combinedSidesAv = olAv + orAv;
+    if (combinedSidesAv >= size) {
+      // Put the fuller side first so it fills before the lesser side is touched
+      const orderedSides = olAv >= orAv ? ['OL', 'OR'] : ['OR', 'OL'];
+      return tryAlloc(orderedSides, size, group);
+    }
+  }
+
   if (dcAv >= 40 && dcAv >= size) {
     const r = tryAlloc(['DCL','DCC','DCR'], size, group); if (r) return r;
   }
