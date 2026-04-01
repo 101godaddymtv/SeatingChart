@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Reynolds Hall — Seating Allocator</title>
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Cormorant+Garamond:wght@300;400;500&family=Cinzel:wght@400;600&family=Raleway:wght@300;400;500&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Cinzel:wght@400;600&family=Raleway:wght@300;400;500&display=swap');
 
   :root {
     --bg-deep: #0a0810;
@@ -19,7 +19,6 @@
     --purple-mid: #5a2d78;
     --purple-dim: #2d1a40;
     --crimson: #8b1a2f;
-    --teal: #1a6b7a;
     --text-primary: #f0e8d0;
     --text-secondary: #a89070;
     --text-dim: #5a4a35;
@@ -41,362 +40,215 @@
       repeating-linear-gradient(90deg, transparent, transparent 60px, rgba(201,162,39,0.02) 60px, rgba(201,162,39,0.02) 61px);
   }
 
+  /* ── SYNC BANNER ─────────────────────────── */
+  #syncBanner {
+    display: none;
+    position: fixed; top: 0; left: 0; right: 0;
+    background: rgba(123,63,160,0.92);
+    color: var(--gold-light);
+    font-family: 'Cinzel', serif;
+    font-size: 12px;
+    letter-spacing: 2px;
+    text-align: center;
+    padding: 8px;
+    z-index: 9999;
+    border-bottom: 1px solid var(--gold-dim);
+  }
+  #syncBanner.show { display: block; }
+
+  /* ── CONNECTION STATUS DOT ───────────────── */
+  .conn-dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: #888; box-shadow: 0 0 4px #888;
+    transition: background 0.4s, box-shadow 0.4s;
+    flex-shrink: 0;
+  }
+  .conn-dot.connected    { background: #4caf50; box-shadow: 0 0 6px #4caf50; animation: pulse 2s infinite; }
+  .conn-dot.disconnected { background: #e05070; box-shadow: 0 0 6px #e05070; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.5} }
+
+  /* ── HEADER ──────────────────────────────── */
   header {
     background: linear-gradient(180deg, rgba(17,14,26,0.98) 0%, rgba(10,8,16,0.95) 100%);
     border-bottom: 1px solid var(--border);
     padding: 16px 32px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
+    display: flex; align-items: center; justify-content: space-between;
     position: sticky; top: 0; z-index: 100;
     box-shadow: 0 4px 40px rgba(0,0,0,0.6);
   }
-
   .header-logo {
-    font-family: 'Cinzel', serif;
-    font-size: 22px;
-    color: var(--gold);
-    letter-spacing: 3px;
+    font-family: 'Cinzel', serif; font-size: 22px;
+    color: var(--gold); letter-spacing: 3px;
     text-shadow: 0 0 20px rgba(201,162,39,0.4);
   }
-
-  .header-logo span { color: var(--text-secondary); font-size: 13px; display: block; letter-spacing: 5px; font-family: 'Raleway', sans-serif; font-weight: 300; margin-top: 2px; }
-
-  .header-meta {
-    display: flex; gap: 24px; align-items: center;
+  .header-logo span {
+    color: var(--text-secondary); font-size: 13px; display: block;
+    letter-spacing: 5px; font-family: 'Raleway', sans-serif;
+    font-weight: 300; margin-top: 2px;
   }
-
+  .header-meta { display: flex; gap: 24px; align-items: center; }
   .active-users {
-    background: var(--purple-dim);
-    border: 1px solid var(--purple-mid);
-    color: var(--gold-light);
-    padding: 6px 14px;
-    border-radius: 20px;
-    font-size: 12px;
-    letter-spacing: 1px;
+    background: var(--purple-dim); border: 1px solid var(--purple-mid);
+    color: var(--gold-light); padding: 6px 14px; border-radius: 20px;
+    font-size: 12px; letter-spacing: 1px;
     display: flex; align-items: center; gap: 8px;
   }
-
-  .active-dot { width: 8px; height: 8px; border-radius: 50%; background: #4caf50; box-shadow: 0 0 6px #4caf50; animation: pulse 2s infinite; }
-
-  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
-
   .session-id { font-size: 11px; color: var(--text-dim); font-family: monospace; }
 
+  /* ── STATS BAR ───────────────────────────── */
   .stats-bar {
-    background: var(--bg-mid);
-    border-bottom: 1px solid var(--border);
-    padding: 10px 32px;
-    display: flex; gap: 32px;
-    font-size: 12px;
+    background: var(--bg-mid); border-bottom: 1px solid var(--border);
+    padding: 10px 32px; display: flex; gap: 32px; font-size: 12px; flex-wrap: wrap;
   }
-
   .stat { display: flex; flex-direction: column; gap: 2px; }
   .stat-label { color: var(--text-dim); letter-spacing: 1px; text-transform: uppercase; font-size: 10px; }
   .stat-value { color: var(--gold); font-family: 'Cinzel', serif; font-size: 16px; }
 
+  /* ── LAYOUT ──────────────────────────────── */
   .main-layout {
-    display: grid;
-    grid-template-columns: 320px 1fr;
-    gap: 0;
-    min-height: calc(100vh - 120px);
+    display: grid; grid-template-columns: 320px 1fr;
+    gap: 0; min-height: calc(100vh - 120px);
   }
-
   .sidebar {
-    background: var(--bg-mid);
-    border-right: 1px solid var(--border);
-    padding: 24px 20px;
-    overflow-y: auto;
-    display: flex;
-    flex-direction: column;
-    gap: 24px;
+    background: var(--bg-mid); border-right: 1px solid var(--border);
+    padding: 24px 20px; overflow-y: auto;
+    display: flex; flex-direction: column; gap: 24px;
   }
 
+  /* ── SIDEBAR COMPONENTS ──────────────────── */
   .section-title {
-    font-family: 'Cinzel', serif;
-    font-size: 13px;
-    letter-spacing: 3px;
-    color: var(--gold);
-    text-transform: uppercase;
-    margin-bottom: 14px;
+    font-family: 'Cinzel', serif; font-size: 13px; letter-spacing: 3px;
+    color: var(--gold); text-transform: uppercase; margin-bottom: 14px;
     display: flex; align-items: center; gap: 10px;
   }
-
   .section-title::after { content: ''; flex: 1; height: 1px; background: var(--border); }
-
   .form-group { margin-bottom: 14px; }
-  .form-label { font-size: 11px; letter-spacing: 1px; color: var(--text-secondary); text-transform: uppercase; margin-bottom: 6px; display: block; }
-
+  .form-label {
+    font-size: 11px; letter-spacing: 1px; color: var(--text-secondary);
+    text-transform: uppercase; margin-bottom: 6px; display: block;
+  }
   .form-input {
-    width: 100%;
-    background: var(--bg-surface);
-    border: 1px solid var(--border);
-    color: var(--text-primary);
-    padding: 10px 14px;
-    border-radius: var(--radius);
-    font-family: 'Raleway', sans-serif;
-    font-size: 14px;
+    width: 100%; background: var(--bg-surface); border: 1px solid var(--border);
+    color: var(--text-primary); padding: 10px 14px; border-radius: var(--radius);
+    font-family: 'Raleway', sans-serif; font-size: 14px;
     transition: border-color 0.2s, box-shadow 0.2s;
   }
-
   .form-input:focus { outline: none; border-color: var(--gold-dim); box-shadow: 0 0 0 3px rgba(201,162,39,0.1); }
-
-  .door-select {
-    display: grid; grid-template-columns: 1fr 1fr; gap: 8px;
-  }
-
+  .door-select { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
   .door-btn {
-    padding: 10px;
-    background: var(--bg-surface);
-    border: 1px solid var(--border);
-    color: var(--text-secondary);
-    border-radius: var(--radius);
-    cursor: pointer;
-    font-family: 'Raleway', sans-serif;
-    font-size: 13px;
-    letter-spacing: 1px;
-    transition: all 0.2s;
-    text-align: center;
+    padding: 10px; background: var(--bg-surface); border: 1px solid var(--border);
+    color: var(--text-secondary); border-radius: var(--radius); cursor: pointer;
+    font-family: 'Raleway', sans-serif; font-size: 13px; letter-spacing: 1px;
+    transition: all 0.2s; text-align: center;
   }
-
   .door-btn:hover { border-color: var(--gold-dim); color: var(--gold); }
   .door-btn.active { background: var(--purple-dim); border-color: var(--gold); color: var(--gold-light); box-shadow: 0 0 12px rgba(201,162,39,0.2); }
-
   .btn-primary {
-    width: 100%;
-    padding: 13px;
+    width: 100%; padding: 13px;
     background: linear-gradient(135deg, var(--purple-mid), var(--purple-vivid));
-    border: 1px solid var(--gold-dim);
-    color: var(--gold-light);
-    border-radius: var(--radius);
-    cursor: pointer;
-    font-family: 'Cinzel', serif;
-    font-size: 13px;
-    letter-spacing: 2px;
-    transition: all 0.2s;
-    text-transform: uppercase;
+    border: 1px solid var(--gold-dim); color: var(--gold-light);
+    border-radius: var(--radius); cursor: pointer;
+    font-family: 'Cinzel', serif; font-size: 13px; letter-spacing: 2px;
+    transition: all 0.2s; text-transform: uppercase;
   }
-
   .btn-primary:hover { background: linear-gradient(135deg, var(--purple-vivid), #9b4fc0); box-shadow: var(--shadow-gold); }
   .btn-primary:disabled { opacity: 0.4; cursor: not-allowed; }
-
   .btn-danger {
-    padding: 5px 10px;
-    background: rgba(139,26,47,0.3);
-    border: 1px solid rgba(139,26,47,0.5);
-    color: #e05070;
-    border-radius: 4px;
-    cursor: pointer;
-    font-size: 11px;
-    transition: all 0.2s;
+    padding: 5px 10px; background: rgba(139,26,47,0.3);
+    border: 1px solid rgba(139,26,47,0.5); color: #e05070;
+    border-radius: 4px; cursor: pointer; font-size: 11px; transition: all 0.2s;
   }
-
   .btn-danger:hover { background: rgba(139,26,47,0.6); }
-
   .group-list { display: flex; flex-direction: column; gap: 8px; }
-
   .group-card {
-    background: var(--bg-surface);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    padding: 12px 14px;
-    font-size: 13px;
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-    position: relative;
-    overflow: hidden;
+    background: var(--bg-surface); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 12px 14px; font-size: 13px;
+    display: flex; flex-direction: column; gap: 6px;
+    position: relative; overflow: hidden;
   }
-
-  .group-card::before {
-    content: '';
-    position: absolute;
-    left: 0; top: 0; bottom: 0;
-    width: 3px;
-  }
-
-  .group-card.orchestra::before { background: var(--gold); }
-  .group-card.dress-circle::before { background: #a04070; }
-  .group-card.gallery::before { background: #4070a0; }
-  .group-card.balcony::before { background: #408060; }
-  .group-card.parterre::before { background: #a06020; }
+  .group-card::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; }
+  .group-card.orchestra::before   { background: var(--gold); }
+  .group-card.dress-circle::before{ background: #a04070; }
+  .group-card.gallery::before     { background: #4070a0; }
+  .group-card.balcony::before     { background: #408060; }
+  .group-card.parterre::before    { background: #a06020; }
   .group-card.unallocated::before { background: var(--text-dim); }
-
   .group-card-header { display: flex; align-items: center; justify-content: space-between; }
   .group-name { font-family: 'Playfair Display', serif; font-weight: 600; color: var(--text-primary); }
   .group-size { font-size: 11px; color: var(--text-secondary); }
   .group-location { font-size: 11px; color: var(--gold); font-style: italic; }
   .group-door { font-size: 10px; color: var(--text-dim); letter-spacing: 1px; }
+  .error-msg { color: #e05070; font-size: 12px; margin-top: 6px; display: none; }
+  .no-groups { color: var(--text-dim); font-size: 12px; text-align: center; padding: 20px; font-style: italic; }
 
-  .theater-area {
-    padding: 24px;
-    overflow-x: auto;
-    overflow-y: auto;
-  }
-
-  .theater-container {
-    max-width: 1100px;
-    margin: 0 auto;
-  }
-
+  /* ── THEATER ─────────────────────────────── */
+  .theater-area { padding: 24px; overflow-x: auto; overflow-y: auto; }
+  .theater-container { max-width: 1100px; margin: 0 auto; }
   .theater-title {
-    font-family: 'Cinzel', serif;
-    font-size: 15px;
-    letter-spacing: 4px;
-    color: var(--gold);
-    text-align: center;
-    margin-bottom: 20px;
+    font-family: 'Cinzel', serif; font-size: 15px; letter-spacing: 4px;
+    color: var(--gold); text-align: center; margin-bottom: 20px;
   }
-
-  .legend {
-    display: flex; flex-wrap: wrap; gap: 14px; justify-content: center; margin-bottom: 20px;
-  }
-
+  .legend { display: flex; flex-wrap: wrap; gap: 14px; justify-content: center; margin-bottom: 20px; }
   .legend-item { display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--text-secondary); }
   .legend-dot { width: 12px; height: 12px; border-radius: 3px; }
-  .l-empty { background: var(--bg-surface); border: 1px solid var(--border); }
+  .l-empty    { background: var(--bg-surface); border: 1px solid var(--border); }
   .l-reserved { background: var(--text-dim); }
-
-  .section-wrap {
-    margin-bottom: 28px;
-  }
-
+  .section-wrap { margin-bottom: 28px; }
   .section-header {
-    font-family: 'Cinzel', serif;
-    font-size: 11px;
-    letter-spacing: 3px;
-    color: var(--text-secondary);
-    text-align: center;
-    margin-bottom: 10px;
-    text-transform: uppercase;
+    font-family: 'Cinzel', serif; font-size: 11px; letter-spacing: 3px;
+    color: var(--text-secondary); text-align: center; margin-bottom: 10px; text-transform: uppercase;
   }
-
   .stage-bar {
     background: linear-gradient(135deg, var(--gold-dim), var(--gold), var(--gold-dim));
-    color: var(--bg-deep);
-    font-family: 'Cinzel', serif;
-    font-size: 13px;
-    letter-spacing: 6px;
-    text-align: center;
-    padding: 10px;
-    border-radius: 4px;
-    margin-bottom: 16px;
-    text-transform: uppercase;
+    color: var(--bg-deep); font-family: 'Cinzel', serif; font-size: 13px;
+    letter-spacing: 6px; text-align: center; padding: 10px; border-radius: 4px;
+    margin-bottom: 16px; text-transform: uppercase;
     box-shadow: 0 4px 20px rgba(201,162,39,0.3);
   }
-
-  .orch-grid {
-    display: grid;
-    grid-template-columns: auto 1fr auto;
-    gap: 6px;
-    align-items: start;
-  }
-
+  .orch-grid { display: grid; grid-template-columns: auto 1fr auto; gap: 6px; align-items: start; }
   .orch-section { display: flex; flex-direction: column; gap: 2px; }
-  .orch-center { display: flex; flex-direction: column; gap: 2px; }
-
-  .seat-row {
-    display: flex;
-    align-items: center;
-    gap: 3px;
-    justify-content: center;
-  }
-
+  .orch-center  { display: flex; flex-direction: column; gap: 2px; }
+  .seat-row { display: flex; align-items: center; gap: 3px; justify-content: center; }
   .row-label {
-    font-family: 'Cinzel', serif;
-    font-size: 10px;
-    color: var(--text-dim);
-    width: 22px;
-    text-align: center;
-    flex-shrink: 0;
+    font-family: 'Cinzel', serif; font-size: 10px; color: var(--text-dim);
+    width: 22px; text-align: center; flex-shrink: 0;
   }
-
   .seat {
-    width: 10px;
-    height: 10px;
-    border-radius: 2px;
-    background: var(--bg-surface);
-    border: 1px solid rgba(201,162,39,0.12);
-    cursor: pointer;
-    transition: transform 0.1s, box-shadow 0.1s;
-    position: relative;
-    flex-shrink: 0;
+    width: 10px; height: 10px; border-radius: 2px;
+    background: var(--bg-surface); border: 1px solid rgba(201,162,39,0.12);
+    cursor: pointer; transition: transform 0.1s, box-shadow 0.1s;
+    position: relative; flex-shrink: 0;
   }
-
   .seat:hover { transform: scale(1.4); z-index: 10; }
   .seat.first-row { background: var(--bg-mid); border-color: rgba(100,80,40,0.2); cursor: not-allowed; opacity: 0.4; }
-  .seat.occupied { cursor: default; }
-
-  .parterre-wrap {
-    display: grid;
-    grid-template-columns: 1fr auto 1fr;
-    gap: 16px;
-    margin-top: 6px;
-  }
-
+  .seat.occupied  { cursor: default; }
+  .parterre-wrap { display: grid; grid-template-columns: 1fr auto 1fr; gap: 16px; margin-top: 6px; }
   .parterre-col { display: flex; flex-direction: column; gap: 2px; }
-  .parterre-center-label { display: flex; align-items: center; font-family: 'Cinzel', serif; font-size: 10px; color: var(--text-dim); letter-spacing: 2px; writing-mode: vertical-rl; text-align: center; }
-
+  .parterre-center-label {
+    display: flex; align-items: center; font-family: 'Cinzel', serif;
+    font-size: 10px; color: var(--text-dim); letter-spacing: 2px;
+    writing-mode: vertical-rl; text-align: center;
+  }
   .balcony-section { display: flex; flex-direction: column; gap: 2px; align-items: center; }
 
+  /* ── TOOLTIP ─────────────────────────────── */
   .tooltip {
-    position: fixed;
-    background: var(--bg-card);
-    border: 1px solid var(--gold-dim);
-    color: var(--text-primary);
-    padding: 8px 12px;
-    border-radius: var(--radius);
-    font-size: 12px;
-    pointer-events: none;
-    z-index: 9999;
-    white-space: nowrap;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.5);
-    display: none;
+    position: fixed; background: var(--bg-card); border: 1px solid var(--gold-dim);
+    color: var(--text-primary); padding: 8px 12px; border-radius: var(--radius);
+    font-size: 12px; pointer-events: none; z-index: 9999;
+    white-space: nowrap; box-shadow: 0 4px 20px rgba(0,0,0,0.5); display: none;
   }
 
-  .summary-area {
-    background: var(--bg-mid);
-    border-top: 1px solid var(--border);
-    padding: 16px 24px;
-  }
-
-  .summary-title {
-    font-family: 'Cinzel', serif;
-    font-size: 12px;
-    letter-spacing: 3px;
-    color: var(--gold);
-    margin-bottom: 12px;
-  }
-
-  .summary-grid {
-    display: flex; flex-wrap: wrap; gap: 10px;
-  }
-
+  /* ── SUMMARY ─────────────────────────────── */
+  .summary-area { background: var(--bg-mid); border-top: 1px solid var(--border); padding: 16px 24px; }
+  .summary-title { font-family: 'Cinzel', serif; font-size: 12px; letter-spacing: 3px; color: var(--gold); margin-bottom: 12px; }
+  .summary-grid { display: flex; flex-wrap: wrap; gap: 10px; }
   .summary-chip {
-    background: var(--bg-surface);
-    border: 1px solid var(--border);
-    border-radius: 20px;
-    padding: 5px 14px;
-    font-size: 11px;
+    background: var(--bg-surface); border: 1px solid var(--border);
+    border-radius: 20px; padding: 5px 14px; font-size: 11px;
     display: flex; gap: 8px; align-items: center;
   }
-
   .chip-color { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
-
-  .error-msg {
-    color: #e05070;
-    font-size: 12px;
-    margin-top: 6px;
-    display: none;
-  }
-
-  .no-groups {
-    color: var(--text-dim);
-    font-size: 12px;
-    text-align: center;
-    padding: 20px;
-    font-style: italic;
-  }
 
   ::-webkit-scrollbar { width: 6px; height: 6px; }
   ::-webkit-scrollbar-track { background: var(--bg-deep); }
@@ -406,6 +258,9 @@
 </head>
 <body>
 
+<!-- Shown briefly while Firebase syncs a remote change -->
+<div id="syncBanner">⟳ SYNCING…</div>
+
 <header>
   <div class="header-logo">
     Reynolds Hall
@@ -413,8 +268,8 @@
   </div>
   <div class="header-meta">
     <div class="active-users">
-      <div class="active-dot"></div>
-      <span id="activeCount">1</span> ACTIVE USER<span id="usersPlural"></span>
+      <div class="conn-dot" id="connDot"></div>
+      <span id="connLabel">CONNECTING</span>
     </div>
     <div class="session-id" id="sessionDisplay">SESSION: —</div>
   </div>
@@ -446,45 +301,46 @@
       <div class="form-group">
         <label class="form-label">Entry Door</label>
         <div class="door-select">
-          <button class="door-btn active" id="doorLeft" onclick="selectDoor('Left')">⬅ LEFT</button>
-          <button class="door-btn" id="doorRight" onclick="selectDoor('Right')">RIGHT ➡</button>
+          <button class="door-btn active" id="doorLeft"  onclick="selectDoor('Left')">⬅ LEFT</button>
+          <button class="door-btn"        id="doorRight" onclick="selectDoor('Right')">RIGHT ➡</button>
         </div>
       </div>
-      <div class="error-msg" id="errorMsg">Please fill all fields correctly.</div>
+      <div class="error-msg" id="errorMsg"></div>
       <button class="btn-primary" onclick="addGroup()">SEAT GROUP</button>
     </div>
 
     <div>
       <div class="section-title">Group Queue</div>
       <div class="group-list" id="groupList">
-        <div class="no-groups">No groups added yet</div>
+        <div class="no-groups">Connecting to Firebase…</div>
       </div>
     </div>
 
     <div>
       <div class="section-title">Actions</div>
-      <button class="btn-primary" onclick="resetAll()" style="background: linear-gradient(135deg, var(--crimson), #6b0020); margin-bottom:10px;">RESET THEATER</button>
+      <button class="btn-primary" onclick="resetAll()"
+        style="background:linear-gradient(135deg,var(--crimson),#6b0020);">
+        RESET THEATER
+      </button>
     </div>
   </div>
 
-  <div style="display:flex; flex-direction:column; overflow:hidden;">
-    <div class="theater-area" id="theaterArea">
+  <div style="display:flex;flex-direction:column;overflow:hidden;">
+    <div class="theater-area">
       <div class="theater-container">
         <div class="theater-title">Reynolds Hall — Seating Plan</div>
-
         <div class="legend">
           <div class="legend-item"><div class="legend-dot l-empty"></div>Available</div>
           <div class="legend-item"><div class="legend-dot l-reserved"></div>First Row (Reserved)</div>
           <div id="legendGroups"></div>
         </div>
 
-        <!-- ORCHESTRA + PARTERRE -->
         <div class="section-wrap">
           <div class="stage-bar">✦ STAGE ✦</div>
-          <div class="section-header">ORCHESTRA & PARTERRE</div>
+          <div class="section-header">ORCHESTRA &amp; PARTERRE</div>
           <div class="orch-grid">
             <div class="orch-section" id="orchLeft"></div>
-            <div class="orch-center" id="orchCenter"></div>
+            <div class="orch-center"  id="orchCenter"></div>
             <div class="orch-section" id="orchRight" style="align-items:flex-end;"></div>
           </div>
           <div class="parterre-wrap" style="margin-top:12px;">
@@ -500,10 +356,9 @@
           </div>
         </div>
 
-        <!-- DRESS CIRCLE -->
         <div class="section-wrap">
           <div class="section-header">DRESS CIRCLE — LEVEL 2</div>
-          <div style="display:grid; grid-template-columns:1fr auto 1fr; gap:6px;">
+          <div style="display:grid;grid-template-columns:1fr auto 1fr;gap:6px;">
             <div>
               <div class="section-header" style="font-size:9px;">DRESS CIRCLE LEFT</div>
               <div id="dcLeft"></div>
@@ -520,10 +375,9 @@
           </div>
         </div>
 
-        <!-- GALLERY -->
         <div class="section-wrap">
           <div class="section-header">GALLERY — LEVEL 3</div>
-          <div style="display:grid; grid-template-columns:1fr auto 1fr; gap:6px;">
+          <div style="display:grid;grid-template-columns:1fr auto 1fr;gap:6px;">
             <div>
               <div class="section-header" style="font-size:9px;">GALLERY LEFT</div>
               <div id="galLeft"></div>
@@ -540,7 +394,6 @@
           </div>
         </div>
 
-        <!-- BALCONY -->
         <div class="section-wrap">
           <div class="section-header">BALCONY — LEVEL 4</div>
           <div class="balcony-section" id="balconyCenter"></div>
@@ -551,7 +404,7 @@
     <div class="summary-area">
       <div class="summary-title">ALLOCATION SUMMARY</div>
       <div class="summary-grid" id="summaryGrid">
-        <div style="color:var(--text-dim); font-size:12px; font-style:italic;">No groups allocated yet.</div>
+        <div style="color:var(--text-dim);font-size:12px;font-style:italic;">No groups allocated yet.</div>
       </div>
     </div>
   </div>
@@ -559,60 +412,80 @@
 
 <div class="tooltip" id="tooltip"></div>
 
-<script>
-// ═══════════════════════════════════════════
-// THEATER DATA DEFINITIONS
-// ═══════════════════════════════════════════
+<!-- ═══════════════════════════════════════════
+     ALL JAVASCRIPT — ES module so Firebase imports work on GitHub Pages
+     ═══════════════════════════════════════════ -->
+<script type="module">
 
+// ── FIREBASE IMPORTS ──────────────────────────────────────────────────────────
+import { initializeApp }                    from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
+import { getDatabase, ref, set, onValue,
+         onDisconnect, serverTimestamp,
+         increment, runTransaction }        from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js';
+
+// ── FIREBASE CONFIG ───────────────────────────────────────────────────────────
+const firebaseConfig = {
+  apiKey:            'AIzaSyBPW2kQv4zTG8KBjmwUOBOzvjEWSh_DtSQ',
+  authDomain:        'reynolds-seating-assignments.firebaseapp.com',
+  databaseURL:       'https://reynolds-seating-assignments-default-rtdb.firebaseio.com',
+  projectId:         'reynolds-seating-assignments',
+  storageBucket:     'reynolds-seating-assignments.firebasestorage.app',
+  messagingSenderId: '25328286909',
+  appId:             '1:25328286909:web:f6079e4adf54c6d4634bd4',
+};
+
+const app      = initializeApp(firebaseConfig);
+const database = getDatabase(app);
+
+// ── DATABASE REFS ─────────────────────────────────────────────────────────────
+const stateRef   = ref(database, 'seatingState');   // the shared seating state
+const usersRef   = ref(database, 'activeUsers');    // online user counter
+
+// ── SESSION ID ────────────────────────────────────────────────────────────────
+const SESSION_ID = Math.random().toString(36).substring(2, 8).toUpperCase();
+document.getElementById('sessionDisplay').textContent = `SESSION: ${SESSION_ID}`;
+
+// ── THEATER DATA ──────────────────────────────────────────────────────────────
 const ORCH_ROWS = [
-  {num:1,  label:'AA', left:0,  center:16, right:0,  first:true},
-  {num:2,  label:'BB', left:0,  center:15, right:0,  first:false},
-  {num:3,  label:'A',  left:6,  center:16, right:6,  first:false},
-  {num:4,  label:'B',  left:7,  center:15, right:7,  first:false},
-  {num:5,  label:'C',  left:0,  center:16, right:0,  first:false},
-  {num:6,  label:'D',  left:0,  center:15, right:0,  first:false},
-  {num:7,  label:'E',  left:7,  center:16, right:7,  first:false},
-  {num:8,  label:'F',  left:8,  center:15, right:8,  first:false},
-  {num:9,  label:'G',  left:8,  center:16, right:8,  first:false},
-  {num:10, label:'H',  left:8,  center:15, right:8,  first:false},
-  {num:11, label:'J',  left:8,  center:16, right:8,  first:false},
-  {num:12, label:'K',  left:8,  center:15, right:8,  first:false},
-  {num:13, label:'L',  left:8,  center:16, right:8,  first:false},
-  {num:14, label:'M',  left:8,  center:15, right:8,  first:false},
-  {num:15, label:'N',  left:9,  center:16, right:9,  first:false},
-  {num:16, label:'P',  left:9,  center:15, right:9,  first:false},
-  {num:17, label:'Q',  left:9,  center:16, right:9,  first:false},
-  {num:18, label:'R',  left:9,  center:15, right:9,  first:false},
-  {num:19, label:'S',  left:9,  center:16, right:9,  first:false},
-  {num:20, label:'T',  left:8,  center:15, right:8,  first:false},
-  {num:21, label:'U',  left:8,  center:16, right:8,  first:false},
-  {num:22, label:'V',  left:7,  center:15, right:7,  first:false},
-  {num:23, label:'W',  left:6,  center:16, right:6,  first:false},
-  {num:24, label:'X',  left:4,  center:16, right:4,  first:false},
-  {num:25, label:'Y',  left:0,  center:16, right:0,  first:false},
-  {num:26, label:'Z',  left:0,  center:8,  right:0,  first:false},
-  {num:27, label:'WW', left:10, center:18, right:10, first:false},
-  {num:28, label:'XX', left:11, center:19, right:11, first:false},
-  {num:29, label:'YY', left:12, center:20, right:12, first:false},
-  {num:30, label:'ZZ', left:11, center:21, right:11, first:false},
+  {label:'AA', left:0,  center:16, right:0,  first:true},
+  {label:'BB', left:0,  center:15, right:0,  first:false},
+  {label:'A',  left:6,  center:16, right:6,  first:false},
+  {label:'B',  left:7,  center:15, right:7,  first:false},
+  {label:'C',  left:0,  center:16, right:0,  first:false},
+  {label:'D',  left:0,  center:15, right:0,  first:false},
+  {label:'E',  left:7,  center:16, right:7,  first:false},
+  {label:'F',  left:8,  center:15, right:8,  first:false},
+  {label:'G',  left:8,  center:16, right:8,  first:false},
+  {label:'H',  left:8,  center:15, right:8,  first:false},
+  {label:'J',  left:8,  center:16, right:8,  first:false},
+  {label:'K',  left:8,  center:15, right:8,  first:false},
+  {label:'L',  left:8,  center:16, right:8,  first:false},
+  {label:'M',  left:8,  center:15, right:8,  first:false},
+  {label:'N',  left:9,  center:16, right:9,  first:false},
+  {label:'P',  left:9,  center:15, right:9,  first:false},
+  {label:'Q',  left:9,  center:16, right:9,  first:false},
+  {label:'R',  left:9,  center:15, right:9,  first:false},
+  {label:'S',  left:9,  center:16, right:9,  first:false},
+  {label:'T',  left:8,  center:15, right:8,  first:false},
+  {label:'U',  left:8,  center:16, right:8,  first:false},
+  {label:'V',  left:7,  center:15, right:7,  first:false},
+  {label:'W',  left:6,  center:16, right:6,  first:false},
+  {label:'X',  left:4,  center:16, right:4,  first:false},
+  {label:'Y',  left:0,  center:16, right:0,  first:false},
+  {label:'Z',  left:0,  center:8,  right:0,  first:false},
+  {label:'WW', left:10, center:18, right:10, first:false},
+  {label:'XX', left:11, center:19, right:11, first:false},
+  {label:'YY', left:12, center:20, right:12, first:false},
+  {label:'ZZ', left:11, center:21, right:11, first:false},
 ];
-
 const PARTERRE_LEFT_ROWS = [
-  {label:'E', seats:6,  first:false},
-  {label:'D', seats:8,  first:false},
-  {label:'C', seats:8,  first:false},
-  {label:'B', seats:8,  first:false},
-  {label:'A', seats:8,  first:false},
+  {label:'E', seats:6}, {label:'D', seats:8}, {label:'C', seats:8},
+  {label:'B', seats:8}, {label:'A', seats:8},
 ];
 const PARTERRE_RIGHT_ROWS = [
-  {label:'V', seats:6,  first:false},
-  {label:'W', seats:8,  first:false},
-  {label:'X', seats:8,  first:false},
-  {label:'Y', seats:8,  first:false},
-  {label:'Z', seats:8,  first:false},
+  {label:'V', seats:6}, {label:'W', seats:8}, {label:'X', seats:8},
+  {label:'Y', seats:8}, {label:'Z', seats:8},
 ];
-
-// FIX: Removed duplicate label:'E' key in the last DC row
 const DC_ROWS = [
   {label:'A', left:0,  center:0,  right:0,  first:true},
   {label:'B', left:10, center:18, right:10, first:false},
@@ -620,7 +493,6 @@ const DC_ROWS = [
   {label:'D', left:9,  center:20, right:9,  first:false},
   {label:'E', left:9,  center:19, right:9,  first:false},
 ];
-
 const GAL_ROWS = [
   {label:'A', left:0, center:0,  right:0,  first:true},
   {label:'B', left:9, center:18, right:9,  first:false},
@@ -628,235 +500,240 @@ const GAL_ROWS = [
   {label:'D', left:9, center:20, right:9,  first:false},
   {label:'E', left:9, center:21, right:9,  first:false},
 ];
-
 const BAL_ROWS = [
   {label:'A', seats:0,  first:true},
-  {label:'B', seats:42, first:false},
-  {label:'C', seats:43, first:false},
-  {label:'D', seats:44, first:false},
-  {label:'E', seats:45, first:false},
-  {label:'F', seats:46, first:false},
-  {label:'G', seats:45, first:false},
-  {label:'H', seats:46, first:false},
-  {label:'J', seats:45, first:false},
-  {label:'K', seats:44, first:false},
+  {label:'B', seats:42}, {label:'C', seats:43}, {label:'D', seats:44},
+  {label:'E', seats:45}, {label:'F', seats:46}, {label:'G', seats:45},
+  {label:'H', seats:46}, {label:'J', seats:45}, {label:'K', seats:44},
 ];
 
-// ═══════════════════════════════════════════
-// FIX: Compute total capacity from row data rather than hardcoding
-// ═══════════════════════════════════════════
-
-function computeSectionTotal(subSection) {
-  let total = 0;
-  switch(subSection) {
-    case 'OL': ORCH_ROWS.forEach(r => { if (!r.first) total += r.left; }); break;
-    case 'OC': ORCH_ROWS.forEach(r => { if (!r.first) total += r.center; }); break;
-    case 'OR': ORCH_ROWS.forEach(r => { if (!r.first) total += r.right; }); break;
-    case 'PL': PARTERRE_LEFT_ROWS.forEach(r => { if (!r.first) total += r.seats; }); break;
-    case 'PR': PARTERRE_RIGHT_ROWS.forEach(r => { if (!r.first) total += r.seats; }); break;
-    case 'DCL': DC_ROWS.forEach(r => { if (!r.first) total += r.left; }); break;
-    case 'DCC': DC_ROWS.forEach(r => { if (!r.first) total += r.center; }); break;
-    case 'DCR': DC_ROWS.forEach(r => { if (!r.first) total += r.right; }); break;
-    case 'GL': GAL_ROWS.forEach(r => { if (!r.first) total += r.left; }); break;
-    case 'GC': GAL_ROWS.forEach(r => { if (!r.first) total += r.center; }); break;
-    case 'GR': GAL_ROWS.forEach(r => { if (!r.first) total += r.right; }); break;
-    case 'BC': BAL_ROWS.forEach(r => { if (!r.first) total += r.seats; }); break;
-  }
-  return total;
-}
-
-// Pre-computed totals (derived from data, not hardcoded)
-const SECTION_TOTALS = {};
-['OL','OC','OR','PL','PR','DCL','DCC','DCR','GL','GC','GR','BC'].forEach(s => {
-  SECTION_TOTALS[s] = computeSectionTotal(s);
-});
-
-const TOTAL_ORCH_PART = SECTION_TOTALS['OL'] + SECTION_TOTALS['OC'] + SECTION_TOTALS['OR'] + SECTION_TOTALS['PL'] + SECTION_TOTALS['PR'];
-const TOTAL_DC        = SECTION_TOTALS['DCL'] + SECTION_TOTALS['DCC'] + SECTION_TOTALS['DCR'];
-const TOTAL_GAL       = SECTION_TOTALS['GL'] + SECTION_TOTALS['GC'] + SECTION_TOTALS['GR'];
-const TOTAL_BAL       = SECTION_TOTALS['BC'];
+// ── CAPACITY TOTALS (computed from data) ──────────────────────────────────────
+function sumSection(rows, fn) { return rows.reduce((t,r) => t + (r.first ? 0 : fn(r)), 0); }
+const TOT = {
+  OL:  sumSection(ORCH_ROWS, r => r.left),
+  OC:  sumSection(ORCH_ROWS, r => r.center),
+  OR:  sumSection(ORCH_ROWS, r => r.right),
+  PL:  sumSection(PARTERRE_LEFT_ROWS,  r => r.seats),
+  PR:  sumSection(PARTERRE_RIGHT_ROWS, r => r.seats),
+  DCL: sumSection(DC_ROWS,  r => r.left),
+  DCC: sumSection(DC_ROWS,  r => r.center),
+  DCR: sumSection(DC_ROWS,  r => r.right),
+  GL:  sumSection(GAL_ROWS, r => r.left),
+  GC:  sumSection(GAL_ROWS, r => r.center),
+  GR:  sumSection(GAL_ROWS, r => r.right),
+  BC:  sumSection(BAL_ROWS, r => r.seats),
+};
+const TOTAL_ORCH_PART = TOT.OL + TOT.OC + TOT.OR + TOT.PL + TOT.PR;
+const TOTAL_DC        = TOT.DCL + TOT.DCC + TOT.DCR;
+const TOTAL_GAL       = TOT.GL  + TOT.GC  + TOT.GR;
+const TOTAL_BAL       = TOT.BC;
 const TOTAL_CAPACITY  = TOTAL_ORCH_PART + TOTAL_DC + TOTAL_GAL + TOTAL_BAL;
-
-// ═══════════════════════════════════════════
-// STATE
-// ═══════════════════════════════════════════
 
 const GROUP_COLORS = [
   '#c9a227','#7b3fa0','#1a6b7a','#8b4520','#2a6b40','#6b1a2a','#1a4a8b','#5a6b20',
-  '#8b6020','#1a408b','#6b3a1a','#20608b','#5a1a6b','#1a6b40','#8b201a','#406b1a'
+  '#8b6020','#1a408b','#6b3a1a','#20608b','#5a1a6b','#1a6b40','#8b201a','#406b1a',
 ];
-
-let state = {
-  groups: [],
-  seats: {},
-  nextGroupId: 1,
-  selectedDoor: 'Left',
-  sessionId: Math.random().toString(36).substring(2,8).toUpperCase(),
-};
-
-// ═══════════════════════════════════════════
-// AVAILABILITY HELPERS
-// ═══════════════════════════════════════════
-
-function calcSectionAvail(subSection) {
-  // FIX: Count occupied seats correctly per sub-section using prefix matching,
-  // then subtract from the data-derived total (not a per-section magic number).
-  let used = 0;
-  const prefix = subSection + '_';
-  for (const [sid, data] of Object.entries(state.seats)) {
-    if (data && sid.startsWith(prefix)) used++;
-  }
-  return SECTION_TOTALS[subSection] - used;
-}
-
-function getSectionAvail(sections) {
-  return sections.reduce((sum, s) => sum + calcSectionAvail(s), 0);
-}
-
-// ═══════════════════════════════════════════
-// ALLOCATION ALGORITHM
-// ═══════════════════════════════════════════
-
-function getAvailableSeatsInOrder(subSection) {
-  const available = [];
-  function addSeats(rows, prefix, countFn) {
-    for (const row of rows) {
-      if (row.first) continue;
-      const count = countFn(row);
-      for (let s = 1; s <= count; s++) {
-        const id = `${prefix}_${row.label}_${s}`;
-        if (!state.seats[id]) available.push(id);
-      }
-    }
-  }
-  switch(subSection) {
-    case 'OL':  addSeats(ORCH_ROWS,           'OL',  r => r.left);   break;
-    case 'OC':  addSeats(ORCH_ROWS,           'OC',  r => r.center); break;
-    case 'OR':  addSeats(ORCH_ROWS,           'OR',  r => r.right);  break;
-    case 'PL':  addSeats(PARTERRE_LEFT_ROWS,  'PL',  r => r.seats);  break;
-    case 'PR':  addSeats(PARTERRE_RIGHT_ROWS, 'PR',  r => r.seats);  break;
-    case 'DCL': addSeats(DC_ROWS,             'DCL', r => r.left);   break;
-    case 'DCC': addSeats(DC_ROWS,             'DCC', r => r.center); break;
-    case 'DCR': addSeats(DC_ROWS,             'DCR', r => r.right);  break;
-    case 'GL':  addSeats(GAL_ROWS,            'GL',  r => r.left);   break;
-    case 'GC':  addSeats(GAL_ROWS,            'GC',  r => r.center); break;
-    case 'GR':  addSeats(GAL_ROWS,            'GR',  r => r.right);  break;
-    case 'BC':  addSeats(BAL_ROWS,            'BC',  r => r.seats);  break;
-  }
-  return available;
-}
-
-function allocateSeats(seatIds, count, group) {
-  const allocated = seatIds.slice(0, count);
-  allocated.forEach(id => { state.seats[id] = {groupId: group.id, groupName: group.name}; });
-  return allocated;
-}
-
 const SEC_NAMES = {
   OL:'Orch Left', OC:'Orch Center', OR:'Orch Right',
   PL:'Parterre Left', PR:'Parterre Right',
   DCL:'DC Left', DCC:'DC Center', DCR:'DC Right',
   GL:'Gallery Left', GC:'Gallery Center', GR:'Gallery Right',
-  BC:'Balcony'
+  BC:'Balcony',
 };
 
-function tryAllocateInSections(sections, size, group) {
-  const combined = [];
-  for (const sec of sections) combined.push(...getAvailableSeatsInOrder(sec));
-  if (combined.length < size) return null;
-  const allocated = allocateSeats(combined, size, group);
-  const used = [...new Set(allocated.map(id => id.split('_')[0]))];
-  return {seats: allocated, location: used.map(u => SEC_NAMES[u] || u).join(' + '), sections: used};
+// ── LOCAL STATE ───────────────────────────────────────────────────────────────
+// This mirrors what is in Firebase. onValue() keeps it in sync.
+let state = {
+  groups:      [],
+  seats:       {},
+  nextGroupId: 1,
+  selectedDoor: 'Left',
+};
+
+// ── AVAILABILITY HELPERS ──────────────────────────────────────────────────────
+function calcAvail(sec) {
+  const prefix = sec + '_';
+  let used = 0;
+  for (const [sid, v] of Object.entries(state.seats)) {
+    if (v && sid.startsWith(prefix)) used++;
+  }
+  return TOT[sec] - used;
+}
+function sumAvail(secs) { return secs.reduce((t, s) => t + calcAvail(s), 0); }
+
+// ── ALLOCATION ALGORITHM ──────────────────────────────────────────────────────
+function getAvailable(sec) {
+  const out = [];
+  function add(rows, pfx, fn) {
+    for (const row of rows) {
+      if (row.first) continue;
+      const n = fn(row);
+      for (let i = 1; i <= n; i++) {
+        const id = `${pfx}_${row.label}_${i}`;
+        if (!state.seats[id]) out.push(id);
+      }
+    }
+  }
+  switch(sec) {
+    case 'OL':  add(ORCH_ROWS,           'OL',  r => r.left);   break;
+    case 'OC':  add(ORCH_ROWS,           'OC',  r => r.center); break;
+    case 'OR':  add(ORCH_ROWS,           'OR',  r => r.right);  break;
+    case 'PL':  add(PARTERRE_LEFT_ROWS,  'PL',  r => r.seats);  break;
+    case 'PR':  add(PARTERRE_RIGHT_ROWS, 'PR',  r => r.seats);  break;
+    case 'DCL': add(DC_ROWS,             'DCL', r => r.left);   break;
+    case 'DCC': add(DC_ROWS,             'DCC', r => r.center); break;
+    case 'DCR': add(DC_ROWS,             'DCR', r => r.right);  break;
+    case 'GL':  add(GAL_ROWS,            'GL',  r => r.left);   break;
+    case 'GC':  add(GAL_ROWS,            'GC',  r => r.center); break;
+    case 'GR':  add(GAL_ROWS,            'GR',  r => r.right);  break;
+    case 'BC':  add(BAL_ROWS,            'BC',  r => r.seats);  break;
+  }
+  return out;
+}
+
+function tryAlloc(secs, size, group) {
+  const pool = secs.flatMap(s => getAvailable(s));
+  if (pool.length < size) return null;
+  const chosen = pool.slice(0, size);
+  chosen.forEach(id => { state.seats[id] = {groupId: group.id, groupName: group.name}; });
+  const used = [...new Set(chosen.map(id => id.split('_')[0]))];
+  return {seats: chosen, location: used.map(u => SEC_NAMES[u]).join(' + '), sections: used};
 }
 
 function allocateGroup(group) {
-  const size = group.size;
-  const door = group.door;
+  const {size, door} = group;
+  const side     = door === 'Left' ? 'OL' : 'OR';
+  const partSide = door === 'Left' ? 'PL' : 'PR';
+  const sideAv   = calcAvail(side);
+  const partAv   = calcAvail(partSide);
+  const ocAv     = calcAvail('OC');
+  const dcAv     = sumAvail(['DCL','DCC','DCR']);
+  const galAv    = sumAvail(['GL','GC','GR']);
+  const balAv    = calcAvail('BC');
+  const overflow = size - sideAv;
 
-  const OC_avail  = calcSectionAvail('OC');
-  const DC_avail  = getSectionAvail(['DCL','DCC','DCR']);
-  const GAL_avail = getSectionAvail(['GL','GC','GR']);
-  const BAL_avail = calcSectionAvail('BC');
-
-  const prioritySide = door === 'Left' ? 'OL' : 'OR';
-  const sideAvail    = calcSectionAvail(prioritySide);
-  const partSide     = door === 'Left' ? 'PL' : 'PR';
-  const partAvail    = calcSectionAvail(partSide);
-  const overflow     = size - sideAvail;
-
-  // STEP 1: Orchestra side fits the whole group
-  if (sideAvail >= size) {
-    return tryAllocateInSections([prioritySide], size, group);
+  if (sideAv >= size)                                          return tryAlloc([side], size, group);
+  if (sideAv > 0 && overflow <= 38 && partAv >= overflow)     return tryAlloc([side, partSide], size, group);
+  if (sideAv < 10 && size < 39 && partAv >= size)             return tryAlloc([partSide], size, group);
+  if (!(ocAv < 80 && size > 79) && ocAv >= size)              return tryAlloc(['OC'], size, group);
+  if (dcAv >= 40 && dcAv >= size) {
+    const r = tryAlloc(['DCL','DCC','DCR'], size, group); if (r) return r;
   }
-
-  // STEP 2: Side has some seats; spill overflow into matching Parterre
-  if (sideAvail > 0 && overflow <= 38 && partAvail >= overflow) {
-    return tryAllocateInSections([prioritySide, partSide], size, group);
+  if (galAv >= 40 && galAv >= size) {
+    const r = tryAlloc(['GL','GC','GR'], size, group); if (r) return r;
   }
-
-  // STEP 3: Tiny orchestra remnant, small group → seat entirely in Parterre
-  if (sideAvail < 10 && size < 39 && partAvail >= size) {
-    return tryAllocateInSections([partSide], size, group);
-  }
-
-  // STEP 4: Try Orchestra Center
-  if (!(OC_avail < 80 && size > 79) && OC_avail >= size) {
-    return tryAllocateInSections(['OC'], size, group);
-  }
-
-  // STEP 5: Upper levels — Dress Circle → Gallery → Balcony
-  if (DC_avail >= 40 && DC_avail >= size) {
-    const res = tryAllocateInSections(['DCL','DCC','DCR'], size, group);
-    if (res) return res;
-  }
-
-  if (GAL_avail >= 40 && GAL_avail >= size) {
-    const res = tryAllocateInSections(['GL','GC','GR'], size, group);
-    if (res) return res;
-  }
-
-  if (BAL_avail >= size) {
-    return tryAllocateInSections(['BC'], size, group);
-  }
-
+  if (balAv >= size)                                           return tryAlloc(['BC'], size, group);
   return null;
 }
 
-// ═══════════════════════════════════════════
-// UI ACTIONS
-// ═══════════════════════════════════════════
+// ── FIREBASE SYNC ─────────────────────────────────────────────────────────────
+// commitState() is the ONLY place we write to Firebase.
+// onValue() is the ONLY place we read from Firebase.
+// This guarantees both users always see the same data.
 
-function selectDoor(door) {
-  state.selectedDoor = door;
-  document.getElementById('doorLeft').classList.toggle('active', door === 'Left');
-  document.getElementById('doorRight').classList.toggle('active', door === 'Right');
+let iAmWriting = false;   // suppress the echo of our own write
+
+async function commitState() {
+  const payload = {
+    groups:      state.groups,
+    seats:       state.seats,
+    nextGroupId: state.nextGroupId,
+  };
+  iAmWriting = true;
+  try {
+    await set(stateRef, payload);
+  } catch(err) {
+    console.error('Firebase write error:', err);
+    showError('Could not save — check your connection.');
+    iAmWriting = false;
+  }
 }
 
-function addGroup() {
+// Subscribe: fires immediately with current data, then on every remote change
+onValue(stateRef, (snapshot) => {
+  if (iAmWriting) { iAmWriting = false; return; }  // skip our own echo
+
+  const data = snapshot.val();
+  if (!data) { renderAll(); return; }  // empty database — render blank slate
+
+  state.groups      = data.groups      ?? [];
+  state.seats       = data.seats       ?? {};
+  state.nextGroupId = data.nextGroupId ?? 1;
+
+  flashSyncBanner();
+  renderAll();
+});
+
+// ── ONLINE USER COUNTER ───────────────────────────────────────────────────────
+// Each tab increments the counter on connect and decrements on disconnect.
+// Firebase onDisconnect() handles the decrement even if the tab crashes.
+{
+  const myPresenceRef = ref(database, `presence/${SESSION_ID}`);
+  // Mark ourselves online
+  set(myPresenceRef, true);
+  // Decrement when we disconnect (handled server-side by Firebase)
+  onDisconnect(myPresenceRef).remove();
+
+  // Count all presence entries to display active users
+  onValue(ref(database, 'presence'), (snap) => {
+    const count = snap.exists() ? Object.keys(snap.val()).length : 1;
+    const dot   = document.getElementById('connDot');
+    const lbl   = document.getElementById('connLabel');
+    dot.className = 'conn-dot connected';
+    lbl.textContent = `${count} USER${count !== 1 ? 'S' : ''} ONLINE`;
+  });
+}
+
+// Connection state indicator
+onValue(ref(database, '.info/connected'), (snap) => {
+  const dot = document.getElementById('connDot');
+  const lbl = document.getElementById('connLabel');
+  if (snap.val() === true) {
+    dot.className = 'conn-dot connected';
+  } else {
+    dot.className = 'conn-dot disconnected';
+    lbl.textContent = 'OFFLINE';
+  }
+});
+
+function flashSyncBanner() {
+  const b = document.getElementById('syncBanner');
+  b.classList.add('show');
+  clearTimeout(flashSyncBanner._t);
+  flashSyncBanner._t = setTimeout(() => b.classList.remove('show'), 1200);
+}
+
+// ── UI ACTIONS ────────────────────────────────────────────────────────────────
+// These are attached to window so inline onclick="" attributes can call them.
+
+window.selectDoor = function(door) {
+  state.selectedDoor = door;
+  document.getElementById('doorLeft').classList.toggle('active',  door === 'Left');
+  document.getElementById('doorRight').classList.toggle('active', door === 'Right');
+};
+
+window.addGroup = function() {
   const name = document.getElementById('groupName').value.trim();
   const size = parseInt(document.getElementById('groupSize').value);
-  const err  = document.getElementById('errorMsg');
 
   if (!name || isNaN(size) || size < 1 || size > 250) {
-    err.textContent = 'Please enter a valid group name and size (1–250).';
-    err.style.display = 'block';
+    showError('Please enter a valid group name and size (1–250).');
     return;
   }
-  err.style.display = 'none';
+  clearError();
 
   const group = {
-    id: state.nextGroupId++,
-    name,
-    size,
-    door: state.selectedDoor,
-    color: GROUP_COLORS[(state.groups.length) % GROUP_COLORS.length],
-    allocation: null
+    id:    state.nextGroupId++,
+    name, size,
+    door:  state.selectedDoor,
+    color: GROUP_COLORS[state.groups.length % GROUP_COLORS.length],
+    allocation: null,
   };
 
   const result = allocateGroup(group);
   if (!result) {
-    err.textContent = `Could not seat group of ${size}. Not enough contiguous seats available.`;
-    err.style.display = 'block';
+    state.nextGroupId--;   // roll back
+    showError(`Could not seat ${size} — not enough contiguous seats available.`);
     return;
   }
 
@@ -866,119 +743,82 @@ function addGroup() {
   document.getElementById('groupName').value = '';
   document.getElementById('groupSize').value = '';
 
-  commitState(); // persist + broadcast
-  renderAll();
-}
+  commitState();   // write to Firebase → onValue fires on both tabs → renderAll()
+  renderAll();     // update our own tab immediately (don't wait for round-trip)
+};
 
-function removeGroup(id) {
+window.removeGroup = function(id) {
   const group = state.groups.find(g => g.id === id);
   if (!group) return;
-  for (const [sid, data] of Object.entries(state.seats)) {
-    if (data && data.groupId === id) delete state.seats[sid];
+  for (const sid of Object.keys(state.seats)) {
+    if (state.seats[sid]?.groupId === id) delete state.seats[sid];
   }
   state.groups = state.groups.filter(g => g.id !== id);
   commitState();
   renderAll();
-}
+};
 
-function resetAll() {
-  if (!confirm('Reset all seating? This cannot be undone.')) return;
+window.resetAll = function() {
+  if (!confirm('Reset all seating for ALL users? This cannot be undone.')) return;
   state.groups      = [];
   state.seats       = {};
   state.nextGroupId = 1;
   commitState();
   renderAll();
+};
+
+// ── ERROR HELPERS ─────────────────────────────────────────────────────────────
+function showError(msg) {
+  const el = document.getElementById('errorMsg');
+  el.textContent = msg; el.style.display = 'block';
+}
+function clearError() {
+  const el = document.getElementById('errorMsg');
+  el.textContent = ''; el.style.display = 'none';
 }
 
-// ═══════════════════════════════════════════
-// PERSISTENCE + CROSS-TAB COLLABORATION
-//
-// Strategy: localStorage is the single source of truth.
-//   - commitState() writes to localStorage AND broadcasts via BroadcastChannel.
-//   - The 'storage' event fires in *other* same-origin tabs whenever localStorage
-//     changes, so they re-render automatically — this is the reliable sync path.
-//   - BroadcastChannel carries the same payload as a fast-path supplement, and
-//     also handles ping/pong for the active-user counter.
-//   - On load, each tab reads from localStorage so a refresh never loses state.
-// ═══════════════════════════════════════════
-
-const STORAGE_KEY = 'reynolds-hall-state';
-
-function commitState() {
-  const payload = {
-    groups:      state.groups,
-    seats:       state.seats,
-    nextGroupId: state.nextGroupId,
-  };
-  try {
-    // Write to localStorage — triggers 'storage' event in other tabs
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
-  } catch(e) { /* quota exceeded or private mode — degrade gracefully */ }
-
-  // Also push directly via BroadcastChannel for lower latency
-  try {
-    channel.postMessage({ type: 'state_update', state: payload });
-  } catch(e) {}
+// ── RENDERING ─────────────────────────────────────────────────────────────────
+function escHtml(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
-
-function applyRemoteState(payload) {
-  // Merge remote state and re-render without triggering another broadcast
-  state.groups      = payload.groups      ?? state.groups;
-  state.seats       = payload.seats       ?? state.seats;
-  state.nextGroupId = payload.nextGroupId ?? state.nextGroupId;
-  renderAll();
-}
-
-function loadState() {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return;
-    const saved = JSON.parse(raw);
-    if (saved.groups)      state.groups      = saved.groups;
-    if (saved.seats)       state.seats       = saved.seats;
-    if (saved.nextGroupId) state.nextGroupId = saved.nextGroupId;
-  } catch(e) { /* corrupt data — start fresh */ }
-}
-
-// ═══════════════════════════════════════════
-// RENDERING
-// ═══════════════════════════════════════════
 
 function getSeatColor(seatId) {
-  const data = state.seats[seatId];
-  if (!data) return null;
-  const group = state.groups.find(g => g.id === data.groupId);
-  return group ? group.color : '#888';
+  const d = state.seats[seatId];
+  if (!d) return null;
+  const g = state.groups.find(g => g.id === d.groupId);
+  return g ? g.color : '#888';
 }
 
 function makeSeat(seatId, isFirst) {
   const div = document.createElement('div');
   div.className = 'seat' + (isFirst ? ' first-row' : '');
-  div.dataset.id = seatId;
-
   const color = getSeatColor(seatId);
-  if (color) {
-    div.style.background = color;
-    div.style.borderColor = color;
-    div.classList.add('occupied');
-  }
-
-  div.addEventListener('mouseover', (e) => showTooltip(e, seatId, isFirst));
-  div.addEventListener('mousemove', (e) => moveTooltip(e));
-  div.addEventListener('mouseout', hideTooltip);
+  if (color) { div.style.background = div.style.borderColor = color; div.classList.add('occupied'); }
+  div.addEventListener('mouseover', e => showTip(e, seatId, isFirst));
+  div.addEventListener('mousemove', moveTooltip);
+  div.addEventListener('mouseout',  hideTip);
   return div;
 }
 
-function showTooltip(e, seatId, isFirst) {
+function makeRow(pfx, label, count, isFirst) {
+  const row = document.createElement('div');
+  row.className = 'seat-row';
+  const lbl = document.createElement('div');
+  lbl.className = 'row-label'; lbl.textContent = label;
+  row.appendChild(lbl);
+  for (let i = 1; i <= count; i++) row.appendChild(makeSeat(`${pfx}_${label}_${i}`, isFirst));
+  return row;
+}
+
+function showTip(e, seatId, isFirst) {
   const tip = document.getElementById('tooltip');
+  const d   = state.seats[seatId];
   const parts = seatId.split('_');
-  const data = state.seats[seatId];
   let text = `Seat: ${parts.slice(1).join('-')}`;
-  if (isFirst) text += ' [First Row — Reserved]';
-  else if (data) text += ` — ${data.groupName}`;
-  else text += ' — Available';
-  tip.textContent = text;
-  tip.style.display = 'block';
+  if (isFirst)   text += ' [First Row — Reserved]';
+  else if (d)    text += ` — ${d.groupName}`;
+  else           text += ' — Available';
+  tip.textContent = text; tip.style.display = 'block';
   moveTooltip(e);
 }
 function moveTooltip(e) {
@@ -986,86 +826,72 @@ function moveTooltip(e) {
   tip.style.left = (e.clientX + 14) + 'px';
   tip.style.top  = (e.clientY - 30) + 'px';
 }
-function hideTooltip() { document.getElementById('tooltip').style.display = 'none'; }
-
-function makeRow(prefix, label, seatCount, isFirst) {
-  const row = document.createElement('div');
-  row.className = 'seat-row';
-  const lbl = document.createElement('div');
-  lbl.className = 'row-label';
-  lbl.textContent = label;
-  row.appendChild(lbl);
-  for (let s = 1; s <= seatCount; s++) {
-    const seatId = `${prefix}_${label}_${s}`;
-    row.appendChild(makeSeat(seatId, isFirst));
-  }
-  return row;
-}
+function hideTip() { document.getElementById('tooltip').style.display = 'none'; }
 
 function renderOrchestra() {
-  const leftEl   = document.getElementById('orchLeft');
-  const centerEl = document.getElementById('orchCenter');
-  const rightEl  = document.getElementById('orchRight');
-  leftEl.innerHTML = ''; centerEl.innerHTML = ''; rightEl.innerHTML = '';
-
+  const L = document.getElementById('orchLeft');
+  const C = document.getElementById('orchCenter');
+  const R = document.getElementById('orchRight');
+  L.innerHTML = C.innerHTML = R.innerHTML = '';
   for (const row of ORCH_ROWS) {
-    if (row.left > 0)   leftEl.appendChild(makeRow('OL', row.label, row.left,   row.first));
-    centerEl.appendChild(makeRow('OC', row.label, row.center, row.first));
-    if (row.right > 0)  rightEl.appendChild(makeRow('OR', row.label, row.right,  row.first));
+    if (row.left  > 0) L.appendChild(makeRow('OL', row.label, row.left,   row.first));
+    C.appendChild(makeRow('OC', row.label, row.center, row.first));
+    if (row.right > 0) R.appendChild(makeRow('OR', row.label, row.right,  row.first));
   }
 }
-
 function renderParterre() {
-  const leftEl  = document.getElementById('parterreLeft');
-  const rightEl = document.getElementById('parterreRight');
-  leftEl.innerHTML = ''; rightEl.innerHTML = '';
-  for (const row of PARTERRE_LEFT_ROWS)  leftEl.appendChild(makeRow('PL', row.label, row.seats, row.first));
-  for (const row of PARTERRE_RIGHT_ROWS) rightEl.appendChild(makeRow('PR', row.label, row.seats, row.first));
+  const L = document.getElementById('parterreLeft');
+  const R = document.getElementById('parterreRight');
+  L.innerHTML = R.innerHTML = '';
+  PARTERRE_LEFT_ROWS.forEach(r  => L.appendChild(makeRow('PL', r.label, r.seats, false)));
+  PARTERRE_RIGHT_ROWS.forEach(r => R.appendChild(makeRow('PR', r.label, r.seats, false)));
 }
-
 function renderDressCircle() {
-  const leftEl   = document.getElementById('dcLeft');
-  const centerEl = document.getElementById('dcCenter');
-  const rightEl  = document.getElementById('dcRight');
-  leftEl.innerHTML = ''; centerEl.innerHTML = ''; rightEl.innerHTML = '';
+  const L = document.getElementById('dcLeft');
+  const C = document.getElementById('dcCenter');
+  const R = document.getElementById('dcRight');
+  L.innerHTML = C.innerHTML = R.innerHTML = '';
   for (const row of DC_ROWS) {
-    if (row.left > 0   || row.first) leftEl.appendChild(makeRow('DCL', row.label, row.left,   row.first));
-    if (row.center > 0 || row.first) centerEl.appendChild(makeRow('DCC', row.label, row.center, row.first));
-    if (row.right > 0  || row.first) rightEl.appendChild(makeRow('DCR', row.label, row.right,  row.first));
+    if (row.left   > 0 || row.first) L.appendChild(makeRow('DCL', row.label, row.left,   row.first));
+    if (row.center > 0 || row.first) C.appendChild(makeRow('DCC', row.label, row.center, row.first));
+    if (row.right  > 0 || row.first) R.appendChild(makeRow('DCR', row.label, row.right,  row.first));
   }
 }
-
 function renderGallery() {
-  const leftEl   = document.getElementById('galLeft');
-  const centerEl = document.getElementById('galCenter');
-  const rightEl  = document.getElementById('galRight');
-  leftEl.innerHTML = ''; centerEl.innerHTML = ''; rightEl.innerHTML = '';
+  const L = document.getElementById('galLeft');
+  const C = document.getElementById('galCenter');
+  const R = document.getElementById('galRight');
+  L.innerHTML = C.innerHTML = R.innerHTML = '';
   for (const row of GAL_ROWS) {
-    if (row.left > 0   || row.first) leftEl.appendChild(makeRow('GL', row.label, row.left,   row.first));
-    if (row.center > 0 || row.first) centerEl.appendChild(makeRow('GC', row.label, row.center, row.first));
-    if (row.right > 0  || row.first) rightEl.appendChild(makeRow('GR', row.label, row.right,  row.first));
+    if (row.left   > 0 || row.first) L.appendChild(makeRow('GL', row.label, row.left,   row.first));
+    if (row.center > 0 || row.first) C.appendChild(makeRow('GC', row.label, row.center, row.first));
+    if (row.right  > 0 || row.first) R.appendChild(makeRow('GR', row.label, row.right,  row.first));
   }
 }
-
 function renderBalcony() {
   const el = document.getElementById('balconyCenter');
   el.innerHTML = '';
-  for (const row of BAL_ROWS) {
-    el.appendChild(makeRow('BC', row.label, row.seats, row.first));
-  }
+  for (const row of BAL_ROWS) el.appendChild(makeRow('BC', row.label, row.seats, !!row.first));
+}
+
+function getSectionClass(secs) {
+  if (!secs?.length) return 'unallocated';
+  const s = secs[0];
+  if (['OL','OC','OR'].includes(s)) return 'orchestra';
+  if (['PL','PR'].includes(s))      return 'parterre';
+  if (s.startsWith('DC'))           return 'dress-circle';
+  if (s.startsWith('G'))            return 'gallery';
+  if (s === 'BC')                   return 'balcony';
+  return 'unallocated';
 }
 
 function renderGroupList() {
   const el = document.getElementById('groupList');
-  if (state.groups.length === 0) {
-    el.innerHTML = '<div class="no-groups">No groups added yet</div>';
-    return;
-  }
+  if (!state.groups.length) { el.innerHTML = '<div class="no-groups">No groups added yet</div>'; return; }
   el.innerHTML = '';
   state.groups.forEach(g => {
     const card = document.createElement('div');
-    const secClass = g.allocation ? getSectionClass(g.allocation.sections) : 'unallocated';
-    card.className = `group-card ${secClass}`;
+    card.className = `group-card ${getSectionClass(g.allocation?.sections)}`;
     card.innerHTML = `
       <div class="group-card-header">
         <div class="group-name" style="display:flex;align-items:center;gap:8px;">
@@ -1086,33 +912,21 @@ function renderGroupList() {
   });
 }
 
-function getSectionClass(sections) {
-  if (!sections || sections.length === 0) return 'unallocated';
-  const s = sections[0];
-  if (s === 'OL' || s === 'OC' || s === 'OR') return 'orchestra';
-  if (s === 'PL' || s === 'PR') return 'parterre';
-  if (s.startsWith('DC')) return 'dress-circle';
-  if (s.startsWith('G')) return 'gallery';
-  if (s === 'BC') return 'balcony';
-  return 'unallocated';
-}
-
 function renderSummary() {
   const el = document.getElementById('summaryGrid');
-  if (state.groups.length === 0) {
-    el.innerHTML = '<div style="color:var(--text-dim); font-size:12px; font-style:italic;">No groups allocated yet.</div>';
+  if (!state.groups.length) {
+    el.innerHTML = '<div style="color:var(--text-dim);font-size:12px;font-style:italic;">No groups allocated yet.</div>';
     return;
   }
   el.innerHTML = '';
   state.groups.forEach(g => {
     const chip = document.createElement('div');
     chip.className = 'summary-chip';
-    // FIX: Changed "px" label to "seats"
     chip.innerHTML = `
       <div class="chip-color" style="background:${g.color}"></div>
       <strong>${escHtml(g.name)}</strong>
       <span style="color:var(--text-dim)">${g.size} seats</span>
-      <span style="color:var(--gold)">${g.allocation ? g.allocation.location : '—'}</span>
+      <span style="color:var(--gold)">${g.allocation?.location ?? '—'}</span>
     `;
     el.appendChild(chip);
   });
@@ -1129,106 +943,28 @@ function renderLegend() {
   });
 }
 
-// FIX: Stats now use computed totals from row data instead of hardcoded magic numbers
 function renderStats() {
   const occupied = Object.values(state.seats).filter(Boolean).length;
-
   document.getElementById('statTotal').textContent     = TOTAL_CAPACITY;
   document.getElementById('statOccupied').textContent  = occupied;
   document.getElementById('statAvailable').textContent = TOTAL_CAPACITY - occupied;
   document.getElementById('statGroups').textContent    = state.groups.length;
 
-  const orchPartOccupied = TOTAL_ORCH_PART - getSectionAvail(['OL','OC','OR','PL','PR']);
-  const dcOccupied       = TOTAL_DC        - getSectionAvail(['DCL','DCC','DCR']);
-  const galOccupied      = TOTAL_GAL       - getSectionAvail(['GL','GC','GR']);
-  const balOccupied      = TOTAL_BAL       - calcSectionAvail('BC');
-
-  document.getElementById('statOrch').textContent = `${orchPartOccupied} / ${TOTAL_ORCH_PART}`;
-  document.getElementById('statDC').textContent   = `${dcOccupied} / ${TOTAL_DC}`;
-  document.getElementById('statGal').textContent  = `${galOccupied} / ${TOTAL_GAL}`;
-  document.getElementById('statBal').textContent  = `${balOccupied} / ${TOTAL_BAL}`;
+  document.getElementById('statOrch').textContent = `${TOTAL_ORCH_PART - sumAvail(['OL','OC','OR','PL','PR'])} / ${TOTAL_ORCH_PART}`;
+  document.getElementById('statDC').textContent   = `${TOTAL_DC  - sumAvail(['DCL','DCC','DCR'])} / ${TOTAL_DC}`;
+  document.getElementById('statGal').textContent  = `${TOTAL_GAL - sumAvail(['GL','GC','GR'])} / ${TOTAL_GAL}`;
+  document.getElementById('statBal').textContent  = `${TOTAL_BAL - calcAvail('BC')} / ${TOTAL_BAL}`;
 }
 
 function renderAll() {
-  renderOrchestra();
-  renderParterre();
-  renderDressCircle();
-  renderGallery();
-  renderBalcony();
-  renderGroupList();
-  renderSummary();
-  renderLegend();
-  renderStats();
+  renderOrchestra(); renderParterre(); renderDressCircle();
+  renderGallery();   renderBalcony();  renderGroupList();
+  renderSummary();   renderLegend();   renderStats();
 }
 
-function escHtml(str) {
-  return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-}
-
-// ═══════════════════════════════════════════
-// BROADCAST CHANNEL — fast-path sync + tab counter
-// ═══════════════════════════════════════════
-
-const channel        = new BroadcastChannel('reynolds-hall-session');
-let   activeTabCount = 1;
-
-function updateActiveCount(count) {
-  activeTabCount = Math.max(1, count);
-  document.getElementById('activeCount').textContent = activeTabCount;
-  document.getElementById('usersPlural').textContent = activeTabCount !== 1 ? 'S' : '';
-}
-
-channel.onmessage = (e) => {
-  const msg = e.data;
-
-  switch (msg.type) {
-    case 'ping':
-      // A new tab announced itself — reply so it knows we exist, and increment our count
-      channel.postMessage({ type: 'pong', session: state.sessionId });
-      updateActiveCount(activeTabCount + 1);
-      break;
-
-    case 'pong':
-      // A tab replied to our ping — we now know at least 2 tabs are open
-      updateActiveCount(activeTabCount + 1);
-      break;
-
-    case 'state_update':
-      // Another tab committed a change — apply it immediately (low-latency path)
-      applyRemoteState(msg.state);
-      break;
-
-    case 'tab_closed':
-      updateActiveCount(activeTabCount - 1);
-      break;
-  }
-};
-
-// 'storage' event fires in all *other* same-origin tabs when localStorage changes.
-// This is the reliable fallback in case BroadcastChannel misses a message.
-window.addEventListener('storage', (e) => {
-  if (e.key !== STORAGE_KEY || !e.newValue) return;
-  try {
-    applyRemoteState(JSON.parse(e.newValue));
-  } catch(err) {}
-});
-
-// Notify other tabs when this tab closes
-window.addEventListener('beforeunload', () => {
-  channel.postMessage({ type: 'tab_closed' });
-});
-
-// ═══════════════════════════════════════════
-// INIT
-// ═══════════════════════════════════════════
-
-document.getElementById('sessionDisplay').textContent = `SESSION: ${state.sessionId}`;
-
-loadState();   // restore persisted state before first render
+// Initial render while waiting for Firebase first response
 renderAll();
 
-// Announce presence; other tabs will pong back so we can count them
-channel.postMessage({ type: 'ping', session: state.sessionId });
 </script>
 </body>
 </html>
