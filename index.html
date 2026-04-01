@@ -301,6 +301,171 @@
   ::-webkit-scrollbar-track { background: var(--bg-deep); }
   ::-webkit-scrollbar-thumb { background: var(--purple-dim); border-radius: 3px; }
   ::-webkit-scrollbar-thumb:hover { background: var(--purple-mid); }
+
+  /* ══════════════════════════════════════════════
+     IMPROVEMENT 1 — RESPONSIVE LAYOUT
+     Stack sidebar above theater on narrow screens.
+     Sidebar gets a collapsible drawer behaviour on
+     mobile via the #sidebarToggle button.
+     ══════════════════════════════════════════════ */
+
+  /* Collapsible sidebar toggle button — hidden on desktop */
+  #sidebarToggle {
+    display: none;
+    width: 100%; padding: 12px 20px;
+    background: var(--bg-mid); border: none;
+    border-bottom: 1px solid var(--border);
+    color: var(--gold); font-family: 'Cinzel', serif;
+    font-size: 12px; letter-spacing: 2px;
+    cursor: pointer; text-align: left;
+    align-items: center; gap: 10px;
+  }
+  #sidebarToggle .toggle-arrow {
+    margin-left: auto; transition: transform 0.3s;
+    font-size: 14px;
+  }
+  #sidebarToggle.open .toggle-arrow { transform: rotate(180deg); }
+
+  /* ══════════════════════════════════════════════
+     IMPROVEMENT 3 — TOUCH-FRIENDLY CONTROLS
+     Minimum 44px tap targets on all interactive
+     elements throughout.
+     ══════════════════════════════════════════════ */
+  .door-btn   { min-height: 44px; }
+  .btn-primary{ min-height: 44px; }
+  .btn-danger {
+    min-width: 44px; min-height: 44px;
+    display: flex; align-items: center; justify-content: center;
+    padding: 0 12px; font-size: 14px;
+  }
+  .toggle-row { min-height: 44px; }
+  .toggle-checkbox { width: 20px; height: 20px; }
+  .toggle-checkbox:checked::after { top: 0px; left: 3px; font-size: 13px; }
+
+  /* ══════════════════════════════════════════════
+     IMPROVEMENT 7 — SUMMARY DRAWER (mobile)
+     The summary panel becomes a slide-up drawer
+     triggered by a fixed footer button on mobile.
+     On desktop it stays as the bottom bar.
+     ══════════════════════════════════════════════ */
+  #summaryDrawerBtn {
+    display: none; /* shown only on mobile via media query */
+    position: fixed; bottom: 0; left: 0; right: 0; z-index: 200;
+    padding: 14px 20px;
+    background: linear-gradient(135deg, var(--purple-mid), var(--purple-vivid));
+    border: none; border-top: 1px solid var(--gold-dim);
+    color: var(--gold-light); font-family: 'Cinzel', serif;
+    font-size: 12px; letter-spacing: 2px; cursor: pointer;
+    text-align: center;
+  }
+  .summary-area {
+    background: var(--bg-mid); border-top: 1px solid var(--border);
+    padding: 16px 24px;
+    transition: max-height 0.35s ease, padding 0.35s ease;
+  }
+  .summary-area.drawer-closed {
+    max-height: 0; padding-top: 0; padding-bottom: 0; overflow: hidden;
+  }
+
+  /* ══════════════════════════════════════════════
+     TABLET  (≤ 900px)
+     ══════════════════════════════════════════════ */
+  @media (max-width: 900px) {
+
+    /* IMPROVEMENT 6 — Typography scaling */
+    .header-logo { font-size: 17px; letter-spacing: 2px; }
+    .header-logo span { font-size: 10px; letter-spacing: 3px; }
+    .session-id { display: none; }
+
+    /* IMPROVEMENT 4 — Stats bar: 2×4 grid */
+    .stats-bar {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px 16px;
+      padding: 10px 16px;
+    }
+    .stat-value { font-size: 14px; }
+
+    /* IMPROVEMENT 1 — Responsive layout */
+    .main-layout {
+      grid-template-columns: 1fr;
+      grid-template-rows: auto 1fr;
+      min-height: unset;
+    }
+    .sidebar {
+      border-right: none;
+      border-bottom: 1px solid var(--border);
+      max-height: none;
+      overflow-y: visible;
+    }
+  }
+
+  /* ══════════════════════════════════════════════
+     MOBILE  (≤ 600px)
+     ══════════════════════════════════════════════ */
+  @media (max-width: 600px) {
+
+    /* IMPROVEMENT 6 — Typography: header shrinks */
+    header { padding: 12px 16px; }
+    .header-logo { font-size: 14px; letter-spacing: 1px; }
+    .header-logo span { display: none; }
+    .active-users { padding: 5px 10px; font-size: 11px; }
+
+    /* IMPROVEMENT 4 — Stats bar: horizontal scroll strip */
+    .stats-bar {
+      display: flex; flex-wrap: nowrap;
+      overflow-x: auto; gap: 0;
+      padding: 0;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
+    }
+    .stats-bar::-webkit-scrollbar { display: none; }
+    .stat {
+      flex: 0 0 auto;
+      padding: 10px 14px;
+      border-right: 1px solid var(--border);
+      min-width: 80px;
+    }
+    .stat:last-child { border-right: none; }
+    .stat-label { font-size: 9px; }
+    .stat-value  { font-size: 15px; }
+
+    /* IMPROVEMENT 1 — Sidebar toggle button */
+    #sidebarToggle { display: flex; }
+    .sidebar {
+      padding: 0;
+      overflow: hidden;
+      max-height: 0;
+      transition: max-height 0.35s ease, padding 0.35s ease;
+    }
+    .sidebar.open {
+      max-height: 2000px;
+      padding: 20px 16px;
+      overflow-y: auto;
+    }
+
+    /* IMPROVEMENT 3 — Larger tap targets on mobile */
+    .door-btn    { min-height: 48px; font-size: 14px; }
+    .btn-primary { min-height: 48px; font-size: 12px; }
+    .form-input  { padding: 12px 14px; font-size: 16px; /* prevents iOS zoom */ }
+
+    /* IMPROVEMENT 2 — Theater: zone view hides individual seats */
+    .seat { width: 7px; height: 7px; }
+    .row-label { font-size: 8px; width: 16px; }
+    .theater-area { padding: 12px 8px; }
+    .stage-bar { font-size: 10px; letter-spacing: 3px; padding: 8px; }
+    .section-header { font-size: 9px; letter-spacing: 2px; }
+
+    /* IMPROVEMENT 7 — Summary becomes slide-up drawer */
+    #summaryDrawerBtn { display: block; }
+    .summary-area { display: none; } /* replaced by drawer */
+    /* Add bottom padding so content isn't hidden behind fixed btn */
+    .theater-area { padding-bottom: 64px; }
+
+    /* IMPROVEMENT 5 — Scroll form into view after submission
+       (handled in JS — just ensure smooth scroll is on) */
+    html { scroll-behavior: smooth; }
+  }
 </style>
 </head>
 <body>
@@ -333,6 +498,11 @@
   <div class="stat"><span class="stat-label">Balcony</span><span class="stat-value" id="statBal">—</span></div>
 </div>
 
+<button id="sidebarToggle">
+  ✦ ADD GROUP &amp; QUEUE
+  <span class="toggle-arrow">▼</span>
+</button>
+
 <div class="main-layout">
   <div class="sidebar">
     <div>
@@ -343,7 +513,7 @@
       </div>
       <div class="form-group">
         <label class="form-label">Group Size (max 250)</label>
-        <input class="form-input" id="groupSize" type="number" min="1" max="250" placeholder="1–250">
+        <input class="form-input" id="groupSize" type="number" min="1" max="250" placeholder="1–250" inputmode="numeric">
       </div>
       <div class="form-group">
         <label class="form-label">Entry Door</label>
@@ -461,6 +631,31 @@
         <div style="color:var(--text-dim);font-size:12px;font-style:italic;">No groups allocated yet.</div>
       </div>
     </div>
+  </div>
+</div>
+
+<!-- IMPROVEMENT 5 — inputmode on size field for numeric mobile keyboard -->
+<!-- handled via attribute on the input element itself, see below -->
+
+<!-- IMPROVEMENT 7 — Mobile summary drawer -->
+<button id="summaryDrawerBtn">▲ ALLOCATION SUMMARY</button>
+
+<!-- Mobile summary overlay (mirrors the desktop summary area) -->
+<div id="summaryOverlay" style="
+  display:none; position:fixed; bottom:0; left:0; right:0; z-index:190;
+  background:var(--bg-mid); border-top:1px solid var(--border);
+  padding:16px 20px 80px; max-height:60vh; overflow-y:auto;
+  box-shadow:0 -8px 40px rgba(0,0,0,0.6);
+">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+    <div class="summary-title" style="margin:0;">ALLOCATION SUMMARY</div>
+    <button id="summaryOverlayClose" style="
+      background:none;border:none;color:var(--text-secondary);
+      font-size:18px;cursor:pointer;padding:4px 8px;
+    ">✕</button>
+  </div>
+  <div class="summary-grid" id="summaryGridMobile">
+    <div style="color:var(--text-dim);font-size:12px;font-style:italic;">No groups allocated yet.</div>
   </div>
 </div>
 
@@ -823,6 +1018,13 @@ function addGroup() {
 
   commitState();
   renderAll();
+
+  // IMPROVEMENT 5 — On mobile, scroll the group list into view so the
+  // user sees the confirmation without having to manually scroll down
+  if (window.innerWidth <= 600) {
+    document.getElementById('groupList')
+      .scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
 }
 
 function removeGroup(id) {
@@ -1029,22 +1231,26 @@ function renderGroupList() {
 }
 
 function renderSummary() {
-  const el = document.getElementById('summaryGrid');
-  if (!state.groups.length) {
-    el.innerHTML = '<div style="color:var(--text-dim);font-size:12px;font-style:italic;">No groups allocated yet.</div>';
-    return;
-  }
-  el.innerHTML = '';
-  state.groups.forEach(g => {
-    const chip = document.createElement('div');
-    chip.className = 'summary-chip';
-    chip.innerHTML = `
-      <div class="chip-color" style="background:${g.color}"></div>
-      <strong>${escHtml(g.name)}</strong>
-      <span style="color:var(--text-dim)">${g.size} seats</span>
-      <span style="color:var(--gold)">${g.allocation?.location ?? '—'}</span>
-    `;
-    el.appendChild(chip);
+  // Render into both the desktop bar and the mobile overlay
+  ['summaryGrid', 'summaryGridMobile'].forEach(elId => {
+    const el = document.getElementById(elId);
+    if (!el) return;
+    if (!state.groups.length) {
+      el.innerHTML = '<div style="color:var(--text-dim);font-size:12px;font-style:italic;">No groups allocated yet.</div>';
+      return;
+    }
+    el.innerHTML = '';
+    state.groups.forEach(g => {
+      const chip = document.createElement('div');
+      chip.className = 'summary-chip';
+      chip.innerHTML = `
+        <div class="chip-color" style="background:${g.color}"></div>
+        <strong>${escHtml(g.name)}</strong>
+        <span style="color:var(--text-dim)">${g.size} seats</span>
+        <span style="color:var(--gold)">${g.allocation?.location ?? '—'}</span>
+      `;
+      el.appendChild(chip);
+    });
   });
 }
 
@@ -1085,6 +1291,30 @@ document.getElementById('seatGroupBtn').addEventListener('click', addGroup);
 document.getElementById('resetBtn').addEventListener('click', resetAll);
 document.getElementById('preferParterre').addEventListener('change', function() {
   document.getElementById('parterreToggleRow').classList.toggle('active', this.checked);
+});
+
+// IMPROVEMENT 1 — Sidebar toggle (mobile)
+const sidebarToggleBtn = document.getElementById('sidebarToggle');
+const sidebar          = document.querySelector('.sidebar');
+sidebarToggleBtn.addEventListener('click', () => {
+  const isOpen = sidebar.classList.toggle('open');
+  sidebarToggleBtn.classList.toggle('open', isOpen);
+});
+
+// IMPROVEMENT 7 — Summary drawer (mobile)
+const summaryDrawerBtn   = document.getElementById('summaryDrawerBtn');
+const summaryOverlay     = document.getElementById('summaryOverlay');
+const summaryOverlayClose= document.getElementById('summaryOverlayClose');
+
+summaryDrawerBtn.addEventListener('click', () => {
+  summaryOverlay.style.display = summaryOverlay.style.display === 'block' ? 'none' : 'block';
+});
+summaryOverlayClose.addEventListener('click', () => {
+  summaryOverlay.style.display = 'none';
+});
+// Close overlay on outside tap
+summaryOverlay.addEventListener('click', (e) => {
+  if (e.target === summaryOverlay) summaryOverlay.style.display = 'none';
 });
 
 // Initial render while waiting for Firebase first response
