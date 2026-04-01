@@ -297,6 +297,41 @@
     font-style: italic;
   }
 
+  /* ── MOBILE SEAT TOAST (touch tooltip) ──────── */
+  #seatToast {
+    position: fixed; bottom: 72px; left: 50%; transform: translateX(-50%);
+    background: var(--bg-card); border: 1px solid var(--gold-dim);
+    color: var(--text-primary); padding: 8px 18px;
+    border-radius: 20px; font-size: 12px; letter-spacing: 1px;
+    pointer-events: none; z-index: 9998;
+    white-space: nowrap; box-shadow: 0 4px 20px rgba(0,0,0,0.6);
+    opacity: 0; transition: opacity 0.2s ease;
+  }
+  #seatToast.visible { opacity: 1; }
+
+  /* ── THEATER LOADING OVERLAY ────────────────── */
+  #theaterLoading {
+    position: absolute; inset: 0; z-index: 50;
+    background: var(--bg-deep);
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    gap: 16px;
+    transition: opacity 0.4s ease;
+  }
+  #theaterLoading.hidden { opacity: 0; pointer-events: none; }
+  .loading-spinner {
+    width: 36px; height: 36px; border-radius: 50%;
+    border: 3px solid var(--purple-dim);
+    border-top-color: var(--gold);
+    animation: spin 0.9s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .loading-text {
+    font-family: 'Cinzel', serif; font-size: 11px;
+    letter-spacing: 3px; color: var(--text-dim);
+    text-transform: uppercase;
+  }
+
   ::-webkit-scrollbar { width: 6px; height: 6px; }
   ::-webkit-scrollbar-track { background: var(--bg-deep); }
   ::-webkit-scrollbar-thumb { background: var(--purple-dim); border-radius: 3px; }
@@ -550,7 +585,12 @@
   </div>
 
   <div style="display:flex;flex-direction:column;overflow:hidden;">
-    <div class="theater-area">
+    <div class="theater-area" style="position:relative;">
+      <!-- Loading overlay — hidden after first Firebase response -->
+      <div id="theaterLoading">
+        <div class="loading-spinner"></div>
+        <div class="loading-text">Connecting to Firebase…</div>
+      </div>
       <div class="theater-container">
         <div class="theater-title">Reynolds Hall — Seating Plan</div>
         <div class="legend">
@@ -659,6 +699,7 @@
   </div>
 </div>
 
+<div id="seatToast"></div>
 <div class="tooltip" id="tooltip"></div>
 
 <!-- ═══════════════════════════════════════════
@@ -667,10 +708,9 @@
 <script type="module">
 
 // ── FIREBASE IMPORTS ──────────────────────────────────────────────────────────
-import { initializeApp }                    from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
+import { initializeApp }                          from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
 import { getDatabase, ref, set, onValue,
-         onDisconnect, serverTimestamp,
-         increment, runTransaction }        from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js';
+         onDisconnect }                           from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js';
 
 // ── FIREBASE CONFIG ───────────────────────────────────────────────────────────
 const firebaseConfig = {
@@ -687,8 +727,7 @@ const app      = initializeApp(firebaseConfig);
 const database = getDatabase(app);
 
 // ── DATABASE REFS ─────────────────────────────────────────────────────────────
-const stateRef   = ref(database, 'seatingState');   // the shared seating state
-const usersRef   = ref(database, 'activeUsers');    // online user counter
+const stateRef = ref(database, 'seatingState');   // the shared seating state
 
 // ── SESSION ID ────────────────────────────────────────────────────────────────
 const SESSION_ID = Math.random().toString(36).substring(2, 8).toUpperCase();
@@ -915,46 +954,62 @@ async function commitState() {
 }
 
 // Subscribe: fires immediately with current data, then on every remote change
+let firstLoad = true;
 onValue(stateRef, (snapshot) => {
   if (iAmWriting) { iAmWriting = false; return; }  // skip our own echo
 
   const data = snapshot.val();
-  if (!data) { renderAll(); return; }  // empty database — render blank slate
+  if (!data) { renderAll(); } else {
+    state.groups      = data.groups      ?? [];
+    state.seats       = data.seats       ?? {};
+    state.nextGroupId = data.nextGroupId ?? 1;
+    if (!firstLoad) flashSyncBanner();
+    renderAll();
+  }
 
-  state.groups      = data.groups      ?? [];
-  state.seats       = data.seats       ?? {};
-  state.nextGroupId = data.nextGroupId ?? 1;
-
-  flashSyncBanner();
-  renderAll();
+  // FIX 3 — Dismiss the loading overlay after the first response
+  if (firstLoad) {
+    firstLoad = false;
+    const overlay = document.getElementById('theaterLoading');
+    overlay.classList.add('hidden');
+    // Remove from DOM after fade so it can't block clicks
+    setTimeout(() => overlay.remove(), 450);
+  }
 });
 
 // ── ONLINE USER COUNTER ───────────────────────────────────────────────────────
-// Each tab increments the counter on connect and decrements on disconnect.
-// Firebase onDisconnect() handles the decrement even if the tab crashes.
+// Presence tracking: each session writes its own node and removes it on
+// disconnect. We count nodes to show how many users are online.
+// IMPORTANT: this listener only updates the text label. The connection dot
+// class is owned exclusively by the .info/connected listener below so the
+// two can never conflict.
 {
   const myPresenceRef = ref(database, `presence/${SESSION_ID}`);
-  // Mark ourselves online
   set(myPresenceRef, true);
-  // Decrement when we disconnect (handled server-side by Firebase)
   onDisconnect(myPresenceRef).remove();
 
-  // Count all presence entries to display active users
   onValue(ref(database, 'presence'), (snap) => {
     const count = snap.exists() ? Object.keys(snap.val()).length : 1;
-    const dot   = document.getElementById('connDot');
     const lbl   = document.getElementById('connLabel');
-    dot.className = 'conn-dot connected';
-    lbl.textContent = `${count} USER${count !== 1 ? 'S' : ''} ONLINE`;
+    // Only update the label when we're actually connected — avoid overwriting
+    // an 'OFFLINE' label with a stale user count from a cached snapshot.
+    const dot = document.getElementById('connDot');
+    if (dot.classList.contains('connected')) {
+      lbl.textContent = `${count} USER${count !== 1 ? 'S' : ''} ONLINE`;
+    }
   });
 }
 
-// Connection state indicator
+// ── CONNECTION STATE INDICATOR ────────────────────────────────────────────────
+// This is the single place that sets the dot class and controls the label
+// when offline. The presence listener above is explicitly forbidden from
+// changing dot.className so the two never race.
 onValue(ref(database, '.info/connected'), (snap) => {
   const dot = document.getElementById('connDot');
   const lbl = document.getElementById('connLabel');
   if (snap.val() === true) {
     dot.className = 'conn-dot connected';
+    // Label will be updated by the presence listener once it fires
   } else {
     dot.className = 'conn-dot disconnected';
     lbl.textContent = 'OFFLINE';
@@ -1062,11 +1117,15 @@ function escHtml(s) {
   return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
+// FIX 5 — Built once at the top of renderAll() so getSeatColor is O(1)
+// instead of O(groups) per seat. With 1,573 seats this eliminates up to
+// 1,573 × N linear scans per render.
+let groupColorMap = new Map(); // groupId → color
+
 function getSeatColor(seatId) {
   const d = state.seats[seatId];
   if (!d) return null;
-  const g = state.groups.find(g => g.id === d.groupId);
-  return g ? g.color : '#888';
+  return groupColorMap.get(d.groupId) ?? '#888';
 }
 
 function makeSeat(seatId, isFirst) {
@@ -1074,9 +1133,18 @@ function makeSeat(seatId, isFirst) {
   div.className = 'seat' + (isFirst ? ' first-row' : '');
   const color = getSeatColor(seatId);
   if (color) { div.style.background = div.style.borderColor = color; div.classList.add('occupied'); }
+
+  // Mouse tooltip (desktop)
   div.addEventListener('mouseover', e => showTip(e, seatId, isFirst));
   div.addEventListener('mousemove', moveTooltip);
   div.addEventListener('mouseout',  hideTip);
+
+  // FIX 4 — Touch tooltip (mobile): show a brief toast at the bottom of screen
+  div.addEventListener('touchstart', e => {
+    e.preventDefault(); // prevent the ghost mouse event
+    showSeatToast(seatId, isFirst);
+  }, { passive: false });
+
   return div;
 }
 
@@ -1107,6 +1175,22 @@ function moveTooltip(e) {
   tip.style.top  = (e.clientY - 30) + 'px';
 }
 function hideTip() { document.getElementById('tooltip').style.display = 'none'; }
+
+// FIX 4 — Mobile toast: briefly shows seat info at the bottom of the screen
+let _toastTimer = null;
+function showSeatToast(seatId, isFirst) {
+  const toast = document.getElementById('seatToast');
+  const d     = state.seats[seatId];
+  const parts = seatId.split('_');
+  let text = `Seat ${parts.slice(1).join('-')}`;
+  if (isFirst)   text += ' — Reserved';
+  else if (d)    text += ` — ${d.groupName}`;
+  else           text += ' — Available';
+  toast.textContent = text;
+  toast.classList.add('visible');
+  clearTimeout(_toastTimer);
+  _toastTimer = setTimeout(() => toast.classList.remove('visible'), 2000);
+}
 
 function renderOrchestra() {
   const L = document.getElementById('orchLeft');
@@ -1279,6 +1363,9 @@ function renderStats() {
 }
 
 function renderAll() {
+  // FIX 5 — Rebuild the O(1) lookup map before any render function runs
+  groupColorMap = new Map(state.groups.map(g => [g.id, g.color]));
+
   renderOrchestra(); renderParterre(); renderDressCircle();
   renderGallery();   renderBalcony();  renderGroupList();
   renderSummary();   renderLegend();   renderStats();
