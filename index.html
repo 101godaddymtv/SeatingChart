@@ -919,21 +919,27 @@ function allocateGroup(group) {
   if (sideAv >= size)                                          return tryAlloc([side], size, group);
   if (sideAv > 0 && overflow <= 38 && partAv >= overflow)     return tryAlloc([side, partSide], size, group);
   if (sideAv < 10 && size < 39 && partAv >= size)             return tryAlloc([partSide], size, group);
+  // ── STEP 4: Orchestra Center ──────────────────────────────────────────────
   if (!(ocAv < 80 && size > 79) && ocAv >= size)              return tryAlloc(['OC'], size, group);
 
-  // ── STEP 4b: Orchestra Center exhausted → spill back to sides ────────────
-  // Only reached when Center cannot fit the group on its own.
-  // Try the fuller side first so seats are used sequentially rather than
-  // split evenly; fall through to upper levels only if the combined sides
-  // still cannot accommodate the group.
+  // ── STEP 4b: Full orchestra floor as a combined pool ─────────────────────
+  // Reached only when no single orchestra section (side OR center) can fit
+  // the group on its own. We treat OL, OC, and OR as one pool, filling the
+  // fullest sections first so seats stay as compact as possible, before
+  // escalating to any upper level.
   {
     const olAv = calcAvail('OL');
     const orAv = calcAvail('OR');
-    const combinedSidesAv = olAv + orAv;
-    if (combinedSidesAv >= size) {
-      // Put the fuller side first so it fills before the lesser side is touched
-      const orderedSides = olAv >= orAv ? ['OL', 'OR'] : ['OR', 'OL'];
-      return tryAlloc(orderedSides, size, group);
+    const orchFloorAv = olAv + ocAv + orAv;
+    if (orchFloorAv >= size) {
+      // Sort the three sections largest-first so tryAlloc fills the fullest
+      // section before touching smaller remnants.
+      const sections = [
+        { sec: 'OL', av: olAv },
+        { sec: 'OC', av: ocAv },
+        { sec: 'OR', av: orAv },
+      ].sort((a, b) => b.av - a.av).map(s => s.sec);
+      return tryAlloc(sections, size, group);
     }
   }
 
