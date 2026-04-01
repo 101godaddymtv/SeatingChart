@@ -250,6 +250,53 @@
   }
   .chip-color { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
 
+  /* ── PREFER PARTERRE TOGGLE ──────────────── */
+  .toggle-row {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 12px;
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    cursor: pointer;
+    transition: border-color 0.2s;
+    user-select: none;
+  }
+  .toggle-row:hover { border-color: var(--gold-dim); }
+  .toggle-row.active {
+    border-color: var(--gold);
+    background: var(--purple-dim);
+    box-shadow: 0 0 10px rgba(201,162,39,0.15);
+  }
+  .toggle-checkbox {
+    appearance: none; -webkit-appearance: none;
+    width: 16px; height: 16px; border-radius: 3px;
+    border: 1px solid var(--gold-dim);
+    background: var(--bg-deep);
+    cursor: pointer; flex-shrink: 0;
+    transition: background 0.2s, border-color 0.2s;
+    position: relative;
+  }
+  .toggle-checkbox:checked {
+    background: var(--gold);
+    border-color: var(--gold);
+  }
+  .toggle-checkbox:checked::after {
+    content: '✓';
+    position: absolute; top: -1px; left: 2px;
+    font-size: 11px; color: var(--bg-deep); font-weight: 700;
+  }
+  .toggle-label {
+    font-size: 12px; letter-spacing: 1px;
+    color: var(--text-secondary); text-transform: uppercase;
+    flex: 1;
+  }
+  .toggle-row.active .toggle-label { color: var(--gold-light); }
+  .toggle-hint {
+    font-size: 10px; color: var(--text-dim);
+    margin-top: 5px; padding-left: 2px;
+    font-style: italic;
+  }
+
   ::-webkit-scrollbar { width: 6px; height: 6px; }
   ::-webkit-scrollbar-track { background: var(--bg-deep); }
   ::-webkit-scrollbar-thumb { background: var(--purple-dim); border-radius: 3px; }
@@ -301,12 +348,19 @@
       <div class="form-group">
         <label class="form-label">Entry Door</label>
         <div class="door-select">
-          <button class="door-btn active" id="doorLeft"  onclick="selectDoor('Left')">⬅ LEFT</button>
-          <button class="door-btn"        id="doorRight" onclick="selectDoor('Right')">RIGHT ➡</button>
+          <button class="door-btn active" id="doorLeft">⬅ LEFT</button>
+          <button class="door-btn"        id="doorRight">RIGHT ➡</button>
         </div>
       </div>
+      <div class="form-group">
+        <label class="toggle-row" id="parterreToggleRow" for="preferParterre">
+          <input type="checkbox" class="toggle-checkbox" id="preferParterre">
+          <span class="toggle-label">Prefer Parterre</span>
+        </label>
+        <div class="toggle-hint" id="parterreHint">Only applies to groups under 25</div>
+      </div>
       <div class="error-msg" id="errorMsg"></div>
-      <button class="btn-primary" onclick="addGroup()">SEAT GROUP</button>
+      <button class="btn-primary" id="seatGroupBtn">SEAT GROUP</button>
     </div>
 
     <div>
@@ -318,7 +372,7 @@
 
     <div>
       <div class="section-title">Actions</div>
-      <button class="btn-primary" onclick="resetAll()"
+      <button class="btn-primary" id="resetBtn"
         style="background:linear-gradient(135deg,var(--crimson),#6b0020);">
         RESET THEATER
       </button>
@@ -601,7 +655,7 @@ function tryAlloc(secs, size, group) {
 }
 
 function allocateGroup(group) {
-  const {size, door} = group;
+  const {size, door, preferParterre} = group;
   const side     = door === 'Left' ? 'OL' : 'OR';
   const partSide = door === 'Left' ? 'PL' : 'PR';
   const sideAv   = calcAvail(side);
@@ -612,6 +666,22 @@ function allocateGroup(group) {
   const balAv    = calcAvail('BC');
   const overflow = size - sideAv;
 
+  // ── PREFER PARTERRE (groups < 25, user opted in) ──────────────────────────
+  // Choose whichever Parterre side has more availability.
+  // Fall through to normal routing if neither side has enough room.
+  if (preferParterre && size < 25) {
+    const plAv = calcAvail('PL');
+    const prAv = calcAvail('PR');
+    // Pick the side with more seats; break ties by preferring the door side
+    const bestPart = (plAv >= prAv) ? 'PL' : 'PR';
+    const bestAv   = Math.max(plAv, prAv);
+    if (bestAv >= size) return tryAlloc([bestPart], size, group);
+    // Neither side alone fits — try both together if combined total is enough
+    if (plAv + prAv >= size) return tryAlloc(['PL', 'PR'], size, group);
+    // Parterre is too full — fall through to normal routing below
+  }
+
+  // ── NORMAL ROUTING ────────────────────────────────────────────────────────
   if (sideAv >= size)                                          return tryAlloc([side], size, group);
   if (sideAv > 0 && overflow <= 38 && partAv >= overflow)     return tryAlloc([side, partSide], size, group);
   if (sideAv < 10 && size < 39 && partAv >= size)             return tryAlloc([partSide], size, group);
@@ -704,35 +774,43 @@ function flashSyncBanner() {
 }
 
 // ── UI ACTIONS ────────────────────────────────────────────────────────────────
-// These are attached to window so inline onclick="" attributes can call them.
+// All wired via addEventListener — no onclick attributes anywhere in the HTML,
+// which means none of these need to be on window and the module-scope timing
+// issue that caused "X is not defined" errors is completely eliminated.
 
-window.selectDoor = function(door) {
+function selectDoor(door) {
   state.selectedDoor = door;
   document.getElementById('doorLeft').classList.toggle('active',  door === 'Left');
   document.getElementById('doorRight').classList.toggle('active', door === 'Right');
-};
+}
 
-window.addGroup = function() {
-  const name = document.getElementById('groupName').value.trim();
-  const size = parseInt(document.getElementById('groupSize').value);
+function addGroup() {
+  const name           = document.getElementById('groupName').value.trim();
+  const size           = parseInt(document.getElementById('groupSize').value);
+  const preferParterre = document.getElementById('preferParterre').checked;
 
   if (!name || isNaN(size) || size < 1 || size > 250) {
     showError('Please enter a valid group name and size (1–250).');
     return;
   }
-  clearError();
+  if (preferParterre && size >= 25) {
+    showError('Prefer Parterre only applies to groups under 25. Seating normally.');
+  } else {
+    clearError();
+  }
 
   const group = {
     id:    state.nextGroupId++,
     name, size,
-    door:  state.selectedDoor,
+    door:           state.selectedDoor,
+    preferParterre: preferParterre && size < 25,
     color: GROUP_COLORS[state.groups.length % GROUP_COLORS.length],
     allocation: null,
   };
 
   const result = allocateGroup(group);
   if (!result) {
-    state.nextGroupId--;   // roll back
+    state.nextGroupId--;
     showError(`Could not seat ${size} — not enough contiguous seats available.`);
     return;
   }
@@ -743,11 +821,11 @@ window.addGroup = function() {
   document.getElementById('groupName').value = '';
   document.getElementById('groupSize').value = '';
 
-  commitState();   // write to Firebase → onValue fires on both tabs → renderAll()
-  renderAll();     // update our own tab immediately (don't wait for round-trip)
-};
+  commitState();
+  renderAll();
+}
 
-window.removeGroup = function(id) {
+function removeGroup(id) {
   const group = state.groups.find(g => g.id === id);
   if (!group) return;
   for (const sid of Object.keys(state.seats)) {
@@ -756,16 +834,16 @@ window.removeGroup = function(id) {
   state.groups = state.groups.filter(g => g.id !== id);
   commitState();
   renderAll();
-};
+}
 
-window.resetAll = function() {
+function resetAll() {
   if (!confirm('Reset all seating for ALL users? This cannot be undone.')) return;
   state.groups      = [];
   state.seats       = {};
   state.nextGroupId = 1;
   commitState();
   renderAll();
-};
+}
 
 // ── ERROR HELPERS ─────────────────────────────────────────────────────────────
 function showError(msg) {
@@ -892,22 +970,60 @@ function renderGroupList() {
   state.groups.forEach(g => {
     const card = document.createElement('div');
     card.className = `group-card ${getSectionClass(g.allocation?.sections)}`;
-    card.innerHTML = `
-      <div class="group-card-header">
-        <div class="group-name" style="display:flex;align-items:center;gap:8px;">
-          <div style="width:10px;height:10px;border-radius:50%;background:${g.color};flex-shrink:0;"></div>
-          ${escHtml(g.name)}
-        </div>
-        <button class="btn-danger" onclick="removeGroup(${g.id})">✕</button>
-      </div>
-      <div style="display:flex;gap:12px;align-items:center;">
-        <div class="group-size">${g.size} seats</div>
-        <div class="group-door">${g.door.toUpperCase()} DOOR</div>
-      </div>
-      ${g.allocation
-        ? `<div class="group-location">📍 ${g.allocation.location}</div>`
-        : '<div style="color:#e05070;font-size:11px;">⚠ Unallocated</div>'}
-    `;
+
+    // Build header row
+    const header = document.createElement('div');
+    header.className = 'group-card-header';
+
+    const nameWrap = document.createElement('div');
+    nameWrap.className = 'group-name';
+    nameWrap.style.cssText = 'display:flex;align-items:center;gap:8px;';
+    const dot = document.createElement('div');
+    dot.style.cssText = `width:10px;height:10px;border-radius:50%;background:${g.color};flex-shrink:0;`;
+    nameWrap.appendChild(dot);
+    nameWrap.appendChild(document.createTextNode(g.name));
+
+    const removeBtn = document.createElement('button');
+    removeBtn.className = 'btn-danger';
+    removeBtn.textContent = '✕';
+    removeBtn.addEventListener('click', () => removeGroup(g.id));
+
+    header.appendChild(nameWrap);
+    header.appendChild(removeBtn);
+
+    // Meta row
+    const meta = document.createElement('div');
+    meta.style.cssText = 'display:flex;gap:12px;align-items:center;';
+    const sizeEl = document.createElement('div');
+    sizeEl.className = 'group-size';
+    sizeEl.textContent = `${g.size} seats`;
+    const doorEl = document.createElement('div');
+    doorEl.className = 'group-door';
+    doorEl.textContent = `${g.door.toUpperCase()} DOOR`;
+    meta.appendChild(sizeEl);
+    meta.appendChild(doorEl);
+
+    // Location
+    const locEl = document.createElement('div');
+    if (g.allocation) {
+      locEl.className = 'group-location';
+      locEl.textContent = `📍 ${g.allocation.location}`;
+    } else {
+      locEl.style.cssText = 'color:#e05070;font-size:11px;';
+      locEl.textContent = '⚠ Unallocated';
+    }
+
+    card.appendChild(header);
+    card.appendChild(meta);
+    card.appendChild(locEl);
+
+    if (g.preferParterre) {
+      const badge = document.createElement('div');
+      badge.style.cssText = 'font-size:10px;color:var(--gold-dim);letter-spacing:1px;';
+      badge.textContent = '✦ PARTERRE PREFERRED';
+      card.appendChild(badge);
+    }
+
     el.appendChild(card);
   });
 }
@@ -961,6 +1077,15 @@ function renderAll() {
   renderGallery();   renderBalcony();  renderGroupList();
   renderSummary();   renderLegend();   renderStats();
 }
+
+// ── BUTTON WIRING ─────────────────────────────────────────────────────────────
+document.getElementById('doorLeft').addEventListener('click',  () => selectDoor('Left'));
+document.getElementById('doorRight').addEventListener('click', () => selectDoor('Right'));
+document.getElementById('seatGroupBtn').addEventListener('click', addGroup);
+document.getElementById('resetBtn').addEventListener('click', resetAll);
+document.getElementById('preferParterre').addEventListener('change', function() {
+  document.getElementById('parterreToggleRow').classList.toggle('active', this.checked);
+});
 
 // Initial render while waiting for Firebase first response
 renderAll();
