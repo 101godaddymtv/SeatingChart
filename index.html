@@ -297,6 +297,97 @@
     font-style: italic;
   }
 
+  /* ── SAVE AS PDF — print report styles ──────── */
+  #pdfReportFrame {
+    display: none;
+  }
+
+  @media print {
+    /* Hide everything except the report frame */
+    body > *:not(#pdfReportFrame) { display: none !important; }
+    #pdfReportFrame {
+      display: block !important;
+      position: fixed; inset: 0;
+      background: #fff; color: #111;
+      font-family: Georgia, serif;
+      padding: 0; margin: 0;
+    }
+  }
+
+  /* Report frame itself — only visible when printing */
+  #pdfReportFrame {
+    font-family: Georgia, 'Times New Roman', serif;
+  }
+  .rpt-page {
+    width: 100%; max-width: 780px;
+    margin: 0 auto; padding: 48px 48px 64px;
+    background: #fff; color: #111;
+    box-sizing: border-box;
+  }
+  .rpt-header {
+    text-align: center; border-bottom: 2px solid #8b1a2f;
+    padding-bottom: 18px; margin-bottom: 28px;
+  }
+  .rpt-title {
+    font-size: 26px; font-weight: bold; letter-spacing: 3px;
+    color: #1a0a00; text-transform: uppercase; margin-bottom: 4px;
+  }
+  .rpt-subtitle {
+    font-size: 12px; letter-spacing: 4px; color: #666;
+    text-transform: uppercase;
+  }
+  .rpt-meta {
+    font-size: 11px; color: #888; margin-top: 8px; letter-spacing: 1px;
+  }
+  .rpt-stats {
+    display: grid; grid-template-columns: repeat(4, 1fr);
+    gap: 12px; margin-bottom: 32px;
+    border: 1px solid #ddd; border-radius: 4px; padding: 16px;
+    background: #faf8f5;
+  }
+  .rpt-stat { text-align: center; }
+  .rpt-stat-label {
+    font-size: 9px; text-transform: uppercase; letter-spacing: 1px;
+    color: #888; margin-bottom: 3px;
+  }
+  .rpt-stat-value {
+    font-size: 20px; font-weight: bold; color: #8b1a2f;
+  }
+  .rpt-section-title {
+    font-size: 11px; text-transform: uppercase; letter-spacing: 3px;
+    color: #8b1a2f; border-bottom: 1px solid #e0ccc0;
+    padding-bottom: 6px; margin: 24px 0 12px;
+  }
+  .rpt-table {
+    width: 100%; border-collapse: collapse; font-size: 12px;
+  }
+  .rpt-table th {
+    background: #1a0a00; color: #f0e8d0;
+    padding: 8px 12px; text-align: left;
+    font-size: 10px; letter-spacing: 1px; text-transform: uppercase;
+    font-weight: normal;
+  }
+  .rpt-table td {
+    padding: 8px 12px; border-bottom: 1px solid #eee;
+    vertical-align: top;
+  }
+  .rpt-table tr:nth-child(even) td { background: #faf8f5; }
+  .rpt-table tr:last-child td { border-bottom: none; }
+  .rpt-color-dot {
+    display: inline-block; width: 10px; height: 10px;
+    border-radius: 50%; margin-right: 6px; vertical-align: middle;
+  }
+  .rpt-blocked-list {
+    font-size: 11px; color: #555; line-height: 1.8;
+    columns: 3; column-gap: 20px;
+  }
+  .rpt-footer {
+    margin-top: 40px; padding-top: 14px;
+    border-top: 1px solid #ddd;
+    font-size: 10px; color: #aaa; text-align: center; letter-spacing: 1px;
+  }
+  .rpt-no-data { font-size: 12px; color: #aaa; font-style: italic; }
+
   /* ── BLOCKED SEATS ───────────────────────────── */
   .seat.blocked {
     background: var(--crimson) !important;
@@ -660,6 +751,12 @@
         Click seats to block · Drag to block a range · Click row label to block entire row
       </div>
       <div style="margin-top:10px;">
+        <button class="btn-primary" id="savePdfBtn"
+          style="background:linear-gradient(135deg,#1a4a2a,#2a6b40); margin-bottom:10px;">
+          ↓ SAVE AS PDF
+        </button>
+      </div>
+      <div style="margin-top:0;">
         <button class="btn-primary" id="resetBtn"
           style="background:linear-gradient(135deg,var(--crimson),#6b0020);">
           RESET THEATER
@@ -783,6 +880,9 @@
     <div style="color:var(--text-dim);font-size:12px;font-style:italic;">No groups allocated yet.</div>
   </div>
 </div>
+
+<!-- ── PDF REPORT FRAME — populated by JS, printed via window.print() ── -->
+<div id="pdfReportFrame"></div>
 
 <div id="seatToast"></div>
 <div class="tooltip" id="tooltip"></div>
@@ -1566,11 +1666,157 @@ function renderAll() {
   renderSummary();   renderLegend();   renderStats();
 }
 
+// ── SAVE AS PDF ───────────────────────────────────────────────────────────────
+// Builds a formatted HTML report inside #pdfReportFrame then calls
+// window.print(). The @media print CSS hides everything else so the
+// browser's Print → Save as PDF dialog produces a clean document.
+
+function buildPdfReport() {
+  const now       = new Date();
+  const dateStr   = now.toLocaleDateString('en-US', {weekday:'long', year:'numeric', month:'long', day:'numeric'});
+  const timeStr   = now.toLocaleTimeString('en-US', {hour:'2-digit', minute:'2-digit'});
+  const occupied  = Object.values(state.seats).filter(Boolean).length;
+  const blocked   = Object.keys(state.blockedSeats).length;
+  const available = TOTAL_CAPACITY - occupied - blocked;
+
+  // ── Stats block ──
+  const statsHtml = `
+    <div class="rpt-stats">
+      <div class="rpt-stat">
+        <div class="rpt-stat-label">Total Capacity</div>
+        <div class="rpt-stat-value">${TOTAL_CAPACITY}</div>
+      </div>
+      <div class="rpt-stat">
+        <div class="rpt-stat-label">Occupied</div>
+        <div class="rpt-stat-value">${occupied}</div>
+      </div>
+      <div class="rpt-stat">
+        <div class="rpt-stat-label">Available</div>
+        <div class="rpt-stat-value">${available}</div>
+      </div>
+      <div class="rpt-stat">
+        <div class="rpt-stat-label">Blocked</div>
+        <div class="rpt-stat-value">${blocked}</div>
+      </div>
+      <div class="rpt-stat">
+        <div class="rpt-stat-label">Groups Seated</div>
+        <div class="rpt-stat-value">${state.groups.length}</div>
+      </div>
+      <div class="rpt-stat">
+        <div class="rpt-stat-label">Orchestra</div>
+        <div class="rpt-stat-value">${TOTAL_ORCH_PART - sumAvail(['OL','OC','OR','PL','PR'])} / ${TOTAL_ORCH_PART}</div>
+      </div>
+      <div class="rpt-stat">
+        <div class="rpt-stat-label">Dress Circle</div>
+        <div class="rpt-stat-value">${TOTAL_DC - sumAvail(['DCL','DCC','DCR'])} / ${TOTAL_DC}</div>
+      </div>
+      <div class="rpt-stat">
+        <div class="rpt-stat-label">Gallery</div>
+        <div class="rpt-stat-value">${TOTAL_GAL - sumAvail(['GL','GC','GR'])} / ${TOTAL_GAL}</div>
+      </div>
+      <div class="rpt-stat">
+        <div class="rpt-stat-label">Balcony</div>
+        <div class="rpt-stat-value">${TOTAL_BAL - calcAvail('BC')} / ${TOTAL_BAL}</div>
+      </div>
+    </div>
+  `;
+
+  // ── Group assignments table ──
+  let groupRows = '';
+  if (state.groups.length === 0) {
+    groupRows = '<tr><td colspan="4" class="rpt-no-data">No groups have been seated.</td></tr>';
+  } else {
+    state.groups.forEach((g, i) => {
+      const location = g.allocation?.location ?? '—';
+      const parterre = g.preferParterre ? ' ✦' : '';
+      groupRows += `
+        <tr>
+          <td>${i + 1}</td>
+          <td>
+            <span class="rpt-color-dot" style="background:${g.color}"></span>
+            ${escHtml(g.name)}
+          </td>
+          <td>${g.size}</td>
+          <td>${g.door} Door</td>
+          <td>${location}${parterre}</td>
+        </tr>`;
+    });
+  }
+
+  const groupTableHtml = `
+    <div class="rpt-section-title">Group Seat Assignments</div>
+    <table class="rpt-table">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Group Name</th>
+          <th>Size</th>
+          <th>Entry</th>
+          <th>Location</th>
+        </tr>
+      </thead>
+      <tbody>${groupRows}</tbody>
+    </table>
+  `;
+
+  // ── Blocked seats section ──
+  let blockedHtml = '';
+  const blockedIds = Object.keys(state.blockedSeats);
+  if (blockedIds.length > 0) {
+    // Format seat IDs into human-readable labels (e.g. OL_A_3 → Orch Left · Row A · Seat 3)
+    const SEC_FULL = {
+      OL:'Orch Left', OC:'Orch Center', OR:'Orch Right',
+      PL:'Parterre Left', PR:'Parterre Right',
+      DCL:'DC Left', DCC:'DC Center', DCR:'DC Right',
+      GL:'Gallery Left', GC:'Gallery Center', GR:'Gallery Right',
+      BC:'Balcony',
+    };
+    const labels = blockedIds.sort().map(id => {
+      const parts  = id.split('_');
+      const sec    = SEC_FULL[parts[0]] ?? parts[0];
+      const row    = parts[1];
+      const seat   = parts[2];
+      return `${sec} · Row ${row} · Seat ${seat}`;
+    });
+    blockedHtml = `
+      <div class="rpt-section-title">Blocked Seats (${blockedIds.length})</div>
+      <div class="rpt-blocked-list">${labels.map(l => `<div>${l}</div>`).join('')}</div>
+    `;
+  }
+
+  // ── Assemble full report ──
+  const frame = document.getElementById('pdfReportFrame');
+  frame.innerHTML = `
+    <div class="rpt-page">
+      <div class="rpt-header">
+        <div class="rpt-title">Reynolds Hall</div>
+        <div class="rpt-subtitle">Seating Assignment Report</div>
+        <div class="rpt-meta">${dateStr} &nbsp;·&nbsp; ${timeStr}</div>
+      </div>
+      ${statsHtml}
+      ${groupTableHtml}
+      ${blockedHtml}
+      <div class="rpt-footer">
+        Reynolds Hall — Intelligent Seating System &nbsp;·&nbsp;
+        Generated ${dateStr} at ${timeStr}
+        ${blockedIds && blockedIds.length > 0
+          ? ' &nbsp;·&nbsp; ✦ Parterre Preferred'
+          : ''}
+      </div>
+    </div>
+  `;
+}
+
 // ── BUTTON WIRING ─────────────────────────────────────────────────────────────
 document.getElementById('doorLeft').addEventListener('click',  () => selectDoor('Left'));
 document.getElementById('doorRight').addEventListener('click', () => selectDoor('Right'));
 document.getElementById('seatGroupBtn').addEventListener('click', addGroup);
 document.getElementById('resetBtn').addEventListener('click', resetAll);
+document.getElementById('savePdfBtn').addEventListener('click', () => {
+  buildPdfReport();
+  // Small delay lets the DOM update before print dialog opens
+  setTimeout(() => window.print(), 120);
+});
 document.getElementById('preferParterre').addEventListener('change', function() {
   document.getElementById('parterreToggleRow').classList.toggle('active', this.checked);
 });
