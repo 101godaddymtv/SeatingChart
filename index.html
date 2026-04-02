@@ -297,6 +297,83 @@
     font-style: italic;
   }
 
+  /* ── BLOCKED SEATS ───────────────────────────── */
+  .seat.blocked {
+    background: var(--crimson) !important;
+    border-color: #e05070 !important;
+    cursor: crosshair;
+    position: relative;
+  }
+  /* X pattern drawn with two pseudo-element lines */
+  .seat.blocked::before,
+  .seat.blocked::after {
+    content: '';
+    position: absolute;
+    top: 50%; left: 50%;
+    width: 130%; height: 1.5px;
+    background: rgba(255,255,255,0.7);
+    transform-origin: center;
+  }
+  .seat.blocked::before { transform: translate(-50%,-50%) rotate(45deg); }
+  .seat.blocked::after  { transform: translate(-50%,-50%) rotate(-45deg); }
+
+  /* Block-mode active — theater cursor changes, seats pulse on hover */
+  body.block-mode .seat:not(.first-row) {
+    cursor: crosshair;
+  }
+  body.block-mode .seat:not(.first-row):not(.blocked):hover {
+    background: rgba(139,26,47,0.5) !important;
+    border-color: #e05070 !important;
+    transform: scale(1.4);
+  }
+  body.block-mode .seat.blocked:hover {
+    opacity: 0.7;
+    transform: scale(1.4);
+  }
+
+  /* Block-mode sidebar button active state */
+  .btn-block-mode {
+    width: 100%; padding: 13px;
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
+    color: var(--text-secondary);
+    border-radius: var(--radius); cursor: pointer;
+    font-family: 'Cinzel', serif; font-size: 13px; letter-spacing: 2px;
+    transition: all 0.2s; text-transform: uppercase;
+    display: flex; align-items: center; justify-content: center; gap: 10px;
+    min-height: 44px;
+  }
+  .btn-block-mode:hover { border-color: var(--gold-dim); color: var(--gold); }
+  .btn-block-mode.active {
+    background: linear-gradient(135deg, var(--crimson), #6b0020);
+    border-color: #e05070; color: #ffb0b0;
+    box-shadow: 0 0 16px rgba(139,26,47,0.4);
+    animation: blockPulse 2s ease-in-out infinite;
+  }
+  @keyframes blockPulse {
+    0%,100% { box-shadow: 0 0 16px rgba(139,26,47,0.4); }
+    50%      { box-shadow: 0 0 28px rgba(139,26,47,0.7); }
+  }
+  .block-mode-hint {
+    font-size: 10px; color: var(--text-dim); text-align: center;
+    margin-top: 6px; font-style: italic; letter-spacing: 0.5px;
+    display: none;
+  }
+  .block-mode-hint.visible { display: block; color: #e05070; }
+
+  /* Legend dot for blocked */
+  .l-blocked {
+    background: var(--crimson); border: 1px solid #e05070;
+    position: relative; overflow: hidden;
+  }
+  .l-blocked::before, .l-blocked::after {
+    content: ''; position: absolute;
+    top: 50%; left: 50%; width: 130%; height: 1.5px;
+    background: rgba(255,255,255,0.7); transform-origin: center;
+  }
+  .l-blocked::before { transform: translate(-50%,-50%) rotate(45deg); }
+  .l-blocked::after  { transform: translate(-50%,-50%) rotate(-45deg); }
+
   /* ── MOBILE SEAT TOAST (touch tooltip) ──────── */
   #seatToast {
     position: fixed; bottom: 72px; left: 50%; transform: translateX(-50%);
@@ -525,6 +602,7 @@
 <div class="stats-bar">
   <div class="stat"><span class="stat-label">Total Capacity</span><span class="stat-value" id="statTotal">—</span></div>
   <div class="stat"><span class="stat-label">Occupied</span><span class="stat-value" id="statOccupied">0</span></div>
+  <div class="stat"><span class="stat-label">Blocked</span><span class="stat-value" id="statBlocked">0</span></div>
   <div class="stat"><span class="stat-label">Available</span><span class="stat-value" id="statAvailable">—</span></div>
   <div class="stat"><span class="stat-label">Groups Seated</span><span class="stat-value" id="statGroups">0</span></div>
   <div class="stat"><span class="stat-label">Orchestra</span><span class="stat-value" id="statOrch">—</span></div>
@@ -577,10 +655,16 @@
 
     <div>
       <div class="section-title">Actions</div>
-      <button class="btn-primary" id="resetBtn"
-        style="background:linear-gradient(135deg,var(--crimson),#6b0020);">
-        RESET THEATER
-      </button>
+      <button class="btn-block-mode" id="blockModeBtn">⊘ Block Seats</button>
+      <div class="block-mode-hint" id="blockModeHint">
+        Click seats to block · Drag to block a range · Click row label to block entire row
+      </div>
+      <div style="margin-top:10px;">
+        <button class="btn-primary" id="resetBtn"
+          style="background:linear-gradient(135deg,var(--crimson),#6b0020);">
+          RESET THEATER
+        </button>
+      </div>
     </div>
   </div>
 
@@ -596,6 +680,7 @@
         <div class="legend">
           <div class="legend-item"><div class="legend-dot l-empty"></div>Available</div>
           <div class="legend-item"><div class="legend-dot l-reserved"></div>First Row (Reserved)</div>
+          <div class="legend-item"><div class="legend-dot l-blocked"></div>Blocked</div>
           <div id="legendGroups"></div>
         </div>
 
@@ -832,11 +917,15 @@ const SEC_NAMES = {
 // ── LOCAL STATE ───────────────────────────────────────────────────────────────
 // This mirrors what is in Firebase. onValue() keeps it in sync.
 let state = {
-  groups:      [],
-  seats:       {},
-  nextGroupId: 1,
+  groups:       [],
+  seats:        {},
+  blockedSeats: {},   // seatId → true  (synced to Firebase)
+  nextGroupId:  1,
   selectedDoor: 'Left',
 };
+
+// Block mode flag — local only, not synced (each user toggles independently)
+let blockModeActive = false;
 
 // ── AVAILABILITY HELPERS ──────────────────────────────────────────────────────
 function calcAvail(sec) {
@@ -844,6 +933,10 @@ function calcAvail(sec) {
   let used = 0;
   for (const [sid, v] of Object.entries(state.seats)) {
     if (v && sid.startsWith(prefix)) used++;
+  }
+  // Also count blocked seats in this section as unavailable
+  for (const sid of Object.keys(state.blockedSeats)) {
+    if (sid.startsWith(prefix)) used++;
   }
   return TOT[sec] - used;
 }
@@ -858,7 +951,7 @@ function getAvailable(sec) {
       const n = fn(row);
       for (let i = 1; i <= n; i++) {
         const id = `${pfx}_${row.label}_${i}`;
-        if (!state.seats[id]) out.push(id);
+        if (!state.seats[id] && !state.blockedSeats[id]) out.push(id);
       }
     }
   }
@@ -962,9 +1055,10 @@ let iAmWriting = false;   // suppress the echo of our own write
 
 async function commitState() {
   const payload = {
-    groups:      state.groups,
-    seats:       state.seats,
-    nextGroupId: state.nextGroupId,
+    groups:       state.groups,
+    seats:        state.seats,
+    blockedSeats: state.blockedSeats,
+    nextGroupId:  state.nextGroupId,
   };
   iAmWriting = true;
   try {
@@ -983,9 +1077,10 @@ onValue(stateRef, (snapshot) => {
 
   const data = snapshot.val();
   if (!data) { renderAll(); } else {
-    state.groups      = data.groups      ?? [];
-    state.seats       = data.seats       ?? {};
-    state.nextGroupId = data.nextGroupId ?? 1;
+    state.groups       = data.groups       ?? [];
+    state.seats        = data.seats        ?? {};
+    state.blockedSeats = data.blockedSeats ?? {};
+    state.nextGroupId  = data.nextGroupId  ?? 1;
     if (!firstLoad) flashSyncBanner();
     renderAll();
   }
@@ -1118,9 +1213,10 @@ function removeGroup(id) {
 
 function resetAll() {
   if (!confirm('Reset all seating for ALL users? This cannot be undone.')) return;
-  state.groups      = [];
-  state.seats       = {};
-  state.nextGroupId = 1;
+  state.groups       = [];
+  state.seats        = {};
+  state.blockedSeats = {};
+  state.nextGroupId  = 1;
   commitState();
   renderAll();
 }
@@ -1154,18 +1250,48 @@ function getSeatColor(seatId) {
 function makeSeat(seatId, isFirst) {
   const div = document.createElement('div');
   div.className = 'seat' + (isFirst ? ' first-row' : '');
-  const color = getSeatColor(seatId);
-  if (color) { div.style.background = div.style.borderColor = color; div.classList.add('occupied'); }
+  div.dataset.seatId = seatId;
 
-  // Mouse tooltip (desktop)
-  div.addEventListener('mouseover', e => showTip(e, seatId, isFirst));
-  div.addEventListener('mousemove', moveTooltip);
-  div.addEventListener('mouseout',  hideTip);
+  const isBlocked = !!state.blockedSeats[seatId];
+  if (isBlocked) {
+    div.classList.add('blocked');
+  } else {
+    const color = getSeatColor(seatId);
+    if (color) { div.style.background = div.style.borderColor = color; div.classList.add('occupied'); }
+  }
 
-  // FIX 4 — Touch tooltip (mobile): show a brief toast at the bottom of screen
+  // Mouse tooltip (desktop) — suppressed in block mode
+  div.addEventListener('mouseover', e => {
+    if (!blockModeActive) showTip(e, seatId, isFirst);
+  });
+  div.addEventListener('mousemove', e => {
+    if (!blockModeActive) moveTooltip(e);
+  });
+  div.addEventListener('mouseout', () => {
+    if (!blockModeActive) hideTip();
+  });
+
+  // Click — toggle block in block mode, ignore if occupied (unless already blocked)
+  div.addEventListener('click', () => {
+    if (!blockModeActive || isFirst) return;
+    toggleBlock(seatId);
+  });
+
+  // Drag-to-block: mouseenter while mouse button held
+  div.addEventListener('mouseenter', () => {
+    if (!blockModeActive || !isDraggingBlock || isFirst) return;
+    applyBlockDrag(seatId);
+  });
+
+  // Touch tooltip (mobile)
   div.addEventListener('touchstart', e => {
-    e.preventDefault(); // prevent the ghost mouse event
-    showSeatToast(seatId, isFirst);
+    if (blockModeActive && !isFirst) {
+      e.preventDefault();
+      toggleBlock(seatId);
+    } else {
+      e.preventDefault();
+      showSeatToast(seatId, isFirst);
+    }
   }, { passive: false });
 
   return div;
@@ -1175,7 +1301,25 @@ function makeRow(pfx, label, count, isFirst) {
   const row = document.createElement('div');
   row.className = 'seat-row';
   const lbl = document.createElement('div');
-  lbl.className = 'row-label'; lbl.textContent = label;
+  lbl.className = 'row-label';
+  lbl.textContent = label;
+
+  // Click row label in block mode to toggle all seats in the row
+  lbl.style.cursor = 'default';
+  lbl.addEventListener('click', () => {
+    if (!blockModeActive || isFirst || count === 0) return;
+    const rowSeatIds = [];
+    for (let i = 1; i <= count; i++) rowSeatIds.push(`${pfx}_${label}_${i}`);
+    // If every seat in the row is already blocked, unblock all; otherwise block all
+    const allBlocked = rowSeatIds.every(id => state.blockedSeats[id]);
+    rowSeatIds.forEach(id => {
+      if (allBlocked) { delete state.blockedSeats[id]; }
+      else            { state.blockedSeats[id] = true; }
+    });
+    commitState();
+    renderAll();
+  });
+
   row.appendChild(lbl);
   for (let i = 1; i <= count; i++) row.appendChild(makeSeat(`${pfx}_${label}_${i}`, isFirst));
   return row;
@@ -1198,6 +1342,32 @@ function moveTooltip(e) {
   tip.style.top  = (e.clientY - 30) + 'px';
 }
 function hideTip() { document.getElementById('tooltip').style.display = 'none'; }
+
+// ── BLOCKING HELPERS ──────────────────────────────────────────────────────────
+let isDraggingBlock  = false;   // true while mouse button is held in block mode
+let dragBlockAction  = null;    // 'block' | 'unblock' — set on mousedown
+
+function toggleBlock(seatId) {
+  if (state.seats[seatId]) return; // occupied seats cannot be blocked
+  if (state.blockedSeats[seatId]) {
+    delete state.blockedSeats[seatId];
+  } else {
+    state.blockedSeats[seatId] = true;
+  }
+  commitState();
+  renderAll();
+}
+
+function applyBlockDrag(seatId) {
+  if (state.seats[seatId]) return; // never drag-block an occupied seat
+  if (dragBlockAction === 'block' && !state.blockedSeats[seatId]) {
+    state.blockedSeats[seatId] = true;
+    renderAll(); // optimistic local update; commitState fires on mouseup
+  } else if (dragBlockAction === 'unblock' && state.blockedSeats[seatId]) {
+    delete state.blockedSeats[seatId];
+    renderAll();
+  }
+}
 
 // FIX 4 — Mobile toast: briefly shows seat info at the bottom of the screen
 let _toastTimer = null;
@@ -1374,9 +1544,11 @@ function renderLegend() {
 
 function renderStats() {
   const occupied = Object.values(state.seats).filter(Boolean).length;
+  const blocked  = Object.keys(state.blockedSeats).length;
   document.getElementById('statTotal').textContent     = TOTAL_CAPACITY;
   document.getElementById('statOccupied').textContent  = occupied;
-  document.getElementById('statAvailable').textContent = TOTAL_CAPACITY - occupied;
+  document.getElementById('statBlocked').textContent   = blocked;
+  document.getElementById('statAvailable').textContent = TOTAL_CAPACITY - occupied - blocked;
   document.getElementById('statGroups').textContent    = state.groups.length;
 
   document.getElementById('statOrch').textContent = `${TOTAL_ORCH_PART - sumAvail(['OL','OC','OR','PL','PR'])} / ${TOTAL_ORCH_PART}`;
@@ -1403,6 +1575,47 @@ document.getElementById('preferParterre').addEventListener('change', function() 
   document.getElementById('parterreToggleRow').classList.toggle('active', this.checked);
 });
 
+// ── BLOCK MODE TOGGLE ─────────────────────────────────────────────────────────
+const blockModeBtn  = document.getElementById('blockModeBtn');
+const blockModeHint = document.getElementById('blockModeHint');
+
+blockModeBtn.addEventListener('click', () => {
+  blockModeActive = !blockModeActive;
+  blockModeBtn.classList.toggle('active', blockModeActive);
+  blockModeHint.classList.toggle('visible', blockModeActive);
+  document.body.classList.toggle('block-mode', blockModeActive);
+  blockModeBtn.textContent = blockModeActive ? '⊘ Exit Block Mode' : '⊘ Block Seats';
+  hideTip(); // clear any open tooltip when switching modes
+});
+
+// ── DRAG-TO-BLOCK ─────────────────────────────────────────────────────────────
+// mousedown on a seat sets the drag action (block or unblock) based on current
+// state of that seat; mouseup commits the accumulated changes to Firebase.
+document.addEventListener('mousedown', e => {
+  if (!blockModeActive) return;
+  const seat = e.target.closest('.seat');
+  if (!seat || seat.classList.contains('first-row')) return;
+  const seatId = seat.dataset.seatId;
+  if (!seatId || state.seats[seatId]) return; // ignore occupied seats
+  isDraggingBlock = true;
+  // Drag action is the opposite of the seat's current state
+  dragBlockAction = state.blockedSeats[seatId] ? 'unblock' : 'block';
+});
+
+document.addEventListener('mouseup', () => {
+  if (isDraggingBlock) {
+    isDraggingBlock = false;
+    dragBlockAction = null;
+    // Commit the full accumulated drag changes to Firebase in one write
+    commitState();
+  }
+});
+
+// Prevent text selection while dragging over seats
+document.addEventListener('selectstart', e => {
+  if (blockModeActive && isDraggingBlock) e.preventDefault();
+});
+
 // IMPROVEMENT 1 — Sidebar toggle (mobile)
 const sidebarToggleBtn = document.getElementById('sidebarToggle');
 const sidebar          = document.querySelector('.sidebar');
@@ -1412,9 +1625,9 @@ sidebarToggleBtn.addEventListener('click', () => {
 });
 
 // IMPROVEMENT 7 — Summary drawer (mobile)
-const summaryDrawerBtn   = document.getElementById('summaryDrawerBtn');
-const summaryOverlay     = document.getElementById('summaryOverlay');
-const summaryOverlayClose= document.getElementById('summaryOverlayClose');
+const summaryDrawerBtn    = document.getElementById('summaryDrawerBtn');
+const summaryOverlay      = document.getElementById('summaryOverlay');
+const summaryOverlayClose = document.getElementById('summaryOverlayClose');
 
 summaryDrawerBtn.addEventListener('click', () => {
   summaryOverlay.style.display = summaryOverlay.style.display === 'block' ? 'none' : 'block';
@@ -1422,7 +1635,6 @@ summaryDrawerBtn.addEventListener('click', () => {
 summaryOverlayClose.addEventListener('click', () => {
   summaryOverlay.style.display = 'none';
 });
-// Close overlay on outside tap
 summaryOverlay.addEventListener('click', (e) => {
   if (e.target === summaryOverlay) summaryOverlay.style.display = 'none';
 });
