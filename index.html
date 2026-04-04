@@ -8,234 +8,233 @@
   @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Cinzel:wght@400;600&family=Raleway:wght@300;400;500&display=swap');
 
   :root {
-    --bg-deep:     #0a0810;
-    --bg-mid:      #110e1a;
-    --bg-surface:  #1a1528;
-    --bg-card:     #1f1a30;
-    --gold:        #c9a227;
-    --gold-light:  #e8c44a;
-    --gold-dim:    #7a621a;
-    --purple-vivid:#7b3fa0;
-    --purple-mid:  #5a2d78;
-    --purple-dim:  #2d1a40;
-    --crimson:     #8b1a2f;
-    --text-primary:#f0e8d0;
-    --text-secondary:#a89070;
-    --text-dim:    #5a4a35;
-    --border:      rgba(201,162,39,0.2);
+    --bg-deep: #0a0810;
+    --bg-mid: #110e1a;
+    --bg-surface: #1a1528;
+    --bg-card: #1f1a30;
+    --gold: #c9a227;
+    --gold-light: #e8c44a;
+    --gold-dim: #7a621a;
+    --purple-vivid: #7b3fa0;
+    --purple-mid: #5a2d78;
+    --purple-dim: #2d1a40;
+    --crimson: #8b1a2f;
+    --text-primary: #f0e8d0;
+    --text-secondary: #a89070;
+    --text-dim: #5a4a35;
+    --border: rgba(201,162,39,0.2);
     --shadow-gold: 0 0 30px rgba(201,162,39,0.15);
-    --radius:      6px;
-    --tab-h:       52px;
-    --subtab-h:    38px;
-    --header-h:    62px;
-    --stats-h:     48px;
+    --radius: 6px;
   }
 
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
 
-  html, body {
-    height: 100%;
+  body {
     font-family: 'Raleway', sans-serif;
     background: var(--bg-deep);
     color: var(--text-primary);
-    overflow: hidden; /* no page scroll — each panel scrolls internally */
-  }
-
-  body {
-    display: flex;
-    flex-direction: column;
+    min-height: 100vh;
     background-image:
       radial-gradient(ellipse at 50% 0%, rgba(123,63,160,0.12) 0%, transparent 60%),
       repeating-linear-gradient(0deg, transparent, transparent 60px, rgba(201,162,39,0.02) 60px, rgba(201,162,39,0.02) 61px),
       repeating-linear-gradient(90deg, transparent, transparent 60px, rgba(201,162,39,0.02) 60px, rgba(201,162,39,0.02) 61px);
   }
 
-  /* ── SYNC BANNER ──────────────────────────── */
+  /* ── SYNC BANNER ─────────────────────────── */
   #syncBanner {
-    display: none; position: fixed; top: 0; left: 0; right: 0;
-    background: rgba(123,63,160,0.92); color: var(--gold-light);
-    font-family: 'Cinzel', serif; font-size: 11px; letter-spacing: 2px;
-    text-align: center; padding: 6px; z-index: 9999;
+    display: none;
+    position: fixed; top: 0; left: 0; right: 0;
+    background: rgba(123,63,160,0.92);
+    color: var(--gold-light);
+    font-family: 'Cinzel', serif;
+    font-size: 12px;
+    letter-spacing: 2px;
+    text-align: center;
+    padding: 8px;
+    z-index: 9999;
     border-bottom: 1px solid var(--gold-dim);
   }
   #syncBanner.show { display: block; }
 
-  /* ── CONNECTION DOT ───────────────────────── */
+  /* ── CONNECTION STATUS DOT ───────────────── */
   .conn-dot {
     width: 8px; height: 8px; border-radius: 50%;
     background: #888; box-shadow: 0 0 4px #888;
-    transition: background 0.4s, box-shadow 0.4s; flex-shrink: 0;
+    transition: background 0.4s, box-shadow 0.4s;
+    flex-shrink: 0;
   }
   .conn-dot.connected    { background: #4caf50; box-shadow: 0 0 6px #4caf50; animation: pulse 2s infinite; }
   .conn-dot.disconnected { background: #e05070; box-shadow: 0 0 6px #e05070; }
   @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.5} }
 
-  /* ── HEADER ───────────────────────────────── */
+  /* ── HEADER ──────────────────────────────── */
   header {
-    height: var(--header-h);
-    background: linear-gradient(180deg, rgba(17,14,26,0.98), rgba(10,8,16,0.95));
+    background: linear-gradient(180deg, rgba(17,14,26,0.98) 0%, rgba(10,8,16,0.95) 100%);
     border-bottom: 1px solid var(--border);
-    padding: 0 24px;
+    padding: 16px 32px;
     display: flex; align-items: center; justify-content: space-between;
-    flex-shrink: 0;
+    position: sticky; top: 0; z-index: 100;
     box-shadow: 0 4px 40px rgba(0,0,0,0.6);
-    z-index: 50;
   }
   .header-logo {
-    font-family: 'Cinzel', serif; font-size: 20px;
+    font-family: 'Cinzel', serif; font-size: 22px;
     color: var(--gold); letter-spacing: 3px;
     text-shadow: 0 0 20px rgba(201,162,39,0.4);
   }
   .header-logo span {
-    color: var(--text-secondary); font-size: 11px; display: block;
+    color: var(--text-secondary); font-size: 13px; display: block;
     letter-spacing: 5px; font-family: 'Raleway', sans-serif;
-    font-weight: 300; margin-top: 1px;
+    font-weight: 300; margin-top: 2px;
   }
-  .header-right { display: flex; gap: 16px; align-items: center; }
+  .header-meta { display: flex; gap: 24px; align-items: center; }
   .active-users {
     background: var(--purple-dim); border: 1px solid var(--purple-mid);
-    color: var(--gold-light); padding: 5px 12px; border-radius: 20px;
-    font-size: 11px; letter-spacing: 1px;
+    color: var(--gold-light); padding: 6px 14px; border-radius: 20px;
+    font-size: 12px; letter-spacing: 1px;
     display: flex; align-items: center; gap: 8px;
   }
-  .session-id { font-size: 10px; color: var(--text-dim); font-family: monospace; }
+  .session-id { font-size: 11px; color: var(--text-dim); font-family: monospace; }
 
-  /* ── STATS BAR ────────────────────────────── */
+  /* ── STATS BAR ───────────────────────────── */
   .stats-bar {
-    height: var(--stats-h);
     background: var(--bg-mid); border-bottom: 1px solid var(--border);
-    padding: 0 24px;
-    display: flex; align-items: center; gap: 0;
-    flex-shrink: 0; overflow-x: auto;
-    scrollbar-width: none;
+    padding: 10px 32px; display: flex; gap: 32px; font-size: 12px; flex-wrap: wrap;
   }
-  .stats-bar::-webkit-scrollbar { display: none; }
-  .stat {
-    display: flex; flex-direction: column; justify-content: center;
-    padding: 0 20px; border-right: 1px solid var(--border);
-    height: 100%; flex-shrink: 0;
-  }
-  .stat:first-child { padding-left: 0; }
-  .stat-label { color: var(--text-dim); letter-spacing: 1px; text-transform: uppercase; font-size: 9px; }
-  .stat-value { color: var(--gold); font-family: 'Cinzel', serif; font-size: 15px; margin-top: 1px; }
+  .stat { display: flex; flex-direction: column; gap: 2px; }
+  .stat-label { color: var(--text-dim); letter-spacing: 1px; text-transform: uppercase; font-size: 10px; }
+  .stat-value { color: var(--gold); font-family: 'Cinzel', serif; font-size: 16px; }
 
-  /* ── PRIMARY TABS ─────────────────────────── */
-  .primary-tabs {
-    height: var(--tab-h);
-    background: var(--bg-mid); border-bottom: 1px solid var(--border);
-    display: flex; align-items: stretch; flex-shrink: 0;
-    padding: 0 8px;
+  /* ── LAYOUT ──────────────────────────────── */
+  .main-layout {
+    display: grid; grid-template-columns: 320px 1fr;
+    gap: 0; min-height: calc(100vh - 120px);
   }
-  .ptab {
-    display: flex; align-items: center; gap: 8px;
-    padding: 0 20px; cursor: pointer;
-    font-family: 'Cinzel', serif; font-size: 12px; letter-spacing: 2px;
-    color: var(--text-dim); border-bottom: 2px solid transparent;
-    transition: color 0.2s, border-color 0.2s; white-space: nowrap;
-    text-transform: uppercase; border-top: 2px solid transparent;
-    user-select: none;
-  }
-  .ptab:hover { color: var(--text-secondary); }
-  .ptab.active { color: var(--gold-light); border-bottom-color: var(--gold); }
-  .ptab-icon { font-size: 14px; }
-  .ptab-badge {
-    background: var(--purple-mid); color: var(--gold-light);
-    font-size: 10px; padding: 1px 6px; border-radius: 10px;
-    font-family: 'Raleway', sans-serif; font-weight: 500; letter-spacing: 0;
+  .sidebar {
+    background: var(--bg-mid); border-right: 1px solid var(--border);
+    padding: 24px 20px; overflow-y: auto;
+    display: flex; flex-direction: column; gap: 24px;
   }
 
-  /* ── PANEL AREA ───────────────────────────── */
-  .panel-area {
-    flex: 1;
-    overflow: hidden;
-    position: relative;
+  /* ── SIDEBAR COMPONENTS ──────────────────── */
+  .section-title {
+    font-family: 'Cinzel', serif; font-size: 13px; letter-spacing: 3px;
+    color: var(--gold); text-transform: uppercase; margin-bottom: 14px;
+    display: flex; align-items: center; gap: 10px;
   }
-  .panel {
-    position: absolute; inset: 0;
-    overflow-y: auto; overflow-x: hidden;
-    display: none;
-    scrollbar-width: thin;
-    scrollbar-color: var(--purple-dim) transparent;
+  .section-title::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+  .form-group { margin-bottom: 14px; }
+  .form-label {
+    font-size: 11px; letter-spacing: 1px; color: var(--text-secondary);
+    text-transform: uppercase; margin-bottom: 6px; display: block;
   }
-  .panel::-webkit-scrollbar { width: 5px; }
-  .panel::-webkit-scrollbar-thumb { background: var(--purple-dim); border-radius: 3px; }
-  .panel.active { display: block; }
+  .form-input {
+    width: 100%; background: var(--bg-surface); border: 1px solid var(--border);
+    color: var(--text-primary); padding: 10px 14px; border-radius: var(--radius);
+    font-family: 'Raleway', sans-serif; font-size: 14px;
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+  .form-input:focus { outline: none; border-color: var(--gold-dim); box-shadow: 0 0 0 3px rgba(201,162,39,0.1); }
+  .door-select { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .door-btn {
+    padding: 10px; background: var(--bg-surface); border: 1px solid var(--border);
+    color: var(--text-secondary); border-radius: var(--radius); cursor: pointer;
+    font-family: 'Raleway', sans-serif; font-size: 13px; letter-spacing: 1px;
+    transition: all 0.2s; text-align: center;
+  }
+  .door-btn:hover { border-color: var(--gold-dim); color: var(--gold); }
+  .door-btn.active { background: var(--purple-dim); border-color: var(--gold); color: var(--gold-light); box-shadow: 0 0 12px rgba(201,162,39,0.2); }
+  .btn-primary {
+    width: 100%; padding: 13px;
+    background: linear-gradient(135deg, var(--purple-mid), var(--purple-vivid));
+    border: 1px solid var(--gold-dim); color: var(--gold-light);
+    border-radius: var(--radius); cursor: pointer;
+    font-family: 'Cinzel', serif; font-size: 13px; letter-spacing: 2px;
+    transition: all 0.2s; text-transform: uppercase;
+  }
+  .btn-primary:hover { background: linear-gradient(135deg, var(--purple-vivid), #9b4fc0); box-shadow: var(--shadow-gold); }
+  .btn-primary:disabled { opacity: 0.4; cursor: not-allowed; }
+  .btn-danger {
+    padding: 5px 10px; background: rgba(139,26,47,0.3);
+    border: 1px solid rgba(139,26,47,0.5); color: #e05070;
+    border-radius: 4px; cursor: pointer; font-size: 11px; transition: all 0.2s;
+  }
+  .btn-danger:hover { background: rgba(139,26,47,0.6); }
+  .group-list { display: flex; flex-direction: column; gap: 8px; }
+  .group-card {
+    background: var(--bg-surface); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 12px 14px; font-size: 13px;
+    display: flex; flex-direction: column; gap: 6px;
+    position: relative; overflow: hidden;
+  }
+  .group-card::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; }
+  .group-card.orchestra::before   { background: var(--gold); }
+  .group-card.dress-circle::before{ background: #a04070; }
+  .group-card.gallery::before     { background: #4070a0; }
+  .group-card.balcony::before     { background: #408060; }
+  .group-card.parterre::before    { background: #a06020; }
+  .group-card.unallocated::before { background: var(--text-dim); }
+  .group-card-header { display: flex; align-items: center; justify-content: space-between; }
+  .group-name { font-family: 'Playfair Display', serif; font-weight: 600; color: var(--text-primary); }
+  .group-size { font-size: 11px; color: var(--text-secondary); }
+  .group-location { font-size: 11px; color: var(--gold); font-style: italic; }
+  .group-door { font-size: 10px; color: var(--text-dim); letter-spacing: 1px; }
+  .error-msg { color: #e05070; font-size: 12px; margin-top: 6px; display: none; }
+  .no-groups { color: var(--text-dim); font-size: 12px; text-align: center; padding: 20px; font-style: italic; }
 
-  /* ── LEVEL SUB-TABS (Plan panel) ──────────── */
-  .subtab-bar {
-    position: sticky; top: 0; z-index: 20;
-    background: var(--bg-deep);
-    border-bottom: 1px solid var(--border);
-    display: flex; align-items: stretch;
-    height: var(--subtab-h); padding: 0 16px; gap: 4px;
-    overflow-x: auto; scrollbar-width: none;
-  }
-  .subtab-bar::-webkit-scrollbar { display: none; }
-  .stab {
-    display: flex; align-items: center; padding: 0 16px;
-    font-family: 'Raleway', sans-serif; font-size: 11px;
-    letter-spacing: 1.5px; text-transform: uppercase;
-    color: var(--text-dim); cursor: pointer;
-    border-bottom: 2px solid transparent;
-    transition: color 0.15s, border-color 0.15s;
-    white-space: nowrap; flex-shrink: 0; user-select: none;
-  }
-  .stab:hover { color: var(--text-secondary); }
-  .stab.active { color: var(--gold); border-bottom-color: var(--gold); }
-
-  /* level panel content */
-  .level-panel { display: none; padding: 20px 16px 32px; }
-  .level-panel.active { display: block; }
-
-  .theater-container { max-width: 1000px; margin: 0 auto; }
+  /* ── THEATER ─────────────────────────────── */
+  .theater-area { padding: 24px; overflow-x: auto; overflow-y: auto; }
+  .theater-container { max-width: 1100px; margin: 0 auto; }
   .theater-title {
-    font-family: 'Cinzel', serif; font-size: 13px; letter-spacing: 4px;
-    color: var(--gold); text-align: center; margin-bottom: 16px;
+    font-family: 'Cinzel', serif; font-size: 15px; letter-spacing: 4px;
+    color: var(--gold); text-align: center; margin-bottom: 20px;
   }
-
-  /* ── LEGEND ───────────────────────────────── */
-  .legend {
-    display: flex; flex-wrap: wrap; gap: 12px;
-    justify-content: center; margin-bottom: 16px;
-  }
+  .legend { display: flex; flex-wrap: wrap; gap: 14px; justify-content: center; margin-bottom: 20px; }
   .legend-item { display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--text-secondary); }
   .legend-dot { width: 12px; height: 12px; border-radius: 3px; }
   .l-empty    { background: var(--bg-surface); border: 1px solid var(--border); }
   .l-reserved { background: var(--text-dim); }
-  .l-blocked  { background: var(--crimson); border: 1px solid #e05070; position: relative; overflow: hidden; }
-  .l-blocked::before,.l-blocked::after { content:''; position:absolute; top:50%; left:50%; width:130%; height:1.5px; background:rgba(255,255,255,0.7); transform-origin:center; }
-  .l-blocked::before { transform:translate(-50%,-50%) rotate(45deg); }
-  .l-blocked::after  { transform:translate(-50%,-50%) rotate(-45deg); }
-
-  /* ── STAGE / SECTION HEADERS ──────────────── */
+  .section-wrap { margin-bottom: 28px; }
+  .section-header {
+    font-family: 'Cinzel', serif; font-size: 11px; letter-spacing: 3px;
+    color: var(--text-secondary); text-align: center; margin-bottom: 10px; text-transform: uppercase;
+  }
   .stage-bar {
     background: linear-gradient(135deg, var(--gold-dim), var(--gold), var(--gold-dim));
-    color: var(--bg-deep); font-family: 'Cinzel', serif; font-size: 12px;
-    letter-spacing: 6px; text-align: center; padding: 8px;
-    border-radius: 4px; margin-bottom: 16px; text-transform: uppercase;
+    color: var(--bg-deep); font-family: 'Cinzel', serif; font-size: 13px;
+    letter-spacing: 6px; text-align: center; padding: 10px; border-radius: 4px;
+    margin-bottom: 16px; text-transform: uppercase;
     box-shadow: 0 4px 20px rgba(201,162,39,0.3);
   }
-  .section-header {
-    font-family: 'Cinzel', serif; font-size: 10px; letter-spacing: 3px;
-    color: var(--text-secondary); text-align: center; margin-bottom: 8px;
-    text-transform: uppercase;
-  }
-  .section-wrap { margin-bottom: 24px; }
-
-  /* ── ORCHESTRA ────────────────────────────── */
   .orch-grid { display: grid; grid-template-columns: auto 1fr auto; gap: 6px; align-items: start; }
   .orch-section { display: flex; flex-direction: column; gap: 2px; }
   .orch-center  { display: flex; flex-direction: column; gap: 2px; }
-  .parterre-wrap { display: grid; grid-template-columns: 1fr auto 1fr; gap: 16px; margin-top: 8px; }
-  .parterre-col  { display: flex; flex-direction: column; gap: 2px; }
-  .parterre-center-label {
-    display: flex; align-items: center; font-family: 'Cinzel', serif;
-    font-size: 10px; color: var(--text-dim); letter-spacing: 2px;
-    writing-mode: vertical-rl; text-align: center;
+
+  /* All seat rows default to centered (used by DC, gallery, balcony, parterre) */
+  .seat-row { display: flex; align-items: center; gap: 3px; justify-content: center; }
+
+  /* Orchestra Center — all rows align from the same left edge so shorter rows
+     (e.g. row Z with 8 seats) line up with longer rows rather than floating
+     in the middle. This matches standard theater seat-map conventions. */
+  .seat-row-center {
+    display: flex; align-items: center; gap: 3px;
+    justify-content: flex-start;
   }
 
-  /* ── SEATS ────────────────────────────────── */
-  .seat-row { display: flex; align-items: center; gap: 3px; justify-content: center; }
+  /* Orchestra Left — seats flow left-to-right, row hugs the right (center) edge.
+     Row label is on the left, seats extend rightward toward center orchestra. */
+  .seat-row-left {
+    display: flex; align-items: center; gap: 3px;
+    justify-content: flex-end; /* seats push toward center */
+    flex-direction: row;
+  }
+
+  /* Orchestra Right — seats flow left-to-right, row hugs the left (center) edge.
+     Row label is on the right, seats extend leftward toward center orchestra. */
+  .seat-row-right {
+    display: flex; align-items: center; gap: 3px;
+    justify-content: flex-start; /* seats push toward center */
+    flex-direction: row-reverse; /* label stays on right, seats fill leftward */
+  }
   .row-label {
     font-family: 'Cinzel', serif; font-size: 10px; color: var(--text-dim);
     width: 22px; text-align: center; flex-shrink: 0;
@@ -243,97 +242,223 @@
   .seat {
     width: 10px; height: 10px; border-radius: 2px;
     background: var(--bg-surface); border: 1px solid rgba(201,162,39,0.12);
-    cursor: pointer; transition: transform 0.1s; position: relative; flex-shrink: 0;
+    cursor: pointer; transition: transform 0.1s, box-shadow 0.1s;
+    position: relative; flex-shrink: 0;
   }
   .seat:hover { transform: scale(1.4); z-index: 10; }
   .seat.first-row { background: var(--bg-mid); border-color: rgba(100,80,40,0.2); cursor: not-allowed; opacity: 0.4; }
   .seat.occupied  { cursor: default; }
-  .seat.blocked   { background: var(--crimson) !important; border-color: #e05070 !important; cursor: crosshair; }
-  .seat.blocked::before,.seat.blocked::after { content:''; position:absolute; top:50%; left:50%; width:130%; height:1.5px; background:rgba(255,255,255,0.7); transform-origin:center; }
-  .seat.blocked::before { transform:translate(-50%,-50%) rotate(45deg); }
-  .seat.blocked::after  { transform:translate(-50%,-50%) rotate(-45deg); }
-
-  /* ── DRESS CIRCLE / GALLERY ───────────────── */
-  .dc-grid { display: grid; grid-template-columns: 1fr auto 1fr; gap: 6px; }
+  .parterre-wrap { display: grid; grid-template-columns: 1fr auto 1fr; gap: 16px; margin-top: 6px; }
+  .parterre-col { display: flex; flex-direction: column; gap: 2px; }
+  .parterre-center-label {
+    display: flex; align-items: center; font-family: 'Cinzel', serif;
+    font-size: 10px; color: var(--text-dim); letter-spacing: 2px;
+    writing-mode: vertical-rl; text-align: center;
+  }
   .balcony-section { display: flex; flex-direction: column; gap: 2px; align-items: center; }
 
-  /* ── BLOCK MODE ───────────────────────────── */
-  body.block-mode .seat:not(.first-row) { cursor: crosshair; }
-  body.block-mode .seat:not(.first-row):not(.blocked):hover { background: rgba(139,26,47,0.5) !important; border-color: #e05070 !important; transform: scale(1.4); }
-  body.block-mode .seat.blocked:hover   { opacity: 0.7; transform: scale(1.4); }
+  /* ── TOOLTIP ─────────────────────────────── */
+  .tooltip {
+    position: fixed; background: var(--bg-card); border: 1px solid var(--gold-dim);
+    color: var(--text-primary); padding: 8px 12px; border-radius: var(--radius);
+    font-size: 12px; pointer-events: none; z-index: 9999;
+    white-space: nowrap; box-shadow: 0 4px 20px rgba(0,0,0,0.5); display: none;
+  }
 
-  /* ── ADD GROUP PANEL ──────────────────────── */
-  .add-panel-inner {
-    max-width: 480px; margin: 0 auto; padding: 28px 20px 48px;
+  /* ── SUMMARY ─────────────────────────────── */
+  .summary-area { background: var(--bg-mid); border-top: 1px solid var(--border); padding: 16px 24px; }
+  .summary-title { font-family: 'Cinzel', serif; font-size: 12px; letter-spacing: 3px; color: var(--gold); margin-bottom: 12px; }
+  .summary-grid { display: flex; flex-wrap: wrap; gap: 10px; }
+  .summary-chip {
+    background: var(--bg-surface); border: 1px solid var(--border);
+    border-radius: 20px; padding: 5px 14px; font-size: 11px;
+    display: flex; gap: 8px; align-items: center;
   }
-  .panel-heading {
-    font-family: 'Cinzel', serif; font-size: 15px; letter-spacing: 3px;
-    color: var(--gold); margin-bottom: 24px; text-transform: uppercase;
-  }
-  .form-group { margin-bottom: 16px; }
-  .form-label {
-    font-size: 11px; letter-spacing: 1px; color: var(--text-secondary);
-    text-transform: uppercase; margin-bottom: 7px; display: block;
-  }
-  .form-input {
-    width: 100%; background: var(--bg-surface); border: 1px solid var(--border);
-    color: var(--text-primary); padding: 12px 14px; border-radius: var(--radius);
-    font-family: 'Raleway', sans-serif; font-size: 15px;
-    transition: border-color 0.2s, box-shadow 0.2s;
-  }
-  .form-input:focus { outline: none; border-color: var(--gold-dim); box-shadow: 0 0 0 3px rgba(201,162,39,0.1); }
-  .door-select { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-  .door-btn {
-    padding: 12px; background: var(--bg-surface); border: 1px solid var(--border);
-    color: var(--text-secondary); border-radius: var(--radius); cursor: pointer;
-    font-family: 'Raleway', sans-serif; font-size: 13px; letter-spacing: 1px;
-    transition: all 0.2s; text-align: center; min-height: 48px;
-  }
-  .door-btn:hover { border-color: var(--gold-dim); color: var(--gold); }
-  .door-btn.active { background: var(--purple-dim); border-color: var(--gold); color: var(--gold-light); box-shadow: 0 0 12px rgba(201,162,39,0.2); }
+  .chip-color { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+
+  /* ── PREFER PARTERRE TOGGLE ──────────────── */
   .toggle-row {
-    display: flex; align-items: center; gap: 12px;
-    padding: 12px 14px; background: var(--bg-surface);
-    border: 1px solid var(--border); border-radius: var(--radius);
-    cursor: pointer; transition: border-color 0.2s; user-select: none; min-height: 48px;
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 12px;
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    cursor: pointer;
+    transition: border-color 0.2s;
+    user-select: none;
   }
   .toggle-row:hover { border-color: var(--gold-dim); }
-  .toggle-row.active { border-color: var(--gold); background: var(--purple-dim); box-shadow: 0 0 10px rgba(201,162,39,0.15); }
+  .toggle-row.active {
+    border-color: var(--gold);
+    background: var(--purple-dim);
+    box-shadow: 0 0 10px rgba(201,162,39,0.15);
+  }
   .toggle-checkbox {
     appearance: none; -webkit-appearance: none;
-    width: 20px; height: 20px; border-radius: 3px;
-    border: 1px solid var(--gold-dim); background: var(--bg-deep);
-    cursor: pointer; flex-shrink: 0; transition: background 0.2s; position: relative;
+    width: 16px; height: 16px; border-radius: 3px;
+    border: 1px solid var(--gold-dim);
+    background: var(--bg-deep);
+    cursor: pointer; flex-shrink: 0;
+    transition: background 0.2s, border-color 0.2s;
+    position: relative;
   }
-  .toggle-checkbox:checked { background: var(--gold); border-color: var(--gold); }
-  .toggle-checkbox:checked::after { content:'✓'; position:absolute; top:0; left:3px; font-size:13px; color:var(--bg-deep); font-weight:700; }
-  .toggle-label { font-size: 13px; letter-spacing: 1px; color: var(--text-secondary); text-transform: uppercase; flex: 1; }
+  .toggle-checkbox:checked {
+    background: var(--gold);
+    border-color: var(--gold);
+  }
+  .toggle-checkbox:checked::after {
+    content: '✓';
+    position: absolute; top: -1px; left: 2px;
+    font-size: 11px; color: var(--bg-deep); font-weight: 700;
+  }
+  .toggle-label {
+    font-size: 12px; letter-spacing: 1px;
+    color: var(--text-secondary); text-transform: uppercase;
+    flex: 1;
+  }
   .toggle-row.active .toggle-label { color: var(--gold-light); }
-  .toggle-hint { font-size: 10px; color: var(--text-dim); margin-top: 5px; font-style: italic; }
-  .error-msg { color: #e05070; font-size: 12px; margin-top: 8px; display: none; }
-  .btn-primary {
-    width: 100%; padding: 14px; min-height: 52px;
-    background: linear-gradient(135deg, var(--purple-mid), var(--purple-vivid));
-    border: 1px solid var(--gold-dim); color: var(--gold-light);
+  .toggle-hint {
+    font-size: 10px; color: var(--text-dim);
+    margin-top: 5px; padding-left: 2px;
+    font-style: italic;
+  }
+
+  /* ── SAVE AS PDF — print report styles ──────── */
+  #pdfReportFrame {
+    display: none;
+  }
+
+  @media print {
+    /* Hide everything except the report frame */
+    body > *:not(#pdfReportFrame) { display: none !important; }
+    #pdfReportFrame {
+      display: block !important;
+      position: fixed; inset: 0;
+      background: #fff; color: #111;
+      font-family: Georgia, serif;
+      padding: 0; margin: 0;
+    }
+  }
+
+  /* Report frame itself — only visible when printing */
+  #pdfReportFrame {
+    font-family: Georgia, 'Times New Roman', serif;
+  }
+  .rpt-page {
+    width: 100%; max-width: 780px;
+    margin: 0 auto; padding: 48px 48px 64px;
+    background: #fff; color: #111;
+    box-sizing: border-box;
+  }
+  .rpt-header {
+    text-align: center; border-bottom: 2px solid #8b1a2f;
+    padding-bottom: 18px; margin-bottom: 28px;
+  }
+  .rpt-title {
+    font-size: 26px; font-weight: bold; letter-spacing: 3px;
+    color: #1a0a00; text-transform: uppercase; margin-bottom: 4px;
+  }
+  .rpt-subtitle {
+    font-size: 12px; letter-spacing: 4px; color: #666;
+    text-transform: uppercase;
+  }
+  .rpt-meta {
+    font-size: 11px; color: #888; margin-top: 8px; letter-spacing: 1px;
+  }
+  .rpt-stats {
+    display: grid; grid-template-columns: repeat(4, 1fr);
+    gap: 12px; margin-bottom: 32px;
+    border: 1px solid #ddd; border-radius: 4px; padding: 16px;
+    background: #faf8f5;
+  }
+  .rpt-stat { text-align: center; }
+  .rpt-stat-label {
+    font-size: 9px; text-transform: uppercase; letter-spacing: 1px;
+    color: #888; margin-bottom: 3px;
+  }
+  .rpt-stat-value {
+    font-size: 20px; font-weight: bold; color: #8b1a2f;
+  }
+  .rpt-section-title {
+    font-size: 11px; text-transform: uppercase; letter-spacing: 3px;
+    color: #8b1a2f; border-bottom: 1px solid #e0ccc0;
+    padding-bottom: 6px; margin: 24px 0 12px;
+  }
+  .rpt-table {
+    width: 100%; border-collapse: collapse; font-size: 12px;
+  }
+  .rpt-table th {
+    background: #1a0a00; color: #f0e8d0;
+    padding: 8px 12px; text-align: left;
+    font-size: 10px; letter-spacing: 1px; text-transform: uppercase;
+    font-weight: normal;
+  }
+  .rpt-table td {
+    padding: 8px 12px; border-bottom: 1px solid #eee;
+    vertical-align: top;
+  }
+  .rpt-table tr:nth-child(even) td { background: #faf8f5; }
+  .rpt-table tr:last-child td { border-bottom: none; }
+  .rpt-color-dot {
+    display: inline-block; width: 10px; height: 10px;
+    border-radius: 50%; margin-right: 6px; vertical-align: middle;
+  }
+  .rpt-blocked-list {
+    font-size: 11px; color: #555; line-height: 1.8;
+    columns: 3; column-gap: 20px;
+  }
+  .rpt-footer {
+    margin-top: 40px; padding-top: 14px;
+    border-top: 1px solid #ddd;
+    font-size: 10px; color: #aaa; text-align: center; letter-spacing: 1px;
+  }
+  .rpt-no-data { font-size: 12px; color: #aaa; font-style: italic; }
+
+  /* ── BLOCKED SEATS ───────────────────────────── */
+  .seat.blocked {
+    background: var(--crimson) !important;
+    border-color: #e05070 !important;
+    cursor: crosshair;
+    position: relative;
+  }
+  /* X pattern drawn with two pseudo-element lines */
+  .seat.blocked::before,
+  .seat.blocked::after {
+    content: '';
+    position: absolute;
+    top: 50%; left: 50%;
+    width: 130%; height: 1.5px;
+    background: rgba(255,255,255,0.7);
+    transform-origin: center;
+  }
+  .seat.blocked::before { transform: translate(-50%,-50%) rotate(45deg); }
+  .seat.blocked::after  { transform: translate(-50%,-50%) rotate(-45deg); }
+
+  /* Block-mode active — theater cursor changes, seats pulse on hover */
+  body.block-mode .seat:not(.first-row) {
+    cursor: crosshair;
+  }
+  body.block-mode .seat:not(.first-row):not(.blocked):hover {
+    background: rgba(139,26,47,0.5) !important;
+    border-color: #e05070 !important;
+    transform: scale(1.4);
+  }
+  body.block-mode .seat.blocked:hover {
+    opacity: 0.7;
+    transform: scale(1.4);
+  }
+
+  /* Block-mode sidebar button active state */
+  .btn-block-mode {
+    width: 100%; padding: 13px;
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
+    color: var(--text-secondary);
     border-radius: var(--radius); cursor: pointer;
     font-family: 'Cinzel', serif; font-size: 13px; letter-spacing: 2px;
-    transition: all 0.2s; text-transform: uppercase; margin-top: 8px;
-  }
-  .btn-primary:hover { background: linear-gradient(135deg, var(--purple-vivid), #9b4fc0); box-shadow: var(--shadow-gold); }
-  .btn-primary:disabled { opacity: 0.4; cursor: not-allowed; }
-
-  /* ── ACTIONS SECTION (bottom of add panel) ── */
-  .actions-divider {
-    border: none; border-top: 1px solid var(--border); margin: 32px 0 24px;
-  }
-  .btn-block-mode {
-    width: 100%; padding: 13px; min-height: 48px;
-    background: var(--bg-surface); border: 1px solid var(--border);
-    color: var(--text-secondary); border-radius: var(--radius); cursor: pointer;
-    font-family: 'Cinzel', serif; font-size: 12px; letter-spacing: 2px;
     transition: all 0.2s; text-transform: uppercase;
     display: flex; align-items: center; justify-content: center; gap: 10px;
-    margin-bottom: 10px;
+    min-height: 44px;
   }
   .btn-block-mode:hover { border-color: var(--gold-dim); color: var(--gold); }
   .btn-block-mode.active {
@@ -342,265 +467,247 @@
     box-shadow: 0 0 16px rgba(139,26,47,0.4);
     animation: blockPulse 2s ease-in-out infinite;
   }
-  @keyframes blockPulse { 0%,100%{box-shadow:0 0 16px rgba(139,26,47,0.4)} 50%{box-shadow:0 0 28px rgba(139,26,47,0.7)} }
-  .block-mode-hint { font-size: 10px; color: var(--text-dim); text-align: center; margin-bottom: 12px; font-style: italic; display: none; }
+  @keyframes blockPulse {
+    0%,100% { box-shadow: 0 0 16px rgba(139,26,47,0.4); }
+    50%      { box-shadow: 0 0 28px rgba(139,26,47,0.7); }
+  }
+  .block-mode-hint {
+    font-size: 10px; color: var(--text-dim); text-align: center;
+    margin-top: 6px; font-style: italic; letter-spacing: 0.5px;
+    display: none;
+  }
   .block-mode-hint.visible { display: block; color: #e05070; }
-  .btn-save-pdf {
-    width: 100%; margin-bottom: 10px;
-    background: linear-gradient(135deg, #1a4a2a, #2a6b40);
-  }
-  .btn-reset {
-    width: 100%;
-    background: linear-gradient(135deg, var(--crimson), #6b0020);
-  }
 
-  /* ── QUEUE PANEL ──────────────────────────── */
-  .queue-panel-inner { max-width: 640px; margin: 0 auto; padding: 28px 20px 48px; }
-  .group-list { display: flex; flex-direction: column; gap: 10px; }
-  .group-card {
-    background: var(--bg-surface); border: 1px solid var(--border);
-    border-radius: var(--radius); padding: 14px 16px;
-    display: flex; flex-direction: column; gap: 8px; position: relative; overflow: hidden;
+  /* Legend dot for blocked */
+  .l-blocked {
+    background: var(--crimson); border: 1px solid #e05070;
+    position: relative; overflow: hidden;
   }
-  .group-card::before { content:''; position:absolute; left:0; top:0; bottom:0; width:3px; }
-  .group-card.orchestra::before   { background: var(--gold); }
-  .group-card.dress-circle::before{ background: #a04070; }
-  .group-card.gallery::before     { background: #4070a0; }
-  .group-card.balcony::before     { background: #408060; }
-  .group-card.parterre::before    { background: #a06020; }
-  .group-card.unallocated::before { background: var(--text-dim); }
-  .group-card-header { display: flex; align-items: center; justify-content: space-between; }
-  .group-name { font-family: 'Playfair Display', serif; font-weight: 600; color: var(--text-primary); display: flex; align-items: center; gap: 8px; }
-  .group-meta { display: flex; gap: 12px; align-items: center; }
-  .group-size { font-size: 12px; color: var(--text-secondary); }
-  .group-door { font-size: 10px; color: var(--text-dim); letter-spacing: 1px; }
-  .group-location { font-size: 12px; color: var(--gold); font-style: italic; }
-  .btn-danger {
-    min-width: 44px; min-height: 44px; padding: 0 12px;
-    background: rgba(139,26,47,0.3); border: 1px solid rgba(139,26,47,0.5);
-    color: #e05070; border-radius: 4px; cursor: pointer; font-size: 14px;
-    transition: all 0.2s; display: flex; align-items: center; justify-content: center;
+  .l-blocked::before, .l-blocked::after {
+    content: ''; position: absolute;
+    top: 50%; left: 50%; width: 130%; height: 1.5px;
+    background: rgba(255,255,255,0.7); transform-origin: center;
   }
-  .btn-danger:hover { background: rgba(139,26,47,0.6); }
-  .no-groups { color: var(--text-dim); font-size: 13px; text-align: center; padding: 40px 20px; font-style: italic; }
+  .l-blocked::before { transform: translate(-50%,-50%) rotate(45deg); }
+  .l-blocked::after  { transform: translate(-50%,-50%) rotate(-45deg); }
 
-  /* ── SUMMARY PANEL ────────────────────────── */
-  .summary-panel-inner { max-width: 800px; margin: 0 auto; padding: 28px 20px 48px; }
-  .summary-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px; }
-  .summary-card {
-    background: var(--bg-surface); border: 1px solid var(--border);
-    border-radius: var(--radius); padding: 14px 16px;
-    display: flex; align-items: center; gap: 14px;
-  }
-  .summary-card-dot { width: 14px; height: 14px; border-radius: 50%; flex-shrink: 0; }
-  .summary-card-info { flex: 1; min-width: 0; }
-  .summary-card-name { font-family: 'Playfair Display', serif; font-weight: 600; font-size: 14px; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .summary-card-loc  { font-size: 11px; color: var(--gold); margin-top: 2px; }
-  .summary-card-size { font-size: 13px; color: var(--text-secondary); font-family: 'Cinzel', serif; flex-shrink: 0; }
-  .no-summary { color: var(--text-dim); font-size: 13px; text-align: center; padding: 40px 20px; font-style: italic; }
-
-  /* ── TOOLTIP ──────────────────────────────── */
-  .tooltip {
-    position: fixed; background: var(--bg-card); border: 1px solid var(--gold-dim);
-    color: var(--text-primary); padding: 7px 12px; border-radius: var(--radius);
-    font-size: 12px; pointer-events: none; z-index: 9999;
-    white-space: nowrap; box-shadow: 0 4px 20px rgba(0,0,0,0.5); display: none;
-  }
-
-  /* ── SEAT TOAST (mobile) ──────────────────── */
+  /* ── MOBILE SEAT TOAST (touch tooltip) ──────── */
   #seatToast {
-    position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+    position: fixed; bottom: 72px; left: 50%; transform: translateX(-50%);
     background: var(--bg-card); border: 1px solid var(--gold-dim);
-    color: var(--text-primary); padding: 8px 18px; border-radius: 20px;
-    font-size: 12px; pointer-events: none; z-index: 9998;
+    color: var(--text-primary); padding: 8px 18px;
+    border-radius: 20px; font-size: 12px; letter-spacing: 1px;
+    pointer-events: none; z-index: 9998;
     white-space: nowrap; box-shadow: 0 4px 20px rgba(0,0,0,0.6);
     opacity: 0; transition: opacity 0.2s ease;
   }
   #seatToast.visible { opacity: 1; }
 
-  /* ── LOADING OVERLAY ──────────────────────── */
+  /* ── THEATER LOADING OVERLAY ────────────────── */
   #theaterLoading {
     position: absolute; inset: 0; z-index: 50;
     background: var(--bg-deep);
     display: flex; flex-direction: column;
-    align-items: center; justify-content: center; gap: 16px;
+    align-items: center; justify-content: center;
+    gap: 16px;
     transition: opacity 0.4s ease;
   }
   #theaterLoading.hidden { opacity: 0; pointer-events: none; }
   .loading-spinner {
     width: 36px; height: 36px; border-radius: 50%;
-    border: 3px solid var(--purple-dim); border-top-color: var(--gold);
+    border: 3px solid var(--purple-dim);
+    border-top-color: var(--gold);
     animation: spin 0.9s linear infinite;
   }
   @keyframes spin { to { transform: rotate(360deg); } }
-  .loading-text { font-family: 'Cinzel', serif; font-size: 11px; letter-spacing: 3px; color: var(--text-dim); }
-
-  /* ── PDF REPORT ───────────────────────────── */
-  #pdfReportFrame { display: none; font-family: Georgia, 'Times New Roman', serif; }
-  .rpt-page { width:100%; max-width:780px; margin:0 auto; padding:48px 48px 64px; background:#fff; color:#111; box-sizing:border-box; }
-  .rpt-header { text-align:center; border-bottom:2px solid #8b1a2f; padding-bottom:18px; margin-bottom:28px; }
-  .rpt-title { font-size:26px; font-weight:bold; letter-spacing:3px; color:#1a0a00; text-transform:uppercase; margin-bottom:4px; }
-  .rpt-subtitle { font-size:12px; letter-spacing:4px; color:#666; text-transform:uppercase; }
-  .rpt-meta { font-size:11px; color:#888; margin-top:8px; letter-spacing:1px; }
-  .rpt-stats { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-bottom:32px; border:1px solid #ddd; border-radius:4px; padding:16px; background:#faf8f5; }
-  .rpt-stat { text-align:center; }
-  .rpt-stat-label { font-size:9px; text-transform:uppercase; letter-spacing:1px; color:#888; margin-bottom:3px; }
-  .rpt-stat-value { font-size:20px; font-weight:bold; color:#8b1a2f; }
-  .rpt-section-title { font-size:11px; text-transform:uppercase; letter-spacing:3px; color:#8b1a2f; border-bottom:1px solid #e0ccc0; padding-bottom:6px; margin:24px 0 12px; }
-  .rpt-table { width:100%; border-collapse:collapse; font-size:12px; }
-  .rpt-table th { background:#1a0a00; color:#f0e8d0; padding:8px 12px; text-align:left; font-size:10px; letter-spacing:1px; text-transform:uppercase; font-weight:normal; }
-  .rpt-table td { padding:8px 12px; border-bottom:1px solid #eee; vertical-align:top; }
-  .rpt-table tr:nth-child(even) td { background:#faf8f5; }
-  .rpt-table tr:last-child td { border-bottom:none; }
-  .rpt-color-dot { display:inline-block; width:10px; height:10px; border-radius:50%; margin-right:6px; vertical-align:middle; }
-  .rpt-blocked-list { font-size:11px; color:#555; line-height:1.8; columns:3; column-gap:20px; }
-  .rpt-footer { margin-top:40px; padding-top:14px; border-top:1px solid #ddd; font-size:10px; color:#aaa; text-align:center; letter-spacing:1px; }
-  .rpt-no-data { font-size:12px; color:#aaa; font-style:italic; }
-
-  @media print {
-    body > *:not(#pdfReportFrame) { display: none !important; }
-    #pdfReportFrame { display: block !important; position: fixed; inset: 0; background: #fff; }
+  .loading-text {
+    font-family: 'Cinzel', serif; font-size: 11px;
+    letter-spacing: 3px; color: var(--text-dim);
+    text-transform: uppercase;
   }
 
-  /* ════════════════════════════════════════════
-     THEATER SCALE WRAPPER
-     The inner grid renders at its natural size.
-     JS measures it and applies a CSS scale()
-     transform so it fits the viewport width
-     without clipping or horizontal scroll.
-     touch-action:none on the wrapper prevents
-     the browser treating a scaled tap as a swipe.
-     ════════════════════════════════════════════ */
-  .theater-scaler-outer {
-    width: 100%;
-    overflow: hidden;           /* clip anything outside the scaled bounds   */
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: var(--bg-deep); }
+  ::-webkit-scrollbar-thumb { background: var(--purple-dim); border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--purple-mid); }
+
+  /* ══════════════════════════════════════════════
+     IMPROVEMENT 1 — RESPONSIVE LAYOUT
+     Stack sidebar above theater on narrow screens.
+     Sidebar gets a collapsible drawer behaviour on
+     mobile via the #sidebarToggle button.
+     ══════════════════════════════════════════════ */
+
+  /* Collapsible sidebar toggle button — hidden on desktop */
+  #sidebarToggle {
+    display: none;
+    width: 100%; padding: 12px 20px;
+    background: var(--bg-mid); border: none;
+    border-bottom: 1px solid var(--border);
+    color: var(--gold); font-family: 'Cinzel', serif;
+    font-size: 12px; letter-spacing: 2px;
+    cursor: pointer; text-align: left;
+    align-items: center; gap: 10px;
   }
-  .theater-scaler-inner {
-    transform-origin: top left;
-    /* height is adjusted by JS to match the scaled visual height             */
-    will-change: transform;
+  #sidebarToggle .toggle-arrow {
+    margin-left: auto; transition: transform 0.3s;
+    font-size: 14px;
+  }
+  #sidebarToggle.open .toggle-arrow { transform: rotate(180deg); }
+
+  /* ══════════════════════════════════════════════
+     IMPROVEMENT 3 — TOUCH-FRIENDLY CONTROLS
+     Minimum 44px tap targets on all interactive
+     elements throughout.
+     ══════════════════════════════════════════════ */
+  .door-btn   { min-height: 44px; }
+  .btn-primary{ min-height: 44px; }
+  .btn-danger {
+    min-width: 44px; min-height: 44px;
+    display: flex; align-items: center; justify-content: center;
+    padding: 0 12px; font-size: 14px;
+  }
+  .toggle-row { min-height: 44px; }
+  .toggle-checkbox { width: 20px; height: 20px; }
+  .toggle-checkbox:checked::after { top: 0px; left: 3px; font-size: 13px; }
+
+  /* ══════════════════════════════════════════════
+     IMPROVEMENT 7 — SUMMARY DRAWER (mobile)
+     The summary panel becomes a slide-up drawer
+     triggered by a fixed footer button on mobile.
+     On desktop it stays as the bottom bar.
+     ══════════════════════════════════════════════ */
+  #summaryDrawerBtn {
+    display: none; /* shown only on mobile via media query */
+    position: fixed; bottom: 0; left: 0; right: 0; z-index: 200;
+    padding: 14px 20px;
+    background: linear-gradient(135deg, var(--purple-mid), var(--purple-vivid));
+    border: none; border-top: 1px solid var(--gold-dim);
+    color: var(--gold-light); font-family: 'Cinzel', serif;
+    font-size: 12px; letter-spacing: 2px; cursor: pointer;
+    text-align: center;
+  }
+  .summary-area {
+    background: var(--bg-mid); border-top: 1px solid var(--border);
+    padding: 16px 24px;
+    transition: max-height 0.35s ease, padding 0.35s ease;
+  }
+  .summary-area.drawer-closed {
+    max-height: 0; padding-top: 0; padding-bottom: 0; overflow: hidden;
   }
 
-  /* ════════════════════════════════════════════
-     DESKTOP  (≥ 900px)
-     Full layout, full seat size, all stats shown
-     ════════════════════════════════════════════ */
-  @media (min-width: 900px) {
-    .seat      { width: 10px; height: 10px; }
-    .row-label { font-size: 10px; width: 22px; }
+  /* ══════════════════════════════════════════════
+     TABLET  (≤ 900px)
+     ══════════════════════════════════════════════ */
+  @media (max-width: 900px) {
+
+    /* IMPROVEMENT 6 — Typography scaling */
+    .header-logo { font-size: 17px; letter-spacing: 2px; }
+    .header-logo span { font-size: 10px; letter-spacing: 3px; }
+    .session-id { display: none; }
+
+    /* IMPROVEMENT 4 — Stats bar: 2×4 grid */
+    .stats-bar {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px 16px;
+      padding: 10px 16px;
+    }
+    .stat-value { font-size: 14px; }
+
+    /* IMPROVEMENT 1 — Responsive layout */
+    .main-layout {
+      grid-template-columns: 1fr;
+      grid-template-rows: auto 1fr;
+      min-height: unset;
+    }
+    .sidebar {
+      border-right: none;
+      border-bottom: 1px solid var(--border);
+      max-height: none;
+      overflow-y: visible;
+    }
   }
 
-  /* ════════════════════════════════════════════
-     TABLET  (600px – 899px)
-     Slightly smaller seats; stats bar scrollable;
-     tab text shrinks slightly
-     ════════════════════════════════════════════ */
-  @media (max-width: 899px) and (min-width: 601px) {
-    :root { --header-h: 56px; --tab-h: 48px; --stats-h: 44px; }
-    .seat      { width: 8px; height: 8px; }
-    .row-label { font-size: 9px; width: 18px; }
-    .ptab      { padding: 0 14px; font-size: 11px; letter-spacing: 1.5px; }
-    .stat      { padding: 0 14px; }
-    .stat-value{ font-size: 13px; }
-    .session-id{ display: none; }
-    .add-panel-inner,
-    .queue-panel-inner,
-    .summary-panel-inner { padding: 24px 18px 40px; }
-  }
-
-  /* ════════════════════════════════════════════
-     PHONE  (≤ 600px)
-     Compact chrome; tab icons only (text hidden);
-     seat grid auto-scaled by JS; stats scrollable
-     ════════════════════════════════════════════ */
+  /* ══════════════════════════════════════════════
+     MOBILE  (≤ 600px)
+     ══════════════════════════════════════════════ */
   @media (max-width: 600px) {
-    :root {
-      --header-h: 50px;
-      --tab-h:    50px;
-      --stats-h:  40px;
-      --subtab-h: 36px;
+
+    /* IMPROVEMENT 6 — Typography: header shrinks */
+    header { padding: 12px 16px; }
+    .header-logo { font-size: 14px; letter-spacing: 1px; }
+    .header-logo span { display: none; }
+    .active-users { padding: 5px 10px; font-size: 11px; }
+
+    /* IMPROVEMENT 4 — Stats bar: horizontal scroll strip */
+    .stats-bar {
+      display: flex; flex-wrap: nowrap;
+      overflow-x: auto; gap: 0;
+      padding: 0;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
     }
-
-    /* Header — keep logo + connection pill, drop session ID and subtitle */
-    header              { padding: 0 14px; }
-    .header-logo        { font-size: 14px; letter-spacing: 1px; }
-    .header-logo span   { display: none; }
-    .session-id         { display: none; }
-    .active-users       { padding: 4px 10px; font-size: 10px; gap: 6px; }
-
-    /* Stats bar — horizontal scroll strip, no wrapping */
-    .stats-bar  { padding: 0; gap: 0; }
-    .stat       { padding: 0 10px; min-width: 60px; border-right: 1px solid var(--border); }
+    .stats-bar::-webkit-scrollbar { display: none; }
+    .stat {
+      flex: 0 0 auto;
+      padding: 10px 14px;
+      border-right: 1px solid var(--border);
+      min-width: 80px;
+    }
     .stat:last-child { border-right: none; }
-    .stat-label { font-size: 8px; }
-    .stat-value { font-size: 12px; }
+    .stat-label { font-size: 9px; }
+    .stat-value  { font-size: 15px; }
 
-    /* Primary tabs — spread full width, icon + tiny label stacked */
-    .primary-tabs { padding: 0; }
-    .ptab {
-      flex: 1;
-      flex-direction: column;
-      justify-content: center;
-      padding: 0 4px;
-      gap: 2px;
-      font-size: 9px;
-      letter-spacing: 0.5px;
+    /* IMPROVEMENT 1 — Sidebar toggle button */
+    #sidebarToggle { display: flex; }
+    .sidebar {
+      padding: 0;
+      overflow: hidden;
+      max-height: 0;
+      transition: max-height 0.35s ease, padding 0.35s ease;
     }
-    .ptab-icon  { font-size: 18px; line-height: 1; }
-    .ptab-badge { font-size: 9px; padding: 1px 5px; }
-
-    /* Sub-tabs — scroll if needed */
-    .subtab-bar { padding: 0 10px; }
-    .stab       { font-size: 10px; letter-spacing: 1px; padding: 0 12px; }
-
-    /* Level panel padding */
-    .level-panel { padding: 10px 6px 20px; }
-
-    /* Seats — rendered at natural size by JS scaler, not shrunk by CSS */
-    .seat      { width: 10px; height: 10px; }
-    .row-label { font-size: 10px; width: 22px; }
-
-    /* Forms */
-    .add-panel-inner,
-    .queue-panel-inner,
-    .summary-panel-inner { padding: 18px 14px 40px; }
-    .form-input   { font-size: 16px; } /* prevents iOS auto-zoom on focus */
-    .panel-heading{ font-size: 13px; }
-
-    /* Summary grid — single column on narrow phones */
-    .summary-grid { grid-template-columns: 1fr; }
-  }
-
-  /* ════════════════════════════════════════════
-     LANDSCAPE PHONE  (≤ 600px height, wide)
-     Reduce chrome height to maximise seat area
-     ════════════════════════════════════════════ */
-  @media (max-height: 500px) and (orientation: landscape) {
-    :root {
-      --header-h: 40px;
-      --tab-h:    40px;
-      --stats-h:  34px;
-      --subtab-h: 32px;
+    .sidebar.open {
+      max-height: 2000px;
+      padding: 20px 16px;
+      overflow-y: auto;
     }
-    .header-logo     { font-size: 13px; }
-    .active-users    { padding: 3px 8px; font-size: 10px; }
-    .ptab            { font-size: 9px; }
-    .ptab-icon       { font-size: 14px; }
-    .stab            { font-size: 9px; }
+
+    /* IMPROVEMENT 3 — Larger tap targets on mobile */
+    .door-btn    { min-height: 48px; font-size: 14px; }
+    .btn-primary { min-height: 48px; font-size: 12px; }
+    .form-input  { padding: 12px 14px; font-size: 16px; /* prevents iOS zoom */ }
+
+    /* IMPROVEMENT 2 — Theater: zone view hides individual seats */
+    .seat { width: 7px; height: 7px; }
+    .row-label { font-size: 8px; width: 16px; }
+    .theater-area { padding: 12px 8px; }
+    .stage-bar { font-size: 10px; letter-spacing: 3px; padding: 8px; }
+    .section-header { font-size: 9px; letter-spacing: 2px; }
+
+    /* IMPROVEMENT 7 — Summary becomes slide-up drawer */
+    #summaryDrawerBtn { display: block; }
+    .summary-area { display: none; } /* replaced by drawer */
+    /* Add bottom padding so content isn't hidden behind fixed btn */
+    .theater-area { padding-bottom: 64px; }
+
+    /* IMPROVEMENT 5 — Scroll form into view after submission
+       (handled in JS — just ensure smooth scroll is on) */
+    html { scroll-behavior: smooth; }
   }
 </style>
 </head>
 <body>
 
+<!-- Shown briefly while Firebase syncs a remote change -->
 <div id="syncBanner">⟳ SYNCING…</div>
 
-<!-- ── HEADER ─────────────────────────────────────────── -->
 <header>
   <div class="header-logo">
     Reynolds Hall
     <span>INTELLIGENT SEATING SYSTEM</span>
   </div>
-  <div class="header-right">
+  <div class="header-meta">
     <div class="active-users">
       <div class="conn-dot" id="connDot"></div>
       <span id="connLabel">CONNECTING</span>
@@ -609,165 +716,27 @@
   </div>
 </header>
 
-<!-- ── STATS BAR ──────────────────────────────────────── -->
 <div class="stats-bar">
-  <div class="stat"><span class="stat-label">Total</span><span class="stat-value" id="statTotal">—</span></div>
+  <div class="stat"><span class="stat-label">Total Capacity</span><span class="stat-value" id="statTotal">—</span></div>
   <div class="stat"><span class="stat-label">Occupied</span><span class="stat-value" id="statOccupied">0</span></div>
   <div class="stat"><span class="stat-label">Blocked</span><span class="stat-value" id="statBlocked">0</span></div>
   <div class="stat"><span class="stat-label">Available</span><span class="stat-value" id="statAvailable">—</span></div>
-  <div class="stat"><span class="stat-label">Groups</span><span class="stat-value" id="statGroups">0</span></div>
+  <div class="stat"><span class="stat-label">Groups Seated</span><span class="stat-value" id="statGroups">0</span></div>
   <div class="stat"><span class="stat-label">Orchestra</span><span class="stat-value" id="statOrch">—</span></div>
   <div class="stat"><span class="stat-label">Dress Circle</span><span class="stat-value" id="statDC">—</span></div>
   <div class="stat"><span class="stat-label">Gallery</span><span class="stat-value" id="statGal">—</span></div>
   <div class="stat"><span class="stat-label">Balcony</span><span class="stat-value" id="statBal">—</span></div>
 </div>
 
-<!-- ── PRIMARY TABS ───────────────────────────────────── -->
-<div class="primary-tabs" role="tablist">
-  <div class="ptab active" data-tab="plan" role="tab">
-    <span class="ptab-icon">🎭</span> Plan
-  </div>
-  <div class="ptab" data-tab="add" role="tab">
-    <span class="ptab-icon">➕</span> Add Group
-  </div>
-  <div class="ptab" data-tab="queue" role="tab">
-    <span class="ptab-icon">👥</span> Queue
-    <span class="ptab-badge" id="queueBadge">0</span>
-  </div>
-  <div class="ptab" data-tab="summary" role="tab">
-    <span class="ptab-icon">📋</span> Summary
-  </div>
-</div>
+<button id="sidebarToggle">
+  ✦ ADD GROUP &amp; QUEUE
+  <span class="toggle-arrow">▼</span>
+</button>
 
-<!-- ── PANEL AREA ─────────────────────────────────────── -->
-<div class="panel-area">
-
-  <!-- ═══ PLAN PANEL ════════════════════════════════════ -->
-  <div class="panel active" id="panel-plan" role="tabpanel">
-
-    <!-- Level sub-tabs -->
-    <div class="subtab-bar">
-      <div class="stab active" data-level="orch">Orchestra &amp; Parterre</div>
-      <div class="stab" data-level="dc">Dress Circle</div>
-      <div class="stab" data-level="gal">Gallery</div>
-      <div class="stab" data-level="bal">Balcony</div>
-    </div>
-
-    <!-- Loading overlay -->
-    <div id="theaterLoading">
-      <div class="loading-spinner"></div>
-      <div class="loading-text">Connecting to Firebase…</div>
-    </div>
-
-    <!-- Legend (shared across levels) -->
-    <div style="padding: 12px 16px 0; max-width: 1000px; margin: 0 auto;">
-      <div class="legend">
-        <div class="legend-item"><div class="legend-dot l-empty"></div>Available</div>
-        <div class="legend-item"><div class="legend-dot l-reserved"></div>First Row (Reserved)</div>
-        <div class="legend-item"><div class="legend-dot l-blocked"></div>Blocked</div>
-        <div id="legendGroups"></div>
-      </div>
-    </div>
-
-    <!-- ── Orchestra & Parterre level ── -->
-    <div class="level-panel active" id="level-orch">
-      <div class="theater-scaler-outer" id="scalerOuter-orch">
-        <div class="theater-scaler-inner" id="scalerInner-orch">
-          <div class="theater-container">
-            <div class="stage-bar">✦ STAGE ✦</div>
-            <div class="section-header">ORCHESTRA &amp; PARTERRE</div>
-            <div class="orch-grid">
-              <div class="orch-section" id="orchLeft"></div>
-              <div class="orch-center"  id="orchCenter"></div>
-              <div class="orch-section" id="orchRight" style="align-items:flex-end;"></div>
-            </div>
-            <div class="parterre-wrap" style="margin-top:12px;">
-              <div>
-                <div class="section-header" style="font-size:9px;">PARTERRE LEFT</div>
-                <div class="parterre-col" id="parterreLeft"></div>
-              </div>
-              <div class="parterre-center-label">PARTERRE BOXES</div>
-              <div>
-                <div class="section-header" style="font-size:9px;">PARTERRE RIGHT</div>
-                <div class="parterre-col" id="parterreRight"></div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- ── Dress Circle level ── -->
-    <div class="level-panel" id="level-dc">
-      <div class="theater-scaler-outer" id="scalerOuter-dc">
-        <div class="theater-scaler-inner" id="scalerInner-dc">
-          <div class="theater-container">
-            <div class="section-header">DRESS CIRCLE — LEVEL 2</div>
-            <div class="dc-grid">
-              <div>
-                <div class="section-header" style="font-size:9px;">LEFT</div>
-                <div id="dcLeft"></div>
-              </div>
-              <div style="width:20px;"></div>
-              <div>
-                <div class="section-header" style="font-size:9px;">CENTER</div>
-                <div id="dcCenter"></div>
-              </div>
-            </div>
-            <div style="margin-top:10px;">
-              <div class="section-header" style="font-size:9px;">RIGHT</div>
-              <div id="dcRight"></div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- ── Gallery level ── -->
-    <div class="level-panel" id="level-gal">
-      <div class="theater-scaler-outer" id="scalerOuter-gal">
-        <div class="theater-scaler-inner" id="scalerInner-gal">
-          <div class="theater-container">
-            <div class="section-header">GALLERY — LEVEL 3</div>
-            <div class="dc-grid">
-              <div>
-                <div class="section-header" style="font-size:9px;">LEFT</div>
-                <div id="galLeft"></div>
-              </div>
-              <div style="width:20px;"></div>
-              <div>
-                <div class="section-header" style="font-size:9px;">CENTER</div>
-                <div id="galCenter"></div>
-              </div>
-            </div>
-            <div style="margin-top:10px;">
-              <div class="section-header" style="font-size:9px;">RIGHT</div>
-              <div id="galRight"></div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- ── Balcony level ── -->
-    <div class="level-panel" id="level-bal">
-      <div class="theater-scaler-outer" id="scalerOuter-bal">
-        <div class="theater-scaler-inner" id="scalerInner-bal">
-          <div class="theater-container">
-            <div class="section-header">BALCONY — LEVEL 4</div>
-            <div class="balcony-section" id="balconyCenter"></div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-  </div><!-- /panel-plan -->
-
-  <!-- ═══ ADD GROUP PANEL ════════════════════════════════ -->
-  <div class="panel" id="panel-add" role="tabpanel">
-    <div class="add-panel-inner">
-      <div class="panel-heading">Add Group</div>
-
+<div class="main-layout">
+  <div class="sidebar">
+    <div>
+      <div class="section-title">Add Group</div>
       <div class="form-group">
         <label class="form-label">Group Name</label>
         <input class="form-input" id="groupName" type="text" placeholder="e.g. Smith Family" maxlength="40">
@@ -792,54 +761,169 @@
       </div>
       <div class="error-msg" id="errorMsg"></div>
       <button class="btn-primary" id="seatGroupBtn">SEAT GROUP</button>
-
-      <hr class="actions-divider">
-      <div class="panel-heading" style="font-size:12px; margin-bottom:16px;">Actions</div>
-
-      <button class="btn-block-mode" id="blockModeBtn">⊘ Block Seats</button>
-      <div class="block-mode-hint" id="blockModeHint">
-        Click seats to block · Drag to block a range · Click row label to block row
-      </div>
-      <button class="btn-primary btn-save-pdf" id="savePdfBtn">↓ SAVE AS PDF</button>
-      <button class="btn-primary btn-reset"    id="resetBtn">RESET THEATER</button>
     </div>
-  </div>
 
-  <!-- ═══ QUEUE PANEL ════════════════════════════════════ -->
-  <div class="panel" id="panel-queue" role="tabpanel">
-    <div class="queue-panel-inner">
-      <div class="panel-heading">Group Queue</div>
+    <div>
+      <div class="section-title">Group Queue</div>
       <div class="group-list" id="groupList">
         <div class="no-groups">Connecting to Firebase…</div>
       </div>
     </div>
-  </div>
 
-  <!-- ═══ SUMMARY PANEL ══════════════════════════════════ -->
-  <div class="panel" id="panel-summary" role="tabpanel">
-    <div class="summary-panel-inner">
-      <div class="panel-heading">Allocation Summary</div>
-      <div class="summary-grid" id="summaryGrid">
-        <div class="no-summary">No groups allocated yet.</div>
+    <div>
+      <div class="section-title">Actions</div>
+      <button class="btn-block-mode" id="blockModeBtn">⊘ Block Seats</button>
+      <div class="block-mode-hint" id="blockModeHint">
+        Click seats to block · Drag to block a range · Click row label to block entire row
+      </div>
+      <div style="margin-top:10px;">
+        <button class="btn-primary" id="savePdfBtn"
+          style="background:linear-gradient(135deg,#1a4a2a,#2a6b40); margin-bottom:10px;">
+          ↓ SAVE AS PDF
+        </button>
+      </div>
+      <div style="margin-top:0;">
+        <button class="btn-primary" id="resetBtn"
+          style="background:linear-gradient(135deg,var(--crimson),#6b0020);">
+          RESET THEATER
+        </button>
       </div>
     </div>
   </div>
 
-</div><!-- /panel-area -->
+  <div style="display:flex;flex-direction:column;overflow:hidden;">
+    <div class="theater-area" style="position:relative;">
+      <!-- Loading overlay — hidden after first Firebase response -->
+      <div id="theaterLoading">
+        <div class="loading-spinner"></div>
+        <div class="loading-text">Connecting to Firebase…</div>
+      </div>
+      <div class="theater-container">
+        <div class="theater-title">Reynolds Hall — Seating Plan</div>
+        <div class="legend">
+          <div class="legend-item"><div class="legend-dot l-empty"></div>Available</div>
+          <div class="legend-item"><div class="legend-dot l-reserved"></div>First Row (Reserved)</div>
+          <div class="legend-item"><div class="legend-dot l-blocked"></div>Blocked</div>
+          <div id="legendGroups"></div>
+        </div>
 
-<div class="tooltip" id="tooltip"></div>
-<div id="seatToast"></div>
+        <div class="section-wrap">
+          <div class="stage-bar">✦ STAGE ✦</div>
+          <div class="section-header">ORCHESTRA &amp; PARTERRE</div>
+          <div class="orch-grid">
+            <div class="orch-section" id="orchLeft"></div>
+            <div class="orch-center"  id="orchCenter"></div>
+            <div class="orch-section" id="orchRight"></div>
+          </div>
+          <div class="parterre-wrap" style="margin-top:12px;">
+            <div>
+              <div class="section-header" style="font-size:9px;">PARTERRE LEFT</div>
+              <div class="parterre-col" id="parterreLeft"></div>
+            </div>
+            <div class="parterre-center-label">PARTERRE BOXES</div>
+            <div>
+              <div class="section-header" style="font-size:9px;">PARTERRE RIGHT</div>
+              <div class="parterre-col" id="parterreRight"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="section-wrap">
+          <div class="section-header">DRESS CIRCLE — LEVEL 2</div>
+          <div style="display:grid;grid-template-columns:1fr auto 1fr;gap:6px;">
+            <div>
+              <div class="section-header" style="font-size:9px;">DRESS CIRCLE LEFT</div>
+              <div id="dcLeft"></div>
+            </div>
+            <div style="width:20px;"></div>
+            <div>
+              <div class="section-header" style="font-size:9px;">DRESS CIRCLE CENTER</div>
+              <div id="dcCenter"></div>
+            </div>
+          </div>
+          <div style="margin-top:8px;">
+            <div class="section-header" style="font-size:9px;">DRESS CIRCLE RIGHT</div>
+            <div id="dcRight"></div>
+          </div>
+        </div>
+
+        <div class="section-wrap">
+          <div class="section-header">GALLERY — LEVEL 3</div>
+          <div style="display:grid;grid-template-columns:1fr auto 1fr;gap:6px;">
+            <div>
+              <div class="section-header" style="font-size:9px;">GALLERY LEFT</div>
+              <div id="galLeft"></div>
+            </div>
+            <div style="width:20px;"></div>
+            <div>
+              <div class="section-header" style="font-size:9px;">GALLERY CENTER</div>
+              <div id="galCenter"></div>
+            </div>
+          </div>
+          <div style="margin-top:8px;">
+            <div class="section-header" style="font-size:9px;">GALLERY RIGHT</div>
+            <div id="galRight"></div>
+          </div>
+        </div>
+
+        <div class="section-wrap">
+          <div class="section-header">BALCONY — LEVEL 4</div>
+          <div class="balcony-section" id="balconyCenter"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="summary-area">
+      <div class="summary-title">ALLOCATION SUMMARY</div>
+      <div class="summary-grid" id="summaryGrid">
+        <div style="color:var(--text-dim);font-size:12px;font-style:italic;">No groups allocated yet.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- IMPROVEMENT 5 — inputmode on size field for numeric mobile keyboard -->
+<!-- handled via attribute on the input element itself, see below -->
+
+<!-- IMPROVEMENT 7 — Mobile summary drawer -->
+<button id="summaryDrawerBtn">▲ ALLOCATION SUMMARY</button>
+
+<!-- Mobile summary overlay (mirrors the desktop summary area) -->
+<div id="summaryOverlay" style="
+  display:none; position:fixed; bottom:0; left:0; right:0; z-index:190;
+  background:var(--bg-mid); border-top:1px solid var(--border);
+  padding:16px 20px 80px; max-height:60vh; overflow-y:auto;
+  box-shadow:0 -8px 40px rgba(0,0,0,0.6);
+">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+    <div class="summary-title" style="margin:0;">ALLOCATION SUMMARY</div>
+    <button id="summaryOverlayClose" style="
+      background:none;border:none;color:var(--text-secondary);
+      font-size:18px;cursor:pointer;padding:4px 8px;
+    ">✕</button>
+  </div>
+  <div class="summary-grid" id="summaryGridMobile">
+    <div style="color:var(--text-dim);font-size:12px;font-style:italic;">No groups allocated yet.</div>
+  </div>
+</div>
+
+<!-- ── PDF REPORT FRAME — populated by JS, printed via window.print() ── -->
 <div id="pdfReportFrame"></div>
 
-<!-- ═══════════════════════════════════════════════════════
-     JAVASCRIPT
-     ═══════════════════════════════════════════════════════ -->
+<div id="seatToast"></div>
+<div class="tooltip" id="tooltip"></div>
+
+<!-- ═══════════════════════════════════════════
+     ALL JAVASCRIPT — ES module so Firebase imports work on GitHub Pages
+     ═══════════════════════════════════════════ -->
 <script type="module">
 
+// ── FIREBASE IMPORTS ──────────────────────────────────────────────────────────
 import { initializeApp }                          from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
 import { getDatabase, ref, set, onValue,
          onDisconnect }                           from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js';
 
+// ── FIREBASE CONFIG ───────────────────────────────────────────────────────────
 const firebaseConfig = {
   apiKey:            'AIzaSyBPW2kQv4zTG8KBjmwUOBOzvjEWSh_DtSQ',
   authDomain:        'reynolds-seating-assignments.firebaseapp.com',
@@ -849,510 +933,995 @@ const firebaseConfig = {
   messagingSenderId: '25328286909',
   appId:             '1:25328286909:web:f6079e4adf54c6d4634bd4',
 };
+
 const app      = initializeApp(firebaseConfig);
 const database = getDatabase(app);
-const stateRef = ref(database, 'seatingState');
 
-const SESSION_ID = Math.random().toString(36).substring(2,8).toUpperCase();
+// ── DATABASE REFS ─────────────────────────────────────────────────────────────
+const stateRef = ref(database, 'seatingState');   // the shared seating state
+
+// ── SESSION ID ────────────────────────────────────────────────────────────────
+const SESSION_ID = Math.random().toString(36).substring(2, 8).toUpperCase();
 document.getElementById('sessionDisplay').textContent = `SESSION: ${SESSION_ID}`;
 
-// ── THEATER DATA (unchanged) ──────────────────────────────────────────────────
+// ── THEATER DATA ──────────────────────────────────────────────────────────────
 const ORCH_ROWS = [
-  {label:'AA',left:0, center:16,right:0, first:true},
-  {label:'BB',left:0, center:15,right:0, first:false},
-  {label:'A', left:6, center:16,right:6, first:false},
-  {label:'B', left:7, center:15,right:7, first:false},
-  {label:'C', left:0, center:16,right:0, first:false},
-  {label:'D', left:0, center:15,right:0, first:false},
-  {label:'E', left:7, center:16,right:7, first:false},
-  {label:'F', left:8, center:15,right:8, first:false},
-  {label:'G', left:8, center:16,right:8, first:false},
-  {label:'H', left:8, center:15,right:8, first:false},
-  {label:'J', left:8, center:16,right:8, first:false},
-  {label:'K', left:8, center:15,right:8, first:false},
-  {label:'L', left:8, center:16,right:8, first:false},
-  {label:'M', left:8, center:15,right:8, first:false},
-  {label:'N', left:9, center:16,right:9, first:false},
-  {label:'P', left:9, center:15,right:9, first:false},
-  {label:'Q', left:9, center:16,right:9, first:false},
-  {label:'R', left:9, center:15,right:9, first:false},
-  {label:'S', left:9, center:16,right:9, first:false},
-  {label:'T', left:8, center:15,right:8, first:false},
-  {label:'U', left:8, center:16,right:8, first:false},
-  {label:'V', left:7, center:15,right:7, first:false},
-  {label:'W', left:6, center:16,right:6, first:false},
-  {label:'X', left:4, center:16,right:4, first:false},
-  {label:'Y', left:0, center:16,right:0, first:false},
-  {label:'Z', left:0, center:8, right:0, first:false},
-  {label:'WW',left:10,center:18,right:10,first:false},
-  {label:'XX',left:11,center:19,right:11,first:false},
-  {label:'YY',left:12,center:20,right:12,first:false},
-  {label:'ZZ',left:11,center:21,right:11,first:false},
+  {label:'AA', left:0,  center:16, right:0,  first:true},
+  {label:'BB', left:0,  center:15, right:0,  first:false},
+  {label:'A',  left:6,  center:16, right:6,  first:false},
+  {label:'B',  left:7,  center:15, right:7,  first:false},
+  {label:'C',  left:0,  center:16, right:0,  first:false},
+  {label:'D',  left:0,  center:15, right:0,  first:false},
+  {label:'E',  left:7,  center:16, right:7,  first:false},
+  {label:'F',  left:8,  center:15, right:8,  first:false},
+  {label:'G',  left:8,  center:16, right:8,  first:false},
+  {label:'H',  left:8,  center:15, right:8,  first:false},
+  {label:'J',  left:8,  center:16, right:8,  first:false},
+  {label:'K',  left:8,  center:15, right:8,  first:false},
+  {label:'L',  left:8,  center:16, right:8,  first:false},
+  {label:'M',  left:8,  center:15, right:8,  first:false},
+  {label:'N',  left:9,  center:16, right:9,  first:false},
+  {label:'P',  left:9,  center:15, right:9,  first:false},
+  {label:'Q',  left:9,  center:16, right:9,  first:false},
+  {label:'R',  left:9,  center:15, right:9,  first:false},
+  {label:'S',  left:9,  center:16, right:9,  first:false},
+  {label:'T',  left:8,  center:15, right:8,  first:false},
+  {label:'U',  left:8,  center:16, right:8,  first:false},
+  {label:'V',  left:7,  center:15, right:7,  first:false},
+  {label:'W',  left:6,  center:16, right:6,  first:false},
+  {label:'X',  left:4,  center:16, right:4,  first:false},
+  {label:'Y',  left:0,  center:16, right:0,  first:false},
+  {label:'Z',  left:0,  center:8,  right:0,  first:false},
+  {label:'WW', left:10, center:18, right:10, first:false},
+  {label:'XX', left:11, center:19, right:11, first:false},
+  {label:'YY', left:12, center:20, right:12, first:false},
+  {label:'ZZ', left:11, center:21, right:11, first:false},
 ];
-const PARTERRE_LEFT_ROWS  = [{label:'A',seats:8},{label:'B',seats:8},{label:'C',seats:8},{label:'D',seats:8},{label:'E',seats:6}];
-const PARTERRE_RIGHT_ROWS = [{label:'Z',seats:8},{label:'Y',seats:8},{label:'X',seats:8},{label:'W',seats:8},{label:'V',seats:6}];
-const DC_ROWS  = [{label:'A',left:0, center:0, right:0, first:true},{label:'B',left:10,center:18,right:10,first:false},{label:'C',left:10,center:19,right:10,first:false},{label:'D',left:9,center:20,right:9,first:false},{label:'E',left:9,center:19,right:9,first:false}];
-const GAL_ROWS = [{label:'A',left:0, center:0, right:0, first:true},{label:'B',left:9,center:18,right:9,first:false},{label:'C',left:9,center:19,right:9,first:false},{label:'D',left:9,center:20,right:9,first:false},{label:'E',left:9,center:21,right:9,first:false}];
-const BAL_ROWS = [{label:'A',seats:0,first:true},{label:'B',seats:42},{label:'C',seats:43},{label:'D',seats:44},{label:'E',seats:45},{label:'F',seats:46},{label:'G',seats:45},{label:'H',seats:46},{label:'J',seats:45},{label:'K',seats:44}];
+const PARTERRE_LEFT_ROWS = [
+  {label:'A', seats:8}, {label:'B', seats:8}, {label:'C', seats:8},
+  {label:'D', seats:8}, {label:'E', seats:6},
+];
+const PARTERRE_RIGHT_ROWS = [
+  {label:'Z', seats:8}, {label:'Y', seats:8}, {label:'X', seats:8},
+  {label:'W', seats:8}, {label:'V', seats:6},
+];
+const DC_ROWS = [
+  {label:'A', left:0,  center:0,  right:0,  first:true},
+  {label:'B', left:10, center:18, right:10, first:false},
+  {label:'C', left:10, center:19, right:10, first:false},
+  {label:'D', left:9,  center:20, right:9,  first:false},
+  {label:'E', left:9,  center:19, right:9,  first:false},
+];
+const GAL_ROWS = [
+  {label:'A', left:0, center:0,  right:0,  first:true},
+  {label:'B', left:9, center:18, right:9,  first:false},
+  {label:'C', left:9, center:19, right:9,  first:false},
+  {label:'D', left:9, center:20, right:9,  first:false},
+  {label:'E', left:9, center:21, right:9,  first:false},
+];
+const BAL_ROWS = [
+  {label:'A', seats:0,  first:true},
+  {label:'B', seats:42}, {label:'C', seats:43}, {label:'D', seats:44},
+  {label:'E', seats:45}, {label:'F', seats:46}, {label:'G', seats:45},
+  {label:'H', seats:46}, {label:'J', seats:45}, {label:'K', seats:44},
+];
 
-function sumSection(rows,fn){ return rows.reduce((t,r)=>t+(r.first?0:fn(r)),0); }
+// ── CAPACITY TOTALS (computed from data) ──────────────────────────────────────
+function sumSection(rows, fn) { return rows.reduce((t,r) => t + (r.first ? 0 : fn(r)), 0); }
 const TOT = {
-  OL:sumSection(ORCH_ROWS,r=>r.left),   OC:sumSection(ORCH_ROWS,r=>r.center),  OR:sumSection(ORCH_ROWS,r=>r.right),
-  PL:sumSection(PARTERRE_LEFT_ROWS,r=>r.seats), PR:sumSection(PARTERRE_RIGHT_ROWS,r=>r.seats),
-  DCL:sumSection(DC_ROWS,r=>r.left),    DCC:sumSection(DC_ROWS,r=>r.center),   DCR:sumSection(DC_ROWS,r=>r.right),
-  GL:sumSection(GAL_ROWS,r=>r.left),    GC:sumSection(GAL_ROWS,r=>r.center),   GR:sumSection(GAL_ROWS,r=>r.right),
-  BC:sumSection(BAL_ROWS,r=>r.seats),
+  OL:  sumSection(ORCH_ROWS, r => r.left),
+  OC:  sumSection(ORCH_ROWS, r => r.center),
+  OR:  sumSection(ORCH_ROWS, r => r.right),
+  PL:  sumSection(PARTERRE_LEFT_ROWS,  r => r.seats),
+  PR:  sumSection(PARTERRE_RIGHT_ROWS, r => r.seats),
+  DCL: sumSection(DC_ROWS,  r => r.left),
+  DCC: sumSection(DC_ROWS,  r => r.center),
+  DCR: sumSection(DC_ROWS,  r => r.right),
+  GL:  sumSection(GAL_ROWS, r => r.left),
+  GC:  sumSection(GAL_ROWS, r => r.center),
+  GR:  sumSection(GAL_ROWS, r => r.right),
+  BC:  sumSection(BAL_ROWS, r => r.seats),
 };
-const TOTAL_ORCH_PART = TOT.OL+TOT.OC+TOT.OR+TOT.PL+TOT.PR;
-const TOTAL_DC        = TOT.DCL+TOT.DCC+TOT.DCR;
-const TOTAL_GAL       = TOT.GL+TOT.GC+TOT.GR;
+const TOTAL_ORCH_PART = TOT.OL + TOT.OC + TOT.OR + TOT.PL + TOT.PR;
+const TOTAL_DC        = TOT.DCL + TOT.DCC + TOT.DCR;
+const TOTAL_GAL       = TOT.GL  + TOT.GC  + TOT.GR;
 const TOTAL_BAL       = TOT.BC;
-const TOTAL_CAPACITY  = TOTAL_ORCH_PART+TOTAL_DC+TOTAL_GAL+TOTAL_BAL;
+const TOTAL_CAPACITY  = TOTAL_ORCH_PART + TOTAL_DC + TOTAL_GAL + TOTAL_BAL;
 
-const GROUP_COLORS = ['#c9a227','#7b3fa0','#1a6b7a','#8b4520','#2a6b40','#6b1a2a','#1a4a8b','#5a6b20','#8b6020','#1a408b','#6b3a1a','#20608b','#5a1a6b','#1a6b40','#8b201a','#406b1a'];
-const SEC_NAMES = {OL:'Orch Left',OC:'Orch Center',OR:'Orch Right',PL:'Parterre Left',PR:'Parterre Right',DCL:'DC Left',DCC:'DC Center',DCR:'DC Right',GL:'Gallery Left',GC:'Gallery Center',GR:'Gallery Right',BC:'Balcony'};
+const GROUP_COLORS = [
+  '#c9a227','#7b3fa0','#1a6b7a','#8b4520','#2a6b40','#6b1a2a','#1a4a8b','#5a6b20',
+  '#8b6020','#1a408b','#6b3a1a','#20608b','#5a1a6b','#1a6b40','#8b201a','#406b1a',
+];
+const SEC_NAMES = {
+  OL:'Orch Left', OC:'Orch Center', OR:'Orch Right',
+  PL:'Parterre Left', PR:'Parterre Right',
+  DCL:'DC Left', DCC:'DC Center', DCR:'DC Right',
+  GL:'Gallery Left', GC:'Gallery Center', GR:'Gallery Right',
+  BC:'Balcony',
+};
 
-// ── STATE ─────────────────────────────────────────────────────────────────────
-let state = { groups:[], seats:{}, blockedSeats:{}, nextGroupId:1, selectedDoor:'Left' };
-let blockModeActive  = false;
-let isDraggingBlock  = false;
-let dragBlockAction  = null;
-let groupColorMap    = new Map();
+// ── LOCAL STATE ───────────────────────────────────────────────────────────────
+// This mirrors what is in Firebase. onValue() keeps it in sync.
+let state = {
+  groups:       [],
+  seats:        {},
+  blockedSeats: {},   // seatId → true  (synced to Firebase)
+  nextGroupId:  1,
+  selectedDoor: 'Left',
+};
 
-// ── AVAILABILITY ──────────────────────────────────────────────────────────────
-function calcAvail(sec){
-  const pfx=sec+'_'; let used=0;
-  for(const[sid,v] of Object.entries(state.seats)) if(v&&sid.startsWith(pfx)) used++;
-  for(const sid of Object.keys(state.blockedSeats)) if(sid.startsWith(pfx)) used++;
-  return TOT[sec]-used;
+// Block mode flag — local only, not synced (each user toggles independently)
+let blockModeActive = false;
+
+// ── AVAILABILITY HELPERS ──────────────────────────────────────────────────────
+function calcAvail(sec) {
+  const prefix = sec + '_';
+  let used = 0;
+  for (const [sid, v] of Object.entries(state.seats)) {
+    if (v && sid.startsWith(prefix)) used++;
+  }
+  // Also count blocked seats in this section as unavailable
+  for (const sid of Object.keys(state.blockedSeats)) {
+    if (sid.startsWith(prefix)) used++;
+  }
+  return TOT[sec] - used;
 }
-function sumAvail(secs){ return secs.reduce((t,s)=>t+calcAvail(s),0); }
+function sumAvail(secs) { return secs.reduce((t, s) => t + calcAvail(s), 0); }
 
-// ── ALLOCATION (unchanged) ────────────────────────────────────────────────────
-function getAvailable(sec){
-  const out=[];
-  function add(rows,pfx,fn){ for(const row of rows){ if(row.first)continue; const n=fn(row); for(let i=1;i<=n;i++){ const id=`${pfx}_${row.label}_${i}`; if(!state.seats[id]&&!state.blockedSeats[id])out.push(id); } } }
-  switch(sec){
-    case'OL': add(ORCH_ROWS,'OL',r=>r.left);   break; case'OC': add(ORCH_ROWS,'OC',r=>r.center); break;
-    case'OR': add(ORCH_ROWS,'OR',r=>r.right);  break; case'PL': add(PARTERRE_LEFT_ROWS,'PL',r=>r.seats); break;
-    case'PR': add(PARTERRE_RIGHT_ROWS,'PR',r=>r.seats); break;
-    case'DCL':add(DC_ROWS,'DCL',r=>r.left);   break; case'DCC':add(DC_ROWS,'DCC',r=>r.center); break;
-    case'DCR':add(DC_ROWS,'DCR',r=>r.right);  break;
-    case'GL': add(GAL_ROWS,'GL',r=>r.left);    break; case'GC': add(GAL_ROWS,'GC',r=>r.center); break;
-    case'GR': add(GAL_ROWS,'GR',r=>r.right);   break;
-    case'BC': add(BAL_ROWS,'BC',r=>r.seats);   break;
+// ── ALLOCATION ALGORITHM ──────────────────────────────────────────────────────
+function getAvailable(sec) {
+  const out = [];
+  function add(rows, pfx, fn) {
+    for (const row of rows) {
+      if (row.first) continue;
+      const n = fn(row);
+      for (let i = 1; i <= n; i++) {
+        const id = `${pfx}_${row.label}_${i}`;
+        if (!state.seats[id] && !state.blockedSeats[id]) out.push(id);
+      }
+    }
+  }
+  switch(sec) {
+    case 'OL':  add(ORCH_ROWS,           'OL',  r => r.left);   break;
+    case 'OC':  add(ORCH_ROWS,           'OC',  r => r.center); break;
+    case 'OR':  add(ORCH_ROWS,           'OR',  r => r.right);  break;
+    case 'PL':  add(PARTERRE_LEFT_ROWS,  'PL',  r => r.seats);  break;
+    case 'PR':  add(PARTERRE_RIGHT_ROWS, 'PR',  r => r.seats);  break;
+    case 'DCL': add(DC_ROWS,             'DCL', r => r.left);   break;
+    case 'DCC': add(DC_ROWS,             'DCC', r => r.center); break;
+    case 'DCR': add(DC_ROWS,             'DCR', r => r.right);  break;
+    case 'GL':  add(GAL_ROWS,            'GL',  r => r.left);   break;
+    case 'GC':  add(GAL_ROWS,            'GC',  r => r.center); break;
+    case 'GR':  add(GAL_ROWS,            'GR',  r => r.right);  break;
+    case 'BC':  add(BAL_ROWS,            'BC',  r => r.seats);  break;
   }
   return out;
 }
-function tryAlloc(secs,size,group){
-  const pool=secs.flatMap(s=>getAvailable(s));
-  if(pool.length<size)return null;
-  const chosen=pool.slice(0,size);
-  chosen.forEach(id=>{state.seats[id]={groupId:group.id,groupName:group.name};});
-  const used=[...new Set(chosen.map(id=>id.split('_')[0]))];
-  return{seats:chosen,location:used.map(u=>SEC_NAMES[u]).join(' + '),sections:used};
+
+function tryAlloc(secs, size, group) {
+  const pool = secs.flatMap(s => getAvailable(s));
+  if (pool.length < size) return null;
+  const chosen = pool.slice(0, size);
+  chosen.forEach(id => { state.seats[id] = {groupId: group.id, groupName: group.name}; });
+  const used = [...new Set(chosen.map(id => id.split('_')[0]))];
+  return {seats: chosen, location: used.map(u => SEC_NAMES[u]).join(' + '), sections: used};
 }
-function allocateGroup(group){
-  const{size,door,preferParterre}=group;
-  const side=door==='Left'?'OL':'OR'; const partSide=door==='Left'?'PL':'PR';
-  const sideAv=calcAvail(side); const partAv=calcAvail(partSide);
-  const ocAv=calcAvail('OC'); const dcAv=sumAvail(['DCL','DCC','DCR']);
-  const galAv=sumAvail(['GL','GC','GR']); const balAv=calcAvail('BC');
-  const overflow=size-sideAv;
-  if(preferParterre&&size<25){
-    const plAv=calcAvail('PL'),prAv=calcAvail('PR');
-    const bestPart=(plAv>=prAv)?'PL':'PR'; const bestAv=Math.max(plAv,prAv);
-    if(bestAv>=size)return tryAlloc([bestPart],size,group);
-    if(plAv+prAv>=size)return tryAlloc(['PL','PR'],size,group);
+
+function allocateGroup(group) {
+  const {size, door, preferParterre} = group;
+  const side     = door === 'Left' ? 'OL' : 'OR';
+  const partSide = door === 'Left' ? 'PL' : 'PR';
+  const sideAv   = calcAvail(side);
+  const partAv   = calcAvail(partSide);
+  const ocAv     = calcAvail('OC');
+  const dcAv     = sumAvail(['DCL','DCC','DCR']);
+  const galAv    = sumAvail(['GL','GC','GR']);
+  const balAv    = calcAvail('BC');
+  const overflow = size - sideAv;
+
+  // ── PREFER PARTERRE (groups < 25, user opted in) ──────────────────────────
+  // Choose whichever Parterre side has more availability.
+  // Fall through to normal routing if neither side has enough room.
+  if (preferParterre && size < 25) {
+    const plAv = calcAvail('PL');
+    const prAv = calcAvail('PR');
+    // Pick the side with more seats; break ties by preferring the door side
+    const bestPart = (plAv >= prAv) ? 'PL' : 'PR';
+    const bestAv   = Math.max(plAv, prAv);
+    if (bestAv >= size) return tryAlloc([bestPart], size, group);
+    // Neither side alone fits — try both together if combined total is enough
+    if (plAv + prAv >= size) return tryAlloc(['PL', 'PR'], size, group);
+    // Parterre is too full — fall through to normal routing below
   }
-  if(sideAv>=size)                                        return tryAlloc([side],size,group);
-  if(sideAv>0&&overflow<=38&&partAv>=overflow)            return tryAlloc([side,partSide],size,group);
-  if(sideAv<10&&size<39&&partAv>=size)                    return tryAlloc([partSide],size,group);
-  if(!(ocAv<80&&size>79)&&ocAv>=size)                     return tryAlloc(['OC'],size,group);
-  {const olAv=calcAvail('OL'),orAv=calcAvail('OR'),orchFloorAv=olAv+ocAv+orAv;
-   if(orchFloorAv>=size){const sections=[{sec:'OL',av:olAv},{sec:'OC',av:ocAv},{sec:'OR',av:orAv}].sort((a,b)=>b.av-a.av).map(s=>s.sec); return tryAlloc(sections,size,group);}}
-  if(dcAv>=40&&dcAv>=size){const r=tryAlloc(['DCL','DCC','DCR'],size,group);if(r)return r;}
-  if(galAv>=40&&galAv>=size){const r=tryAlloc(['GL','GC','GR'],size,group);if(r)return r;}
-  if(balAv>=size)return tryAlloc(['BC'],size,group);
+
+  // ── NORMAL ROUTING ────────────────────────────────────────────────────────
+  if (sideAv >= size)                                          return tryAlloc([side], size, group);
+  if (sideAv > 0 && overflow <= 38 && partAv >= overflow)     return tryAlloc([side, partSide], size, group);
+  if (sideAv < 10 && size < 39 && partAv >= size)             return tryAlloc([partSide], size, group);
+  // ── STEP 4: Orchestra Center ──────────────────────────────────────────────
+  if (!(ocAv < 80 && size > 79) && ocAv >= size)              return tryAlloc(['OC'], size, group);
+
+  // ── STEP 4b: Full orchestra floor as a combined pool ─────────────────────
+  // Reached only when no single orchestra section (side OR center) can fit
+  // the group on its own. We treat OL, OC, and OR as one pool, filling the
+  // fullest sections first so seats stay as compact as possible, before
+  // escalating to any upper level.
+  {
+    const olAv = calcAvail('OL');
+    const orAv = calcAvail('OR');
+    const orchFloorAv = olAv + ocAv + orAv;
+    if (orchFloorAv >= size) {
+      // Sort the three sections largest-first so tryAlloc fills the fullest
+      // section before touching smaller remnants.
+      const sections = [
+        { sec: 'OL', av: olAv },
+        { sec: 'OC', av: ocAv },
+        { sec: 'OR', av: orAv },
+      ].sort((a, b) => b.av - a.av).map(s => s.sec);
+      return tryAlloc(sections, size, group);
+    }
+  }
+
+  if (dcAv >= 40 && dcAv >= size) {
+    const r = tryAlloc(['DCL','DCC','DCR'], size, group); if (r) return r;
+  }
+  if (galAv >= 40 && galAv >= size) {
+    const r = tryAlloc(['GL','GC','GR'], size, group); if (r) return r;
+  }
+  if (balAv >= size)                                           return tryAlloc(['BC'], size, group);
   return null;
 }
 
-// ── FIREBASE ──────────────────────────────────────────────────────────────────
-let iAmWriting=false;
-async function commitState(){
-  const payload={groups:state.groups,seats:state.seats,blockedSeats:state.blockedSeats,nextGroupId:state.nextGroupId};
-  iAmWriting=true;
-  try{ await set(stateRef,payload); }
-  catch(err){ console.error(err); showError('Could not save — check your connection.'); iAmWriting=false; }
+// ── FIREBASE SYNC ─────────────────────────────────────────────────────────────
+// commitState() is the ONLY place we write to Firebase.
+// onValue() is the ONLY place we read from Firebase.
+// This guarantees both users always see the same data.
+
+let iAmWriting = false;   // suppress the echo of our own write
+
+async function commitState() {
+  const payload = {
+    groups:       state.groups,
+    seats:        state.seats,
+    blockedSeats: state.blockedSeats,
+    nextGroupId:  state.nextGroupId,
+  };
+  iAmWriting = true;
+  try {
+    await set(stateRef, payload);
+  } catch(err) {
+    console.error('Firebase write error:', err);
+    showError('Could not save — check your connection.');
+    iAmWriting = false;
+  }
 }
-let firstLoad=true;
-onValue(stateRef,(snapshot)=>{
-  if(iAmWriting){iAmWriting=false;return;}
-  const data=snapshot.val();
-  if(!data){renderAll();}else{
-    state.groups=data.groups??[]; state.seats=data.seats??{};
-    state.blockedSeats=data.blockedSeats??{}; state.nextGroupId=data.nextGroupId??1;
-    if(!firstLoad)flashSyncBanner();
+
+// Subscribe: fires immediately with current data, then on every remote change
+let firstLoad = true;
+onValue(stateRef, (snapshot) => {
+  if (iAmWriting) { iAmWriting = false; return; }  // skip our own echo
+
+  const data = snapshot.val();
+  if (!data) { renderAll(); } else {
+    state.groups       = data.groups       ?? [];
+    state.seats        = data.seats        ?? {};
+    state.blockedSeats = data.blockedSeats ?? {};
+    state.nextGroupId  = data.nextGroupId  ?? 1;
+    if (!firstLoad) flashSyncBanner();
     renderAll();
   }
-  if(firstLoad){
-    firstLoad=false;
-    const ov=document.getElementById('theaterLoading');
-    ov.classList.add('hidden'); setTimeout(()=>ov.remove(),450);
+
+  // FIX 3 — Dismiss the loading overlay after the first response
+  if (firstLoad) {
+    firstLoad = false;
+    const overlay = document.getElementById('theaterLoading');
+    overlay.classList.add('hidden');
+    // Remove from DOM after fade so it can't block clicks
+    setTimeout(() => overlay.remove(), 450);
   }
 });
+
+// ── ONLINE USER COUNTER ───────────────────────────────────────────────────────
+// Presence tracking: each session writes its own node and removes it on
+// disconnect. We count nodes to show how many users are online.
+// IMPORTANT: this listener only updates the text label. The connection dot
+// class is owned exclusively by the .info/connected listener below so the
+// two can never conflict.
 {
-  const myRef=ref(database,`presence/${SESSION_ID}`);
-  set(myRef,true); onDisconnect(myRef).remove();
-  onValue(ref(database,'presence'),(snap)=>{
-    const count=snap.exists()?Object.keys(snap.val()).length:1;
-    const dot=document.getElementById('connDot');
-    if(dot.classList.contains('connected'))
-      document.getElementById('connLabel').textContent=`${count} USER${count!==1?'S':''} ONLINE`;
+  const myPresenceRef = ref(database, `presence/${SESSION_ID}`);
+  set(myPresenceRef, true);
+  onDisconnect(myPresenceRef).remove();
+
+  onValue(ref(database, 'presence'), (snap) => {
+    const count = snap.exists() ? Object.keys(snap.val()).length : 1;
+    const lbl   = document.getElementById('connLabel');
+    // Only update the label when we're actually connected — avoid overwriting
+    // an 'OFFLINE' label with a stale user count from a cached snapshot.
+    const dot = document.getElementById('connDot');
+    if (dot.classList.contains('connected')) {
+      lbl.textContent = `${count} USER${count !== 1 ? 'S' : ''} ONLINE`;
+    }
   });
 }
-onValue(ref(database,'.info/connected'),(snap)=>{
-  const dot=document.getElementById('connDot'),lbl=document.getElementById('connLabel');
-  if(snap.val()===true){dot.className='conn-dot connected';}
-  else{dot.className='conn-dot disconnected';lbl.textContent='OFFLINE';}
+
+// ── CONNECTION STATE INDICATOR ────────────────────────────────────────────────
+// This is the single place that sets the dot class and controls the label
+// when offline. The presence listener above is explicitly forbidden from
+// changing dot.className so the two never race.
+onValue(ref(database, '.info/connected'), (snap) => {
+  const dot = document.getElementById('connDot');
+  const lbl = document.getElementById('connLabel');
+  if (snap.val() === true) {
+    dot.className = 'conn-dot connected';
+    // Label will be updated by the presence listener once it fires
+  } else {
+    dot.className = 'conn-dot disconnected';
+    lbl.textContent = 'OFFLINE';
+  }
 });
-function flashSyncBanner(){
-  const b=document.getElementById('syncBanner'); b.classList.add('show');
-  clearTimeout(flashSyncBanner._t); flashSyncBanner._t=setTimeout(()=>b.classList.remove('show'),1200);
+
+function flashSyncBanner() {
+  const b = document.getElementById('syncBanner');
+  b.classList.add('show');
+  clearTimeout(flashSyncBanner._t);
+  flashSyncBanner._t = setTimeout(() => b.classList.remove('show'), 1200);
 }
 
 // ── UI ACTIONS ────────────────────────────────────────────────────────────────
-function selectDoor(door){
-  state.selectedDoor=door;
-  document.getElementById('doorLeft').classList.toggle('active',door==='Left');
-  document.getElementById('doorRight').classList.toggle('active',door==='Right');
-}
-function addGroup(){
-  const name=document.getElementById('groupName').value.trim();
-  const size=parseInt(document.getElementById('groupSize').value);
-  const preferParterre=document.getElementById('preferParterre').checked;
-  if(!name||isNaN(size)||size<1||size>250){showError('Please enter a valid group name and size (1–250).');return;}
-  if(preferParterre&&size>=25){showError('Prefer Parterre only applies to groups under 25. Seating normally.');}else{clearError();}
-  const group={id:state.nextGroupId++,name,size,door:state.selectedDoor,preferParterre:preferParterre&&size<25,color:GROUP_COLORS[state.groups.length%GROUP_COLORS.length],allocation:null};
-  const result=allocateGroup(group);
-  if(!result){state.nextGroupId--;showError(`Could not seat ${size} — not enough seats available.`);return;}
-  group.allocation=result; state.groups.push(group);
-  document.getElementById('groupName').value=''; document.getElementById('groupSize').value='';
-  commitState(); renderAll();
-  // Switch to Queue tab so user sees confirmation
-  switchTab('queue');
-}
-function removeGroup(id){
-  const group=state.groups.find(g=>g.id===id); if(!group)return;
-  for(const sid of Object.keys(state.seats)) if(state.seats[sid]?.groupId===id)delete state.seats[sid];
-  state.groups=state.groups.filter(g=>g.id!==id);
-  commitState(); renderAll();
-}
-function resetAll(){
-  if(!confirm('Reset all seating for ALL users? This cannot be undone.'))return;
-  state.groups=[]; state.seats={}; state.blockedSeats={}; state.nextGroupId=1;
-  commitState(); renderAll();
-}
-function showError(msg){const el=document.getElementById('errorMsg');el.textContent=msg;el.style.display='block';}
-function clearError(){const el=document.getElementById('errorMsg');el.textContent='';el.style.display='none';}
-function escHtml(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+// All wired via addEventListener — no onclick attributes anywhere in the HTML,
+// which means none of these need to be on window and the module-scope timing
+// issue that caused "X is not defined" errors is completely eliminated.
 
-// ── TAB SWITCHING ─────────────────────────────────────────────────────────────
-function switchTab(tabId){
-  document.querySelectorAll('.ptab').forEach(t=>t.classList.toggle('active',t.dataset.tab===tabId));
-  document.querySelectorAll('.panel').forEach(p=>p.classList.toggle('active',p.id===`panel-${tabId}`));
+function selectDoor(door) {
+  state.selectedDoor = door;
+  document.getElementById('doorLeft').classList.toggle('active',  door === 'Left');
+  document.getElementById('doorRight').classList.toggle('active', door === 'Right');
 }
-document.querySelectorAll('.ptab').forEach(t=>{
-  t.addEventListener('click',()=>switchTab(t.dataset.tab));
-});
 
-// ── LEVEL SUB-TABS ────────────────────────────────────────────────────────────
-document.querySelectorAll('.stab').forEach(t=>{
-  t.addEventListener('click',()=>{
-    document.querySelectorAll('.stab').forEach(s=>s.classList.toggle('active',s===t));
-    document.querySelectorAll('.level-panel').forEach(p=>p.classList.toggle('active',p.id===`level-${t.dataset.level}`));
+function addGroup() {
+  const name           = document.getElementById('groupName').value.trim();
+  const size           = parseInt(document.getElementById('groupSize').value);
+  const preferParterre = document.getElementById('preferParterre').checked;
+
+  if (!name || isNaN(size) || size < 1 || size > 250) {
+    showError('Please enter a valid group name and size (1–250).');
+    return;
+  }
+  if (preferParterre && size >= 25) {
+    showError('Prefer Parterre only applies to groups under 25. Seating normally.');
+  } else {
+    clearError();
+  }
+
+  const group = {
+    id:    state.nextGroupId++,
+    name, size,
+    door:           state.selectedDoor,
+    preferParterre: preferParterre && size < 25,
+    color: GROUP_COLORS[state.groups.length % GROUP_COLORS.length],
+    allocation: null,
+  };
+
+  const result = allocateGroup(group);
+  if (!result) {
+    state.nextGroupId--;
+    showError(`Could not seat ${size} — not enough contiguous seats available.`);
+    return;
+  }
+
+  group.allocation = result;
+  state.groups.push(group);
+
+  document.getElementById('groupName').value = '';
+  document.getElementById('groupSize').value = '';
+
+  commitState();
+  renderAll();
+
+  // IMPROVEMENT 5 — On mobile, scroll the group list into view so the
+  // user sees the confirmation without having to manually scroll down
+  if (window.innerWidth <= 600) {
+    document.getElementById('groupList')
+      .scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+}
+
+function removeGroup(id) {
+  const group = state.groups.find(g => g.id === id);
+  if (!group) return;
+  for (const sid of Object.keys(state.seats)) {
+    if (state.seats[sid]?.groupId === id) delete state.seats[sid];
+  }
+  state.groups = state.groups.filter(g => g.id !== id);
+  commitState();
+  renderAll();
+}
+
+function resetAll() {
+  if (!confirm('Reset all seating for ALL users? This cannot be undone.')) return;
+  state.groups       = [];
+  state.seats        = {};
+  state.blockedSeats = {};
+  state.nextGroupId  = 1;
+  commitState();
+  renderAll();
+}
+
+// ── ERROR HELPERS ─────────────────────────────────────────────────────────────
+function showError(msg) {
+  const el = document.getElementById('errorMsg');
+  el.textContent = msg; el.style.display = 'block';
+}
+function clearError() {
+  const el = document.getElementById('errorMsg');
+  el.textContent = ''; el.style.display = 'none';
+}
+
+// ── RENDERING ─────────────────────────────────────────────────────────────────
+function escHtml(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// FIX 5 — Built once at the top of renderAll() so getSeatColor is O(1)
+// instead of O(groups) per seat. With 1,573 seats this eliminates up to
+// 1,573 × N linear scans per render.
+let groupColorMap = new Map(); // groupId → color
+
+function getSeatColor(seatId) {
+  const d = state.seats[seatId];
+  if (!d) return null;
+  return groupColorMap.get(d.groupId) ?? '#888';
+}
+
+function makeSeat(seatId, isFirst) {
+  const div = document.createElement('div');
+  div.className = 'seat' + (isFirst ? ' first-row' : '');
+  div.dataset.seatId = seatId;
+
+  const isBlocked = !!state.blockedSeats[seatId];
+  if (isBlocked) {
+    div.classList.add('blocked');
+  } else {
+    const color = getSeatColor(seatId);
+    if (color) { div.style.background = div.style.borderColor = color; div.classList.add('occupied'); }
+  }
+
+  // Mouse tooltip (desktop) — suppressed in block mode
+  div.addEventListener('mouseover', e => {
+    if (!blockModeActive) showTip(e, seatId, isFirst);
   });
-});
+  div.addEventListener('mousemove', e => {
+    if (!blockModeActive) moveTooltip(e);
+  });
+  div.addEventListener('mouseout', () => {
+    if (!blockModeActive) hideTip();
+  });
 
-// ── SEAT RENDERING ────────────────────────────────────────────────────────────
-function getSeatColor(seatId){const d=state.seats[seatId];if(!d)return null;return groupColorMap.get(d.groupId)??'#888';}
-function makeSeat(seatId,isFirst){
-  const div=document.createElement('div');
-  div.className='seat'+(isFirst?' first-row':'');
-  div.dataset.seatId=seatId;
-  const isBlocked=!!state.blockedSeats[seatId];
-  if(isBlocked){div.classList.add('blocked');}
-  else{const color=getSeatColor(seatId);if(color){div.style.background=div.style.borderColor=color;div.classList.add('occupied');}}
-  div.addEventListener('mouseover',e=>{if(!blockModeActive)showTip(e,seatId,isFirst);});
-  div.addEventListener('mousemove',e=>{if(!blockModeActive)moveTooltip(e);});
-  div.addEventListener('mouseout',()=>{if(!blockModeActive)hideTip();});
-  div.addEventListener('click',()=>{if(!blockModeActive||isFirst)return;toggleBlock(seatId);});
-  div.addEventListener('mouseenter',()=>{if(!blockModeActive||!isDraggingBlock||isFirst)return;applyBlockDrag(seatId);});
-  div.addEventListener('touchstart',e=>{
-    if(blockModeActive&&!isFirst){e.preventDefault();toggleBlock(seatId);}
-    else{e.preventDefault();showSeatToast(seatId,isFirst);}
-  },{passive:false});
+  // Click — toggle block in block mode, ignore if occupied (unless already blocked)
+  div.addEventListener('click', () => {
+    if (!blockModeActive || isFirst) return;
+    toggleBlock(seatId);
+  });
+
+  // Drag-to-block: mouseenter while mouse button held
+  div.addEventListener('mouseenter', () => {
+    if (!blockModeActive || !isDraggingBlock || isFirst) return;
+    applyBlockDrag(seatId);
+  });
+
+  // Touch tooltip (mobile)
+  div.addEventListener('touchstart', e => {
+    if (blockModeActive && !isFirst) {
+      e.preventDefault();
+      toggleBlock(seatId);
+    } else {
+      e.preventDefault();
+      showSeatToast(seatId, isFirst);
+    }
+  }, { passive: false });
+
   return div;
 }
-function makeRow(pfx,label,count,isFirst){
-  const row=document.createElement('div'); row.className='seat-row';
-  const lbl=document.createElement('div'); lbl.className='row-label'; lbl.textContent=label;
-  lbl.addEventListener('click',()=>{
-    if(!blockModeActive||isFirst||count===0)return;
-    const ids=[]; for(let i=1;i<=count;i++)ids.push(`${pfx}_${label}_${i}`);
-    const allBlocked=ids.every(id=>state.blockedSeats[id]);
-    ids.forEach(id=>{if(allBlocked)delete state.blockedSeats[id];else state.blockedSeats[id]=true;});
-    commitState(); renderAll();
+
+function makeRow(pfx, label, count, isFirst, align = 'center') {
+  const row = document.createElement('div');
+  // 'left' → seats push toward center (right edge of left column)
+  // 'right' → seats push toward center (left edge of right column), label on right
+  // 'center' → default centered layout used everywhere else
+  row.className = align === 'left'   ? 'seat-row-left'
+                : align === 'right'  ? 'seat-row-right'
+                : align === 'center' ? 'seat-row-center'
+                :                      'seat-row';
+
+  const lbl = document.createElement('div');
+  lbl.className = 'row-label';
+  lbl.textContent = label;
+
+  // Click row label in block mode to toggle all seats in the row
+  lbl.style.cursor = 'default';
+  lbl.addEventListener('click', () => {
+    if (!blockModeActive || isFirst || count === 0) return;
+    const rowSeatIds = [];
+    for (let i = 1; i <= count; i++) rowSeatIds.push(`${pfx}_${label}_${i}`);
+    // Only toggle seats that are not occupied
+    const blockableIds = rowSeatIds.filter(id => !state.seats[id]);
+    const allBlocked   = blockableIds.every(id => state.blockedSeats[id]);
+    blockableIds.forEach(id => {
+      if (allBlocked) { delete state.blockedSeats[id]; }
+      else            { state.blockedSeats[id] = true; }
+    });
+    commitState();
+    renderAll();
   });
+
   row.appendChild(lbl);
-  for(let i=1;i<=count;i++)row.appendChild(makeSeat(`${pfx}_${label}_${i}`,isFirst));
+  for (let i = 1; i <= count; i++) row.appendChild(makeSeat(`${pfx}_${label}_${i}`, isFirst));
   return row;
 }
-function showTip(e,seatId,isFirst){
-  const tip=document.getElementById('tooltip'); const d=state.seats[seatId]; const parts=seatId.split('_');
-  let text=`Seat: ${parts.slice(1).join('-')}`;
-  if(isFirst)text+=' [First Row — Reserved]'; else if(d)text+=` — ${d.groupName}`; else text+=' — Available';
-  tip.textContent=text; tip.style.display='block'; moveTooltip(e);
+
+function showTip(e, seatId, isFirst) {
+  const tip = document.getElementById('tooltip');
+  const d   = state.seats[seatId];
+  const parts = seatId.split('_');
+  let text = `Seat: ${parts.slice(1).join('-')}`;
+  if (isFirst)   text += ' [First Row — Reserved]';
+  else if (d)    text += ` — ${d.groupName}`;
+  else           text += ' — Available';
+  tip.textContent = text; tip.style.display = 'block';
+  moveTooltip(e);
 }
-function moveTooltip(e){const tip=document.getElementById('tooltip');tip.style.left=(e.clientX+14)+'px';tip.style.top=(e.clientY-30)+'px';}
-function hideTip(){document.getElementById('tooltip').style.display='none';}
-let _toastTimer=null;
-function showSeatToast(seatId,isFirst){
-  const toast=document.getElementById('seatToast'); const d=state.seats[seatId]; const parts=seatId.split('_');
-  let text=`Seat ${parts.slice(1).join('-')}`;
-  if(isFirst)text+=' — Reserved'; else if(d)text+=` — ${d.groupName}`; else text+=' — Available';
-  toast.textContent=text; toast.classList.add('visible');
-  clearTimeout(_toastTimer); _toastTimer=setTimeout(()=>toast.classList.remove('visible'),2000);
+function moveTooltip(e) {
+  const tip = document.getElementById('tooltip');
+  tip.style.left = (e.clientX + 14) + 'px';
+  tip.style.top  = (e.clientY - 30) + 'px';
 }
-function toggleBlock(seatId){
-  if(state.seats[seatId])return;
-  if(state.blockedSeats[seatId])delete state.blockedSeats[seatId]; else state.blockedSeats[seatId]=true;
-  commitState(); renderAll();
-}
-function applyBlockDrag(seatId){
-  if(state.seats[seatId])return;
-  if(dragBlockAction==='block'&&!state.blockedSeats[seatId]){state.blockedSeats[seatId]=true;renderAll();}
-  else if(dragBlockAction==='unblock'&&state.blockedSeats[seatId]){delete state.blockedSeats[seatId];renderAll();}
+function hideTip() { document.getElementById('tooltip').style.display = 'none'; }
+
+// ── BLOCKING HELPERS ──────────────────────────────────────────────────────────
+let isDraggingBlock  = false;   // true while mouse button is held in block mode
+let dragBlockAction  = null;    // 'block' | 'unblock' — set on mousedown
+
+function toggleBlock(seatId) {
+  if (state.seats[seatId]) return; // occupied seats cannot be blocked
+  if (state.blockedSeats[seatId]) {
+    delete state.blockedSeats[seatId];
+  } else {
+    state.blockedSeats[seatId] = true;
+  }
+  commitState();
+  renderAll();
 }
 
-// ── FULL RENDER ───────────────────────────────────────────────────────────────
-function renderOrchestra(){
-  const L=document.getElementById('orchLeft'),C=document.getElementById('orchCenter'),R=document.getElementById('orchRight');
-  L.innerHTML=C.innerHTML=R.innerHTML='';
-  for(const row of ORCH_ROWS){
-    if(row.left>0)L.appendChild(makeRow('OL',row.label,row.left,row.first));
-    C.appendChild(makeRow('OC',row.label,row.center,row.first));
-    if(row.right>0)R.appendChild(makeRow('OR',row.label,row.right,row.first));
+function applyBlockDrag(seatId) {
+  if (state.seats[seatId]) return; // never drag-block an occupied seat
+  if (dragBlockAction === 'block' && !state.blockedSeats[seatId]) {
+    state.blockedSeats[seatId] = true;
+    renderAll(); // optimistic local update; commitState fires on mouseup
+  } else if (dragBlockAction === 'unblock' && state.blockedSeats[seatId]) {
+    delete state.blockedSeats[seatId];
+    renderAll();
   }
 }
-function renderParterre(){
-  const L=document.getElementById('parterreLeft'),R=document.getElementById('parterreRight');
-  L.innerHTML=R.innerHTML='';
-  PARTERRE_LEFT_ROWS.forEach(r=>L.appendChild(makeRow('PL',r.label,r.seats,false)));
-  PARTERRE_RIGHT_ROWS.forEach(r=>R.appendChild(makeRow('PR',r.label,r.seats,false)));
+
+// FIX 4 — Mobile toast: briefly shows seat info at the bottom of the screen
+let _toastTimer = null;
+function showSeatToast(seatId, isFirst) {
+  const toast = document.getElementById('seatToast');
+  const d     = state.seats[seatId];
+  const parts = seatId.split('_');
+  let text = `Seat ${parts.slice(1).join('-')}`;
+  if (isFirst)   text += ' — Reserved';
+  else if (d)    text += ` — ${d.groupName}`;
+  else           text += ' — Available';
+  toast.textContent = text;
+  toast.classList.add('visible');
+  clearTimeout(_toastTimer);
+  _toastTimer = setTimeout(() => toast.classList.remove('visible'), 2000);
 }
-function renderDressCircle(){
-  const L=document.getElementById('dcLeft'),C=document.getElementById('dcCenter'),R=document.getElementById('dcRight');
-  L.innerHTML=C.innerHTML=R.innerHTML='';
-  for(const row of DC_ROWS){
-    if(row.left>0||row.first)L.appendChild(makeRow('DCL',row.label,row.left,row.first));
-    if(row.center>0||row.first)C.appendChild(makeRow('DCC',row.label,row.center,row.first));
-    if(row.right>0||row.first)R.appendChild(makeRow('DCR',row.label,row.right,row.first));
+
+function renderOrchestra() {
+  const L = document.getElementById('orchLeft');
+  const C = document.getElementById('orchCenter');
+  const R = document.getElementById('orchRight');
+  L.innerHTML = C.innerHTML = R.innerHTML = '';
+  for (const row of ORCH_ROWS) {
+    if (row.left  > 0) L.appendChild(makeRow('OL', row.label, row.left,   row.first, 'left'));
+    C.appendChild(makeRow('OC', row.label, row.center, row.first, 'center'));
+    if (row.right > 0) R.appendChild(makeRow('OR', row.label, row.right,  row.first, 'right'));
   }
 }
-function renderGallery(){
-  const L=document.getElementById('galLeft'),C=document.getElementById('galCenter'),R=document.getElementById('galRight');
-  L.innerHTML=C.innerHTML=R.innerHTML='';
-  for(const row of GAL_ROWS){
-    if(row.left>0||row.first)L.appendChild(makeRow('GL',row.label,row.left,row.first));
-    if(row.center>0||row.first)C.appendChild(makeRow('GC',row.label,row.center,row.first));
-    if(row.right>0||row.first)R.appendChild(makeRow('GR',row.label,row.right,row.first));
+function renderParterre() {
+  const L = document.getElementById('parterreLeft');
+  const R = document.getElementById('parterreRight');
+  L.innerHTML = R.innerHTML = '';
+  PARTERRE_LEFT_ROWS.forEach(r  => L.appendChild(makeRow('PL', r.label, r.seats, false)));
+  PARTERRE_RIGHT_ROWS.forEach(r => R.appendChild(makeRow('PR', r.label, r.seats, false)));
+}
+function renderDressCircle() {
+  const L = document.getElementById('dcLeft');
+  const C = document.getElementById('dcCenter');
+  const R = document.getElementById('dcRight');
+  L.innerHTML = C.innerHTML = R.innerHTML = '';
+  for (const row of DC_ROWS) {
+    if (row.left   > 0 || row.first) L.appendChild(makeRow('DCL', row.label, row.left,   row.first));
+    if (row.center > 0 || row.first) C.appendChild(makeRow('DCC', row.label, row.center, row.first));
+    if (row.right  > 0 || row.first) R.appendChild(makeRow('DCR', row.label, row.right,  row.first));
   }
 }
-function renderBalcony(){
-  const el=document.getElementById('balconyCenter'); el.innerHTML='';
-  for(const row of BAL_ROWS)el.appendChild(makeRow('BC',row.label,row.seats,!!row.first));
+function renderGallery() {
+  const L = document.getElementById('galLeft');
+  const C = document.getElementById('galCenter');
+  const R = document.getElementById('galRight');
+  L.innerHTML = C.innerHTML = R.innerHTML = '';
+  for (const row of GAL_ROWS) {
+    if (row.left   > 0 || row.first) L.appendChild(makeRow('GL', row.label, row.left,   row.first));
+    if (row.center > 0 || row.first) C.appendChild(makeRow('GC', row.label, row.center, row.first));
+    if (row.right  > 0 || row.first) R.appendChild(makeRow('GR', row.label, row.right,  row.first));
+  }
 }
-function getSectionClass(secs){
-  if(!secs?.length)return'unallocated'; const s=secs[0];
-  if(['OL','OC','OR'].includes(s))return'orchestra';
-  if(['PL','PR'].includes(s))return'parterre';
-  if(s.startsWith('DC'))return'dress-circle';
-  if(s.startsWith('G'))return'gallery';
-  if(s==='BC')return'balcony';
-  return'unallocated';
+function renderBalcony() {
+  const el = document.getElementById('balconyCenter');
+  el.innerHTML = '';
+  for (const row of BAL_ROWS) el.appendChild(makeRow('BC', row.label, row.seats, !!row.first));
 }
-function renderGroupList(){
-  const el=document.getElementById('groupList');
-  if(!state.groups.length){el.innerHTML='<div class="no-groups">No groups added yet</div>';return;}
-  el.innerHTML='';
-  state.groups.forEach(g=>{
-    const card=document.createElement('div');
-    card.className=`group-card ${getSectionClass(g.allocation?.sections)}`;
-    const header=document.createElement('div'); header.className='group-card-header';
-    const nameWrap=document.createElement('div'); nameWrap.className='group-name';
-    const dot=document.createElement('div'); dot.style.cssText=`width:10px;height:10px;border-radius:50%;background:${g.color};flex-shrink:0;`;
-    nameWrap.appendChild(dot); nameWrap.appendChild(document.createTextNode(g.name));
-    const removeBtn=document.createElement('button'); removeBtn.className='btn-danger'; removeBtn.textContent='✕';
-    removeBtn.addEventListener('click',()=>removeGroup(g.id));
-    header.appendChild(nameWrap); header.appendChild(removeBtn);
-    const meta=document.createElement('div'); meta.className='group-meta';
-    const sizeEl=document.createElement('div'); sizeEl.className='group-size'; sizeEl.textContent=`${g.size} seats`;
-    const doorEl=document.createElement('div'); doorEl.className='group-door'; doorEl.textContent=`${g.door.toUpperCase()} DOOR`;
-    meta.appendChild(sizeEl); meta.appendChild(doorEl);
-    const locEl=document.createElement('div');
-    if(g.allocation){locEl.className='group-location';locEl.textContent=`📍 ${g.allocation.location}`;}
-    else{locEl.style.cssText='color:#e05070;font-size:11px;';locEl.textContent='⚠ Unallocated';}
-    card.appendChild(header); card.appendChild(meta); card.appendChild(locEl);
-    if(g.preferParterre){const badge=document.createElement('div');badge.style.cssText='font-size:10px;color:var(--gold-dim);letter-spacing:1px;';badge.textContent='✦ PARTERRE PREFERRED';card.appendChild(badge);}
+
+function getSectionClass(secs) {
+  if (!secs?.length) return 'unallocated';
+  const s = secs[0];
+  if (['OL','OC','OR'].includes(s)) return 'orchestra';
+  if (['PL','PR'].includes(s))      return 'parterre';
+  if (s.startsWith('DC'))           return 'dress-circle';
+  if (s.startsWith('G'))            return 'gallery';
+  if (s === 'BC')                   return 'balcony';
+  return 'unallocated';
+}
+
+function renderGroupList() {
+  const el = document.getElementById('groupList');
+  if (!state.groups.length) { el.innerHTML = '<div class="no-groups">No groups added yet</div>'; return; }
+  el.innerHTML = '';
+  state.groups.forEach(g => {
+    const card = document.createElement('div');
+    card.className = `group-card ${getSectionClass(g.allocation?.sections)}`;
+
+    // Build header row
+    const header = document.createElement('div');
+    header.className = 'group-card-header';
+
+    const nameWrap = document.createElement('div');
+    nameWrap.className = 'group-name';
+    nameWrap.style.cssText = 'display:flex;align-items:center;gap:8px;';
+    const dot = document.createElement('div');
+    dot.style.cssText = `width:10px;height:10px;border-radius:50%;background:${g.color};flex-shrink:0;`;
+    nameWrap.appendChild(dot);
+    nameWrap.appendChild(document.createTextNode(g.name));
+
+    const removeBtn = document.createElement('button');
+    removeBtn.className = 'btn-danger';
+    removeBtn.textContent = '✕';
+    removeBtn.addEventListener('click', () => removeGroup(g.id));
+
+    header.appendChild(nameWrap);
+    header.appendChild(removeBtn);
+
+    // Meta row
+    const meta = document.createElement('div');
+    meta.style.cssText = 'display:flex;gap:12px;align-items:center;';
+    const sizeEl = document.createElement('div');
+    sizeEl.className = 'group-size';
+    sizeEl.textContent = `${g.size} seats`;
+    const doorEl = document.createElement('div');
+    doorEl.className = 'group-door';
+    doorEl.textContent = `${g.door.toUpperCase()} DOOR`;
+    meta.appendChild(sizeEl);
+    meta.appendChild(doorEl);
+
+    // Location
+    const locEl = document.createElement('div');
+    if (g.allocation) {
+      locEl.className = 'group-location';
+      locEl.textContent = `📍 ${g.allocation.location}`;
+    } else {
+      locEl.style.cssText = 'color:#e05070;font-size:11px;';
+      locEl.textContent = '⚠ Unallocated';
+    }
+
+    card.appendChild(header);
+    card.appendChild(meta);
+    card.appendChild(locEl);
+
+    if (g.preferParterre) {
+      const badge = document.createElement('div');
+      badge.style.cssText = 'font-size:10px;color:var(--gold-dim);letter-spacing:1px;';
+      badge.textContent = '✦ PARTERRE PREFERRED';
+      card.appendChild(badge);
+    }
+
     el.appendChild(card);
   });
-  document.getElementById('queueBadge').textContent=state.groups.length;
 }
-function renderSummary(){
-  const el=document.getElementById('summaryGrid');
-  if(!state.groups.length){el.innerHTML='<div class="no-summary">No groups allocated yet.</div>';return;}
-  el.innerHTML='';
-  state.groups.forEach(g=>{
-    const card=document.createElement('div'); card.className='summary-card';
-    card.innerHTML=`
-      <div class="summary-card-dot" style="background:${g.color}"></div>
-      <div class="summary-card-info">
-        <div class="summary-card-name">${escHtml(g.name)}</div>
-        <div class="summary-card-loc">${g.allocation?.location??'—'}</div>
-      </div>
-      <div class="summary-card-size">${g.size}</div>`;
-    el.appendChild(card);
+
+function renderSummary() {
+  // Render into both the desktop bar and the mobile overlay
+  ['summaryGrid', 'summaryGridMobile'].forEach(elId => {
+    const el = document.getElementById(elId);
+    if (!el) return;
+    if (!state.groups.length) {
+      el.innerHTML = '<div style="color:var(--text-dim);font-size:12px;font-style:italic;">No groups allocated yet.</div>';
+      return;
+    }
+    el.innerHTML = '';
+    state.groups.forEach(g => {
+      const chip = document.createElement('div');
+      chip.className = 'summary-chip';
+      chip.innerHTML = `
+        <div class="chip-color" style="background:${g.color}"></div>
+        <strong>${escHtml(g.name)}</strong>
+        <span style="color:var(--text-dim)">${g.size} seats</span>
+        <span style="color:var(--gold)">${g.allocation?.location ?? '—'}</span>
+      `;
+      el.appendChild(chip);
+    });
   });
 }
-function renderLegend(){
-  const el=document.getElementById('legendGroups'); el.innerHTML='';
-  state.groups.forEach(g=>{
-    const item=document.createElement('div'); item.className='legend-item';
-    item.innerHTML=`<div class="legend-dot" style="background:${g.color}"></div>${escHtml(g.name)}`;
+
+function renderLegend() {
+  const el = document.getElementById('legendGroups');
+  el.innerHTML = '';
+  state.groups.forEach(g => {
+    const item = document.createElement('div');
+    item.className = 'legend-item';
+    item.innerHTML = `<div class="legend-dot" style="background:${g.color}"></div>${escHtml(g.name)}`;
     el.appendChild(item);
   });
 }
-function renderStats(){
-  const occupied=Object.values(state.seats).filter(Boolean).length;
-  const blocked=Object.keys(state.blockedSeats).length;
-  document.getElementById('statTotal').textContent=TOTAL_CAPACITY;
-  document.getElementById('statOccupied').textContent=occupied;
-  document.getElementById('statBlocked').textContent=blocked;
-  document.getElementById('statAvailable').textContent=TOTAL_CAPACITY-occupied-blocked;
-  document.getElementById('statGroups').textContent=state.groups.length;
-  document.getElementById('statOrch').textContent=`${TOTAL_ORCH_PART-sumAvail(['OL','OC','OR','PL','PR'])}/${TOTAL_ORCH_PART}`;
-  document.getElementById('statDC').textContent=`${TOTAL_DC-sumAvail(['DCL','DCC','DCR'])}/${TOTAL_DC}`;
-  document.getElementById('statGal').textContent=`${TOTAL_GAL-sumAvail(['GL','GC','GR'])}/${TOTAL_GAL}`;
-  document.getElementById('statBal').textContent=`${TOTAL_BAL-calcAvail('BC')}/${TOTAL_BAL}`;
+
+function renderStats() {
+  const occupied = Object.values(state.seats).filter(Boolean).length;
+  const blocked  = Object.keys(state.blockedSeats).length;
+  document.getElementById('statTotal').textContent     = TOTAL_CAPACITY;
+  document.getElementById('statOccupied').textContent  = occupied;
+  document.getElementById('statBlocked').textContent   = blocked;
+  document.getElementById('statAvailable').textContent = TOTAL_CAPACITY - occupied - blocked;
+  document.getElementById('statGroups').textContent    = state.groups.length;
+
+  document.getElementById('statOrch').textContent = `${TOTAL_ORCH_PART - sumAvail(['OL','OC','OR','PL','PR'])} / ${TOTAL_ORCH_PART}`;
+  document.getElementById('statDC').textContent   = `${TOTAL_DC  - sumAvail(['DCL','DCC','DCR'])} / ${TOTAL_DC}`;
+  document.getElementById('statGal').textContent  = `${TOTAL_GAL - sumAvail(['GL','GC','GR'])} / ${TOTAL_GAL}`;
+  document.getElementById('statBal').textContent  = `${TOTAL_BAL - calcAvail('BC')} / ${TOTAL_BAL}`;
 }
-function renderAll(){
-  groupColorMap=new Map(state.groups.map(g=>[g.id,g.color]));
+
+function renderAll() {
+  // FIX 5 — Rebuild the O(1) lookup map before any render function runs
+  groupColorMap = new Map(state.groups.map(g => [g.id, g.color]));
+
   renderOrchestra(); renderParterre(); renderDressCircle();
   renderGallery();   renderBalcony();  renderGroupList();
   renderSummary();   renderLegend();   renderStats();
 }
 
-// ── PDF (unchanged) ───────────────────────────────────────────────────────────
-function buildPdfReport(){
-  const now=new Date();
-  const dateStr=now.toLocaleDateString('en-US',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
-  const timeStr=now.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'});
-  const occupied=Object.values(state.seats).filter(Boolean).length;
-  const blocked=Object.keys(state.blockedSeats).length;
-  const available=TOTAL_CAPACITY-occupied-blocked;
-  const statsHtml=`<div class="rpt-stats"><div class="rpt-stat"><div class="rpt-stat-label">Total Capacity</div><div class="rpt-stat-value">${TOTAL_CAPACITY}</div></div><div class="rpt-stat"><div class="rpt-stat-label">Occupied</div><div class="rpt-stat-value">${occupied}</div></div><div class="rpt-stat"><div class="rpt-stat-label">Available</div><div class="rpt-stat-value">${available}</div></div><div class="rpt-stat"><div class="rpt-stat-label">Blocked</div><div class="rpt-stat-value">${blocked}</div></div><div class="rpt-stat"><div class="rpt-stat-label">Groups Seated</div><div class="rpt-stat-value">${state.groups.length}</div></div><div class="rpt-stat"><div class="rpt-stat-label">Orchestra</div><div class="rpt-stat-value">${TOTAL_ORCH_PART-sumAvail(['OL','OC','OR','PL','PR'])}/${TOTAL_ORCH_PART}</div></div><div class="rpt-stat"><div class="rpt-stat-label">Dress Circle</div><div class="rpt-stat-value">${TOTAL_DC-sumAvail(['DCL','DCC','DCR'])}/${TOTAL_DC}</div></div><div class="rpt-stat"><div class="rpt-stat-label">Gallery</div><div class="rpt-stat-value">${TOTAL_GAL-sumAvail(['GL','GC','GR'])}/${TOTAL_GAL}</div></div><div class="rpt-stat"><div class="rpt-stat-label">Balcony</div><div class="rpt-stat-value">${TOTAL_BAL-calcAvail('BC')}/${TOTAL_BAL}</div></div></div>`;
-  let groupRows='';
-  if(!state.groups.length){groupRows='<tr><td colspan="5" class="rpt-no-data">No groups have been seated.</td></tr>';}
-  else{state.groups.forEach((g,i)=>{groupRows+=`<tr><td>${i+1}</td><td><span class="rpt-color-dot" style="background:${g.color}"></span>${escHtml(g.name)}</td><td>${g.size}</td><td>${g.door} Door</td><td>${g.allocation?.location??'—'}${g.preferParterre?' ✦':''}</td></tr>`;});}
-  const groupTableHtml=`<div class="rpt-section-title">Group Seat Assignments</div><table class="rpt-table"><thead><tr><th>#</th><th>Group Name</th><th>Size</th><th>Entry</th><th>Location</th></tr></thead><tbody>${groupRows}</tbody></table>`;
-  const blockedIds=Object.keys(state.blockedSeats);
-  let blockedHtml='';
-  if(blockedIds.length>0){
-    const SEC_FULL={OL:'Orch Left',OC:'Orch Center',OR:'Orch Right',PL:'Parterre Left',PR:'Parterre Right',DCL:'DC Left',DCC:'DC Center',DCR:'DC Right',GL:'Gallery Left',GC:'Gallery Center',GR:'Gallery Right',BC:'Balcony'};
-    const labels=blockedIds.sort().map(id=>{const p=id.split('_');return`${SEC_FULL[p[0]]??p[0]} · Row ${p[1]} · Seat ${p[2]}`;});
-    blockedHtml=`<div class="rpt-section-title">Blocked Seats (${blockedIds.length})</div><div class="rpt-blocked-list">${labels.map(l=>`<div>${l}</div>`).join('')}</div>`;
+// ── SAVE AS PDF ───────────────────────────────────────────────────────────────
+// Builds a formatted HTML report inside #pdfReportFrame then calls
+// window.print(). The @media print CSS hides everything else so the
+// browser's Print → Save as PDF dialog produces a clean document.
+
+function buildPdfReport() {
+  const now       = new Date();
+  const dateStr   = now.toLocaleDateString('en-US', {weekday:'long', year:'numeric', month:'long', day:'numeric'});
+  const timeStr   = now.toLocaleTimeString('en-US', {hour:'2-digit', minute:'2-digit'});
+  const occupied  = Object.values(state.seats).filter(Boolean).length;
+  const blocked   = Object.keys(state.blockedSeats).length;
+  const available = TOTAL_CAPACITY - occupied - blocked;
+
+  // ── Stats block ──
+  const statsHtml = `
+    <div class="rpt-stats">
+      <div class="rpt-stat">
+        <div class="rpt-stat-label">Total Capacity</div>
+        <div class="rpt-stat-value">${TOTAL_CAPACITY}</div>
+      </div>
+      <div class="rpt-stat">
+        <div class="rpt-stat-label">Occupied</div>
+        <div class="rpt-stat-value">${occupied}</div>
+      </div>
+      <div class="rpt-stat">
+        <div class="rpt-stat-label">Available</div>
+        <div class="rpt-stat-value">${available}</div>
+      </div>
+      <div class="rpt-stat">
+        <div class="rpt-stat-label">Blocked</div>
+        <div class="rpt-stat-value">${blocked}</div>
+      </div>
+      <div class="rpt-stat">
+        <div class="rpt-stat-label">Groups Seated</div>
+        <div class="rpt-stat-value">${state.groups.length}</div>
+      </div>
+      <div class="rpt-stat">
+        <div class="rpt-stat-label">Orchestra</div>
+        <div class="rpt-stat-value">${TOTAL_ORCH_PART - sumAvail(['OL','OC','OR','PL','PR'])} / ${TOTAL_ORCH_PART}</div>
+      </div>
+      <div class="rpt-stat">
+        <div class="rpt-stat-label">Dress Circle</div>
+        <div class="rpt-stat-value">${TOTAL_DC - sumAvail(['DCL','DCC','DCR'])} / ${TOTAL_DC}</div>
+      </div>
+      <div class="rpt-stat">
+        <div class="rpt-stat-label">Gallery</div>
+        <div class="rpt-stat-value">${TOTAL_GAL - sumAvail(['GL','GC','GR'])} / ${TOTAL_GAL}</div>
+      </div>
+      <div class="rpt-stat">
+        <div class="rpt-stat-label">Balcony</div>
+        <div class="rpt-stat-value">${TOTAL_BAL - calcAvail('BC')} / ${TOTAL_BAL}</div>
+      </div>
+    </div>
+  `;
+
+  // ── Group assignments table ──
+  let groupRows = '';
+  if (state.groups.length === 0) {
+    groupRows = '<tr><td colspan="4" class="rpt-no-data">No groups have been seated.</td></tr>';
+  } else {
+    state.groups.forEach((g, i) => {
+      const location = g.allocation?.location ?? '—';
+      const parterre = g.preferParterre ? ' ✦' : '';
+      groupRows += `
+        <tr>
+          <td>${i + 1}</td>
+          <td>
+            <span class="rpt-color-dot" style="background:${g.color}"></span>
+            ${escHtml(g.name)}
+          </td>
+          <td>${g.size}</td>
+          <td>${g.door} Door</td>
+          <td>${location}${parterre}</td>
+        </tr>`;
+    });
   }
-  document.getElementById('pdfReportFrame').innerHTML=`<div class="rpt-page"><div class="rpt-header"><div class="rpt-title">Reynolds Hall</div><div class="rpt-subtitle">Seating Assignment Report</div><div class="rpt-meta">${dateStr} · ${timeStr}</div></div>${statsHtml}${groupTableHtml}${blockedHtml}<div class="rpt-footer">Reynolds Hall — Intelligent Seating System · Generated ${dateStr} at ${timeStr}</div></div>`;
+
+  const groupTableHtml = `
+    <div class="rpt-section-title">Group Seat Assignments</div>
+    <table class="rpt-table">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Group Name</th>
+          <th>Size</th>
+          <th>Entry</th>
+          <th>Location</th>
+        </tr>
+      </thead>
+      <tbody>${groupRows}</tbody>
+    </table>
+  `;
+
+  // ── Blocked seats section ──
+  let blockedHtml = '';
+  const blockedIds = Object.keys(state.blockedSeats);
+  if (blockedIds.length > 0) {
+    // Format seat IDs into human-readable labels (e.g. OL_A_3 → Orch Left · Row A · Seat 3)
+    const SEC_FULL = {
+      OL:'Orch Left', OC:'Orch Center', OR:'Orch Right',
+      PL:'Parterre Left', PR:'Parterre Right',
+      DCL:'DC Left', DCC:'DC Center', DCR:'DC Right',
+      GL:'Gallery Left', GC:'Gallery Center', GR:'Gallery Right',
+      BC:'Balcony',
+    };
+    const labels = blockedIds.sort().map(id => {
+      const parts  = id.split('_');
+      const sec    = SEC_FULL[parts[0]] ?? parts[0];
+      const row    = parts[1];
+      const seat   = parts[2];
+      return `${sec} · Row ${row} · Seat ${seat}`;
+    });
+    blockedHtml = `
+      <div class="rpt-section-title">Blocked Seats (${blockedIds.length})</div>
+      <div class="rpt-blocked-list">${labels.map(l => `<div>${l}</div>`).join('')}</div>
+    `;
+  }
+
+  // ── Assemble full report ──
+  const frame = document.getElementById('pdfReportFrame');
+  frame.innerHTML = `
+    <div class="rpt-page">
+      <div class="rpt-header">
+        <div class="rpt-title">Reynolds Hall</div>
+        <div class="rpt-subtitle">Seating Assignment Report</div>
+        <div class="rpt-meta">${dateStr} &nbsp;·&nbsp; ${timeStr}</div>
+      </div>
+      ${statsHtml}
+      ${groupTableHtml}
+      ${blockedHtml}
+      <div class="rpt-footer">
+        Reynolds Hall — Intelligent Seating System &nbsp;·&nbsp;
+        Generated ${dateStr} at ${timeStr}
+        ${blockedIds && blockedIds.length > 0
+          ? ' &nbsp;·&nbsp; ✦ Parterre Preferred'
+          : ''}
+      </div>
+    </div>
+  `;
 }
 
 // ── BUTTON WIRING ─────────────────────────────────────────────────────────────
-document.getElementById('doorLeft').addEventListener('click',()=>selectDoor('Left'));
-document.getElementById('doorRight').addEventListener('click',()=>selectDoor('Right'));
-document.getElementById('seatGroupBtn').addEventListener('click',addGroup);
-document.getElementById('resetBtn').addEventListener('click',resetAll);
-document.getElementById('savePdfBtn').addEventListener('click',()=>{buildPdfReport();setTimeout(()=>window.print(),120);});
-document.getElementById('preferParterre').addEventListener('change',function(){
-  document.getElementById('parterreToggleRow').classList.toggle('active',this.checked);
+document.getElementById('doorLeft').addEventListener('click',  () => selectDoor('Left'));
+document.getElementById('doorRight').addEventListener('click', () => selectDoor('Right'));
+document.getElementById('seatGroupBtn').addEventListener('click', addGroup);
+document.getElementById('resetBtn').addEventListener('click', resetAll);
+document.getElementById('savePdfBtn').addEventListener('click', () => {
+  buildPdfReport();
+  // Small delay lets the DOM update before print dialog opens
+  setTimeout(() => window.print(), 120);
 });
-const blockModeBtn=document.getElementById('blockModeBtn');
-const blockModeHint=document.getElementById('blockModeHint');
-blockModeBtn.addEventListener('click',()=>{
-  blockModeActive=!blockModeActive;
-  blockModeBtn.classList.toggle('active',blockModeActive);
-  blockModeHint.classList.toggle('visible',blockModeActive);
-  document.body.classList.toggle('block-mode',blockModeActive);
-  blockModeBtn.textContent=blockModeActive?'⊘ Exit Block Mode':'⊘ Block Seats';
-  hideTip();
-  // If activating block mode, switch to Plan tab so seats are visible
-  if(blockModeActive) switchTab('plan');
-});
-document.addEventListener('mousedown',e=>{
-  if(!blockModeActive)return;
-  const seat=e.target.closest('.seat');
-  if(!seat||seat.classList.contains('first-row'))return;
-  const seatId=seat.dataset.seatId;
-  if(!seatId||state.seats[seatId])return;
-  isDraggingBlock=true; dragBlockAction=state.blockedSeats[seatId]?'unblock':'block';
-});
-document.addEventListener('mouseup',()=>{
-  if(isDraggingBlock){isDraggingBlock=false;dragBlockAction=null;commitState();}
-});
-document.addEventListener('selectstart',e=>{if(blockModeActive&&isDraggingBlock)e.preventDefault();});
-
-// ── THEATER AUTO-SCALER ───────────────────────────────────────────────────────
-// Measures each level's natural rendered width and applies a CSS scale()
-// transform so it fits the viewport exactly in portrait mode — no horizontal
-// scroll, no clipping, seats stay their natural 10×10px tappable size.
-// The outer container height is updated to match the scaled visual height
-// so the panel's vertical scroll still behaves correctly.
-
-const SCALER_LEVELS = ['orch','dc','gal','bal'];
-
-function scaleTheaterLevel(levelId) {
-  const outer = document.getElementById('scalerOuter-' + levelId);
-  const inner = document.getElementById('scalerInner-' + levelId);
-  if (!outer || !inner) return;
-
-  // Reset first so we measure the true natural width
-  inner.style.transform = '';
-  outer.style.height    = '';
-
-  const available = outer.clientWidth;
-  const natural   = inner.scrollWidth;
-  if (natural <= available) return; // already fits — nothing to do
-
-  const scale = available / natural;
-  inner.style.transform = 'scale(' + scale + ')';
-  // Shrink the outer box to the visually-scaled height so scrolling works
-  outer.style.height = Math.ceil(inner.scrollHeight * scale) + 'px';
-}
-
-function scaleAllLevels() { SCALER_LEVELS.forEach(scaleTheaterLevel); }
-
-// Re-scale on viewport change (resize, orientation flip)
-window.addEventListener('resize', scaleAllLevels);
-window.addEventListener('orientationchange', () => setTimeout(scaleAllLevels, 150));
-
-// Re-scale when a sub-tab becomes visible (hidden panels have 0 natural width
-// until they are displayed, so we measure after the display change settles)
-document.querySelectorAll('.stab').forEach(t => {
-  t.addEventListener('click', () => setTimeout(() => scaleTheaterLevel(t.dataset.level), 0));
+document.getElementById('preferParterre').addEventListener('change', function() {
+  document.getElementById('parterreToggleRow').classList.toggle('active', this.checked);
 });
 
+// ── BLOCK MODE TOGGLE ─────────────────────────────────────────────────────────
+const blockModeBtn  = document.getElementById('blockModeBtn');
+const blockModeHint = document.getElementById('blockModeHint');
+
+blockModeBtn.addEventListener('click', () => {
+  blockModeActive = !blockModeActive;
+  blockModeBtn.classList.toggle('active', blockModeActive);
+  blockModeHint.classList.toggle('visible', blockModeActive);
+  document.body.classList.toggle('block-mode', blockModeActive);
+  blockModeBtn.textContent = blockModeActive ? '⊘ Exit Block Mode' : '⊘ Block Seats';
+  hideTip(); // clear any open tooltip when switching modes
+});
+
+// ── DRAG-TO-BLOCK ─────────────────────────────────────────────────────────────
+// mousedown on a seat sets the drag action (block or unblock) based on current
+// state of that seat; mouseup commits the accumulated changes to Firebase.
+document.addEventListener('mousedown', e => {
+  if (!blockModeActive) return;
+  const seat = e.target.closest('.seat');
+  if (!seat || seat.classList.contains('first-row')) return;
+  const seatId = seat.dataset.seatId;
+  if (!seatId || state.seats[seatId]) return; // ignore occupied seats
+  isDraggingBlock = true;
+  // Drag action is the opposite of the seat's current state
+  dragBlockAction = state.blockedSeats[seatId] ? 'unblock' : 'block';
+});
+
+document.addEventListener('mouseup', () => {
+  if (isDraggingBlock) {
+    isDraggingBlock = false;
+    dragBlockAction = null;
+    // Commit the full accumulated drag changes to Firebase in one write
+    commitState();
+  }
+});
+
+// Prevent text selection while dragging over seats
+document.addEventListener('selectstart', e => {
+  if (blockModeActive && isDraggingBlock) e.preventDefault();
+});
+
+// IMPROVEMENT 1 — Sidebar toggle (mobile)
+const sidebarToggleBtn = document.getElementById('sidebarToggle');
+const sidebar          = document.querySelector('.sidebar');
+sidebarToggleBtn.addEventListener('click', () => {
+  const isOpen = sidebar.classList.toggle('open');
+  sidebarToggleBtn.classList.toggle('open', isOpen);
+});
+
+// IMPROVEMENT 7 — Summary drawer (mobile)
+const summaryDrawerBtn    = document.getElementById('summaryDrawerBtn');
+const summaryOverlay      = document.getElementById('summaryOverlay');
+const summaryOverlayClose = document.getElementById('summaryOverlayClose');
+
+summaryDrawerBtn.addEventListener('click', () => {
+  summaryOverlay.style.display = summaryOverlay.style.display === 'block' ? 'none' : 'block';
+});
+summaryOverlayClose.addEventListener('click', () => {
+  summaryOverlay.style.display = 'none';
+});
+summaryOverlay.addEventListener('click', (e) => {
+  if (e.target === summaryOverlay) summaryOverlay.style.display = 'none';
+});
+
+// Initial render while waiting for Firebase first response
 renderAll();
-// Initial scale after first render (setTimeout lets the DOM paint first)
-setTimeout(scaleAllLevels, 0);
+
 </script>
 </body>
 </html>
