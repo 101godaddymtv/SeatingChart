@@ -1114,7 +1114,7 @@ function allocateGroup(group) {
   // ── PREFER PARTERRE (groups < 38, user opted in) ──────────────────────────
   // Choose whichever Parterre side has more availability.
   // Fall through to normal routing if neither side has enough room.
-  if (preferParterre && size < 38) {
+  if (preferParterre && size < 39) {
     const plAv = calcAvail('PL');
     const prAv = calcAvail('PR');
     // Pick the side with more seats; break ties by preferring the door side
@@ -1279,7 +1279,7 @@ function addGroup() {
     showError('Please enter a valid group name and size (1–250).');
     return;
   }
-  if (preferParterre && size >= 38) {
+  if (preferParterre && size >= 39) {
     showError('Prefer Parterre only applies to groups under 38. Seating normally.');
   } else {
     clearError();
@@ -1289,7 +1289,7 @@ function addGroup() {
     id:    state.nextGroupId++,
     name, size,
     door:           state.selectedDoor,
-    preferParterre: preferParterre && size < 38,
+    preferParterre: preferParterre && size < 39,
     color: GROUP_COLORS[state.groups.length % GROUP_COLORS.length],
     allocation: null,
   };
