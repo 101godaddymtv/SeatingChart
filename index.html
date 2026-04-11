@@ -209,16 +209,8 @@
   .orch-section { display: flex; flex-direction: column; gap: 2px; }
   .orch-center  { display: flex; flex-direction: column; gap: 2px; }
 
-  /* All seat rows default to centered (used by DC, gallery, balcony, parterre) */
+  /* All seat rows default to centered (used by center orchestra, DC, gallery, balcony) */
   .seat-row { display: flex; align-items: center; gap: 3px; justify-content: center; }
-
-  /* Orchestra Center — all rows align from the same left edge so shorter rows
-     (e.g. row Z with 8 seats) line up with longer rows rather than floating
-     in the middle. This matches standard theater seat-map conventions. */
-  .seat-row-center {
-    display: flex; align-items: center; gap: 3px;
-    justify-content: flex-start;
-  }
 
   /* Orchestra Left — seats flow left-to-right, row hugs the right (center) edge.
      Row label is on the left, seats extend rightward toward center orchestra. */
@@ -757,7 +749,7 @@
           <input type="checkbox" class="toggle-checkbox" id="preferParterre">
           <span class="toggle-label">Prefer Parterre</span>
         </label>
-        <div class="toggle-hint" id="parterreHint">Only applies to groups under 37</div>
+        <div class="toggle-hint" id="parterreHint">Only applies to groups under 25</div>
       </div>
       <div class="error-msg" id="errorMsg"></div>
       <button class="btn-primary" id="seatGroupBtn">SEAT GROUP</button>
@@ -1119,10 +1111,10 @@ function allocateGroup(group) {
   const balAv    = calcAvail('BC');
   const overflow = size - sideAv;
 
-  // ── PREFER PARTERRE (groups < 37, user opted in) ──────────────────────────
+  // ── PREFER PARTERRE (groups < 25, user opted in) ──────────────────────────
   // Choose whichever Parterre side has more availability.
   // Fall through to normal routing if neither side has enough room.
-  if (preferParterre && size < 37) {
+  if (preferParterre && size < 25) {
     const plAv = calcAvail('PL');
     const prAv = calcAvail('PR');
     // Pick the side with more seats; break ties by preferring the door side
@@ -1288,7 +1280,7 @@ function addGroup() {
     return;
   }
   if (preferParterre && size >= 25) {
-    showError('Prefer Parterre only applies to groups under 37. Seating normally.');
+    showError('Prefer Parterre only applies to groups under 25. Seating normally.');
   } else {
     clearError();
   }
@@ -1428,10 +1420,9 @@ function makeRow(pfx, label, count, isFirst, align = 'center') {
   // 'left' → seats push toward center (right edge of left column)
   // 'right' → seats push toward center (left edge of right column), label on right
   // 'center' → default centered layout used everywhere else
-  row.className = align === 'left'   ? 'seat-row-left'
-                : align === 'right'  ? 'seat-row-right'
-                : align === 'center' ? 'seat-row-center'
-                :                      'seat-row';
+  row.className = align === 'left'  ? 'seat-row-left'
+                : align === 'right' ? 'seat-row-right'
+                :                     'seat-row';
 
   const lbl = document.createElement('div');
   lbl.className = 'row-label';
