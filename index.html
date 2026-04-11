@@ -1119,10 +1119,10 @@ function allocateGroup(group) {
   const balAv    = calcAvail('BC');
   const overflow = size - sideAv;
 
-  // ── PREFER PARTERRE (groups < 25, user opted in) ──────────────────────────
+  // ── PREFER PARTERRE (groups < 37, user opted in) ──────────────────────────
   // Choose whichever Parterre side has more availability.
   // Fall through to normal routing if neither side has enough room.
-  if (preferParterre && size < 25) {
+  if (preferParterre && size < 37) {
     const plAv = calcAvail('PL');
     const prAv = calcAvail('PR');
     // Pick the side with more seats; break ties by preferring the door side
