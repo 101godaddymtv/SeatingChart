@@ -749,7 +749,7 @@
           <input type="checkbox" class="toggle-checkbox" id="preferParterre">
           <span class="toggle-label">Prefer Parterre</span>
         </label>
-        <div class="toggle-hint" id="parterreHint">Only applies to groups under 25</div>
+        <div class="toggle-hint" id="parterreHint">Only applies to groups under 38</div>
       </div>
       <div class="error-msg" id="errorMsg"></div>
       <button class="btn-primary" id="seatGroupBtn">SEAT GROUP</button>
@@ -1111,10 +1111,10 @@ function allocateGroup(group) {
   const balAv    = calcAvail('BC');
   const overflow = size - sideAv;
 
-  // ── PREFER PARTERRE (groups < 25, user opted in) ──────────────────────────
+  // ── PREFER PARTERRE (groups < 38, user opted in) ──────────────────────────
   // Choose whichever Parterre side has more availability.
   // Fall through to normal routing if neither side has enough room.
-  if (preferParterre && size < 25) {
+  if (preferParterre && size < 38) {
     const plAv = calcAvail('PL');
     const prAv = calcAvail('PR');
     // Pick the side with more seats; break ties by preferring the door side
@@ -1279,8 +1279,8 @@ function addGroup() {
     showError('Please enter a valid group name and size (1–250).');
     return;
   }
-  if (preferParterre && size >= 25) {
-    showError('Prefer Parterre only applies to groups under 25. Seating normally.');
+  if (preferParterre && size >= 38) {
+    showError('Prefer Parterre only applies to groups under 38. Seating normally.');
   } else {
     clearError();
   }
@@ -1289,7 +1289,7 @@ function addGroup() {
     id:    state.nextGroupId++,
     name, size,
     door:           state.selectedDoor,
-    preferParterre: preferParterre && size < 25,
+    preferParterre: preferParterre && size < 38,
     color: GROUP_COLORS[state.groups.length % GROUP_COLORS.length],
     allocation: null,
   };
