@@ -523,6 +523,103 @@
   ::-webkit-scrollbar-thumb { background: var(--purple-dim); border-radius: 3px; }
   ::-webkit-scrollbar-thumb:hover { background: var(--purple-mid); }
 
+  /* ── FIRST-ROW BLOCK MODAL ───────────────────── */
+  #firstRowModal {
+    position: fixed; inset: 0; z-index: 10000;
+    background: rgba(0,0,0,0.82);
+    display: flex; align-items: center; justify-content: center;
+    padding: 20px;
+  }
+  #firstRowModal.hidden { display: none; }
+  .frm-box {
+    background: var(--bg-card);
+    border: 1px solid var(--gold-dim);
+    border-radius: 10px;
+    padding: 32px 36px 28px;
+    max-width: 520px; width: 100%;
+    box-shadow: 0 8px 60px rgba(0,0,0,0.8), 0 0 40px rgba(201,162,39,0.1);
+  }
+  .frm-title {
+    font-family: 'Cinzel', serif; font-size: 16px;
+    letter-spacing: 3px; color: var(--gold);
+    text-align: center; margin-bottom: 6px;
+    text-transform: uppercase;
+  }
+  .frm-subtitle {
+    font-size: 12px; color: var(--text-secondary);
+    text-align: center; margin-bottom: 24px;
+    letter-spacing: 0.5px; line-height: 1.5;
+  }
+  .frm-section {
+    margin-bottom: 20px;
+  }
+  .frm-section-label {
+    font-family: 'Cinzel', serif; font-size: 10px;
+    letter-spacing: 2px; color: var(--text-secondary);
+    text-transform: uppercase; margin-bottom: 10px;
+    border-bottom: 1px solid var(--border); padding-bottom: 6px;
+  }
+  .frm-checks { display: flex; flex-direction: column; gap: 8px; }
+  .frm-check-row {
+    display: flex; align-items: center; gap: 12px;
+    padding: 10px 14px;
+    background: var(--bg-surface); border: 1px solid var(--border);
+    border-radius: var(--radius); cursor: pointer;
+    transition: border-color 0.2s, background 0.2s;
+    user-select: none;
+  }
+  .frm-check-row:hover { border-color: var(--gold-dim); }
+  .frm-check-row.checked {
+    border-color: var(--gold);
+    background: var(--purple-dim);
+    box-shadow: 0 0 10px rgba(201,162,39,0.15);
+  }
+  .frm-checkbox {
+    appearance: none; -webkit-appearance: none;
+    width: 18px; height: 18px; border-radius: 4px;
+    border: 1px solid var(--gold-dim);
+    background: var(--bg-deep);
+    cursor: pointer; flex-shrink: 0;
+    transition: background 0.2s, border-color 0.2s;
+    position: relative;
+  }
+  .frm-checkbox:checked { background: var(--gold); border-color: var(--gold); }
+  .frm-checkbox:checked::after {
+    content: '✓'; position: absolute;
+    top: -1px; left: 3px; font-size: 12px;
+    color: var(--bg-deep); font-weight: 700;
+  }
+  .frm-check-info { flex: 1; }
+  .frm-check-name {
+    font-size: 13px; color: var(--text-primary);
+    font-family: 'Playfair Display', serif; font-weight: 600;
+  }
+  .frm-check-row.checked .frm-check-name { color: var(--gold-light); }
+  .frm-check-desc { font-size: 11px; color: var(--text-dim); margin-top: 2px; }
+  .frm-actions { display: flex; gap: 10px; margin-top: 24px; }
+  .frm-btn-confirm {
+    flex: 1; padding: 13px;
+    background: linear-gradient(135deg, var(--purple-mid), var(--purple-vivid));
+    border: 1px solid var(--gold-dim); color: var(--gold-light);
+    border-radius: var(--radius); cursor: pointer;
+    font-family: 'Cinzel', serif; font-size: 13px; letter-spacing: 2px;
+    transition: all 0.2s; text-transform: uppercase;
+  }
+  .frm-btn-confirm:hover {
+    background: linear-gradient(135deg, var(--purple-vivid), #9b4fc0);
+    box-shadow: var(--shadow-gold);
+  }
+  .frm-btn-none {
+    padding: 13px 18px;
+    background: var(--bg-surface); border: 1px solid var(--border);
+    color: var(--text-secondary);
+    border-radius: var(--radius); cursor: pointer;
+    font-family: 'Cinzel', serif; font-size: 11px; letter-spacing: 1px;
+    transition: all 0.2s; text-transform: uppercase;
+    white-space: nowrap;
+  }
+  .frm-btn-none:hover { border-color: var(--gold-dim); color: var(--gold); }
+
   /* ══════════════════════════════════════════════
      IMPROVEMENT 1 — RESPONSIVE LAYOUT
      Stack sidebar above theater on narrow screens.
@@ -694,6 +791,73 @@
 <!-- Shown briefly while Firebase syncs a remote change -->
 <div id="syncBanner">⟳ SYNCING…</div>
 
+<!-- ── FIRST-ROW BLOCK SELECTION MODAL ─────────────────────────────────── -->
+<div id="firstRowModal">
+  <div class="frm-box">
+    <div class="frm-title">⊘ First Row Configuration</div>
+    <div class="frm-subtitle">Select which first rows should be blocked as reserved.<br>These seats will be unavailable for group allocation.</div>
+
+    <div class="frm-section">
+      <div class="frm-section-label">Orchestra — First Rows</div>
+      <div class="frm-checks">
+        <label class="frm-check-row checked" id="frLabel_OL_BB">
+          <input type="checkbox" class="frm-checkbox" id="frCheck_OL_BB" data-section="OL" data-row="BB" checked>
+          <div class="frm-check-info">
+            <div class="frm-check-name">Orchestra Left — Row BB</div>
+            <div class="frm-check-desc">5 seats · First side row on the left</div>
+          </div>
+        </label>
+        <label class="frm-check-row checked" id="frLabel_OC_AA">
+          <input type="checkbox" class="frm-checkbox" id="frCheck_OC_AA" data-section="OC" data-row="AA" checked>
+          <div class="frm-check-info">
+            <div class="frm-check-name">Orchestra Center — Row AA</div>
+            <div class="frm-check-desc">16 seats · Front center row</div>
+          </div>
+        </label>
+        <label class="frm-check-row checked" id="frLabel_OR_BB">
+          <input type="checkbox" class="frm-checkbox" id="frCheck_OR_BB" data-section="OR" data-row="BB" checked>
+          <div class="frm-check-info">
+            <div class="frm-check-name">Orchestra Right — Row BB</div>
+            <div class="frm-check-desc">5 seats · First side row on the right</div>
+          </div>
+        </label>
+      </div>
+    </div>
+
+    <div class="frm-section">
+      <div class="frm-section-label">Upper Levels — First Rows</div>
+      <div class="frm-checks">
+        <label class="frm-check-row checked" id="frLabel_DC_A">
+          <input type="checkbox" class="frm-checkbox" id="frCheck_DC_A" data-section="DC" data-row="A" checked>
+          <div class="frm-check-info">
+            <div class="frm-check-name">Dress Circle — Row A</div>
+            <div class="frm-check-desc">Front row of Dress Circle (Level 2)</div>
+          </div>
+        </label>
+        <label class="frm-check-row checked" id="frLabel_GAL_A">
+          <input type="checkbox" class="frm-checkbox" id="frCheck_GAL_A" data-section="GAL" data-row="A" checked>
+          <div class="frm-check-info">
+            <div class="frm-check-name">Gallery — Row A</div>
+            <div class="frm-check-desc">Front row of Gallery (Level 3)</div>
+          </div>
+        </label>
+        <label class="frm-check-row checked" id="frLabel_BAL_A">
+          <input type="checkbox" class="frm-checkbox" id="frCheck_BAL_A" data-section="BAL" data-row="A" checked>
+          <div class="frm-check-info">
+            <div class="frm-check-name">Balcony — Row A</div>
+            <div class="frm-check-desc">Front row of Balcony (Level 4)</div>
+          </div>
+        </label>
+      </div>
+    </div>
+
+    <div class="frm-actions">
+      <button class="frm-btn-none" id="frmBtnNone">Block None</button>
+      <button class="frm-btn-confirm" id="frmBtnConfirm">Confirm &amp; Apply</button>
+    </div>
+  </div>
+</div>
+
 <header>
   <div class="header-logo">
     Reynolds Hall
@@ -769,6 +933,18 @@
         Click seats to block · Drag to block a range · Click row label to block entire row
       </div>
       <div style="margin-top:10px;">
+        <button class="btn-primary" id="undoBtn"
+          style="background:linear-gradient(135deg,#3a2a1a,#6b4a20); margin-bottom:10px;" disabled>
+          ↩ UNDO LAST ACTION
+        </button>
+      </div>
+      <div style="margin-top:0;">
+        <button class="btn-primary" id="configFirstRowBtn"
+          style="background:linear-gradient(135deg,#2a2a5a,#3a3a8a); margin-bottom:10px;">
+          ⊘ CONFIGURE RESERVED ROWS
+        </button>
+      </div>
+      <div style="margin-top:0;">
         <button class="btn-primary" id="savePdfBtn"
           style="background:linear-gradient(135deg,#1a4a2a,#2a6b40); margin-bottom:10px;">
           ↓ SAVE AS PDF
@@ -794,8 +970,7 @@
         <div class="theater-title">Reynolds Hall — Seating Plan</div>
         <div class="legend">
           <div class="legend-item"><div class="legend-dot l-empty"></div>Available</div>
-          <div class="legend-item"><div class="legend-dot l-reserved"></div>First Row (Reserved)</div>
-          <div class="legend-item"><div class="legend-dot l-blocked"></div>Blocked</div>
+          <div class="legend-item"><div class="legend-dot l-blocked"></div>Blocked / Reserved</div>
           <div id="legendGroups"></div>
         </div>
 
@@ -913,7 +1088,7 @@
 // ── FIREBASE IMPORTS ──────────────────────────────────────────────────────────
 import { initializeApp }                          from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
 import { getDatabase, ref, set, onValue,
-         onDisconnect }                           from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js';
+         onDisconnect, runTransaction }             from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js';
 
 // ── FIREBASE CONFIG ───────────────────────────────────────────────────────────
 const firebaseConfig = {
@@ -938,8 +1113,8 @@ document.getElementById('sessionDisplay').textContent = `SESSION: ${SESSION_ID}`
 
 // ── THEATER DATA ──────────────────────────────────────────────────────────────
 const ORCH_ROWS = [
-  {label:'AA', left:0,  center:16, right:0,  first:true},
-  {label:'BB', left:0,  center:15, right:0,  first:false},
+  {label:'AA', left:0,  center:16, right:0,  first:false},
+  {label:'BB', left:5,  center:15, right:5,  first:false},
   {label:'A',  left:6,  center:16, right:6,  first:false},
   {label:'B',  left:7,  center:15, right:7,  first:false},
   {label:'C',  left:0,  center:16, right:0,  first:false},
@@ -978,25 +1153,36 @@ const PARTERRE_RIGHT_ROWS = [
   {label:'W', seats:8}, {label:'V', seats:6},
 ];
 const DC_ROWS = [
-  {label:'A', left:0,  center:0,  right:0,  first:true},
+  {label:'A', left:11,  center:17,  right:11,  first:true},
   {label:'B', left:10, center:18, right:10, first:false},
   {label:'C', left:10, center:19, right:10, first:false},
   {label:'D', left:9,  center:20, right:9,  first:false},
   {label:'E', left:9,  center:19, right:9,  first:false},
 ];
 const GAL_ROWS = [
-  {label:'A', left:0, center:0,  right:0,  first:true},
+  {label:'A', left:9, center:16,  right:9,  first:true},
   {label:'B', left:9, center:18, right:9,  first:false},
   {label:'C', left:9, center:19, right:9,  first:false},
   {label:'D', left:9, center:20, right:9,  first:false},
   {label:'E', left:9, center:21, right:9,  first:false},
 ];
 const BAL_ROWS = [
-  {label:'A', seats:0,  first:true},
+  {label:'A', seats:42,  first:true},
   {label:'B', seats:42}, {label:'C', seats:43}, {label:'D', seats:44},
   {label:'E', seats:45}, {label:'F', seats:46}, {label:'G', seats:45},
   {label:'H', seats:46}, {label:'J', seats:45}, {label:'K', seats:44},
 ];
+
+// ── ALLOCATION CONSTANTS ──────────────────────────────────────────────────────
+// Maximum seats in a single Parterre side (gates parterre routing)
+const PARTERRE_MAX_SIZE     = 38;
+// Maximum overflow from a door-side section that can spill into paired Parterre
+const PARTERRE_OVERFLOW_MAX = 39;
+// Minimum available seats before OC is reserved for large groups only
+const OC_LARGE_GROUP_MIN    = 80;
+// Minimum available seats required before routing a group to DC or Gallery
+// (prevents sending large groups to nearly-full upper levels)
+const UPPER_LEVEL_MIN_AV    = 40;
 
 // ── CAPACITY TOTALS (computed from data) ──────────────────────────────────────
 function sumSection(rows, fn) { return rows.reduce((t,r) => t + (r.first ? 0 : fn(r)), 0); }
@@ -1094,7 +1280,15 @@ function tryAlloc(secs, size, group) {
   const pool = secs.flatMap(s => getAvailable(s));
   if (pool.length < size) return null;
   const chosen = pool.slice(0, size);
-  chosen.forEach(id => { state.seats[id] = {groupId: group.id, groupName: group.name}; });
+  // Build the assignment in a temporary map first; only merge into state once
+  // we're certain all seats are available — prevents partial-state corruption
+  // if a seat somehow appears twice in the pool.
+  const pending = {};
+  for (const id of chosen) {
+    if (state.seats[id] || state.blockedSeats[id]) return null; // double-check
+    pending[id] = {groupId: group.id, groupName: group.name};
+  }
+  Object.assign(state.seats, pending);
   const used = [...new Set(chosen.map(id => id.split('_')[0]))];
   return {seats: chosen, location: used.map(u => SEC_NAMES[u]).join(' + '), sections: used};
 }
@@ -1114,24 +1308,26 @@ function allocateGroup(group) {
   // ── PREFER PARTERRE (groups < 38, user opted in) ──────────────────────────
   // Choose whichever Parterre side has more availability.
   // Fall through to normal routing if neither side has enough room.
-  if (preferParterre && size < 39) {
+  if (preferParterre && size <= PARTERRE_MAX_SIZE) {
     const plAv = calcAvail('PL');
     const prAv = calcAvail('PR');
-    // Pick the side with more seats; break ties by preferring the door side
-    const bestPart = (plAv >= prAv) ? 'PL' : 'PR';
-    const bestAv   = Math.max(plAv, prAv);
-    if (bestAv >= size) return tryAlloc([bestPart], size, group);
-    // Neither side alone fits — try both together if combined total is enough
-    if (plAv + prAv >= size) return tryAlloc(['PL', 'PR'], size, group);
-    // Parterre is too full — fall through to normal routing below
+    // Pick the door-side parterre first; fall back to the other side if it has more room
+    const doorPart  = partSide;
+    const otherPart = partSide === 'PL' ? 'PR' : 'PL';
+    const doorAv    = partSide === 'PL' ? plAv : prAv;
+    const otherAv   = partSide === 'PL' ? prAv : plAv;
+    const bestPart  = doorAv >= size ? doorPart : (otherAv >= size ? otherPart : null);
+    if (bestPart) return tryAlloc([bestPart], size, group);
+    // Neither side alone fits — fall through to normal routing.
+    // Groups must fit within one Parterre side; no cross-side splits.
   }
 
   // ── NORMAL ROUTING ────────────────────────────────────────────────────────
-  if (sideAv >= size)                                          return tryAlloc([side], size, group);
-  if (sideAv > 0 && overflow <= 38 && partAv >= overflow)     return tryAlloc([side, partSide], size, group);
-  if (sideAv < 10 && size < 39 && partAv >= size)             return tryAlloc([partSide], size, group);
+  if (sideAv >= size)                                                          return tryAlloc([side], size, group);
+  if (sideAv > 0 && overflow <= PARTERRE_OVERFLOW_MAX && partAv >= overflow)   return tryAlloc([side, partSide], size, group);
+  if (sideAv < 10 && size <= PARTERRE_MAX_SIZE && partAv >= size)              return tryAlloc([partSide], size, group);
   // ── STEP 4: Orchestra Center ──────────────────────────────────────────────
-  if (!(ocAv < 80 && size > 79) && ocAv >= size)              return tryAlloc(['OC'], size, group);
+  if (!(ocAv < OC_LARGE_GROUP_MIN && size > OC_LARGE_GROUP_MIN - 1) && ocAv >= size) return tryAlloc(['OC'], size, group);
 
   // ── STEP 4b: Full orchestra floor as a combined pool ─────────────────────
   // Reached only when no single orchestra section (side OR center) can fit
@@ -1154,13 +1350,28 @@ function allocateGroup(group) {
     }
   }
 
-  if (dcAv >= 40 && dcAv >= size) {
+  if (dcAv >= UPPER_LEVEL_MIN_AV && dcAv >= size) {
     const r = tryAlloc(['DCL','DCC','DCR'], size, group); if (r) return r;
   }
-  if (galAv >= 40 && galAv >= size) {
+  if (galAv >= UPPER_LEVEL_MIN_AV && galAv >= size) {
     const r = tryAlloc(['GL','GC','GR'], size, group); if (r) return r;
   }
-  if (balAv >= size)                                           return tryAlloc(['BC'], size, group);
+  if (balAv >= size) return tryAlloc(['BC'], size, group);
+
+  // ── FINAL CATCH-ALL: try every remaining section as a combined pool ────────
+  // Reached only when the structured routing above failed — e.g. the hall is
+  // heavily fragmented and no single section or pairing has enough contiguous
+  // room. We gather all available seats across every section and seat the group
+  // wherever space exists, rather than returning null unnecessarily.
+  {
+    const allSecs = ['OL','OC','OR','PL','PR','DCL','DCC','DCR','GL','GC','GR','BC'];
+    const totalAv = allSecs.reduce((t, s) => t + calcAvail(s), 0);
+    if (totalAv >= size) {
+      const r = tryAlloc(allSecs, size, group);
+      if (r) return r;
+    }
+  }
+
   return null;
 }
 
@@ -1169,29 +1380,39 @@ function allocateGroup(group) {
 // onValue() is the ONLY place we read from Firebase.
 // This guarantees both users always see the same data.
 
-let iAmWriting = false;   // suppress the echo of our own write
+// pendingWrites tracks how many of our own writes are in-flight so we can
+// suppress the echoed onValue callbacks without a fragile single boolean.
+let pendingWrites = 0;
 
-async function commitState() {
+async function commitState(retries = 3) {
   const payload = {
     groups:       state.groups,
     seats:        state.seats,
     blockedSeats: state.blockedSeats,
     nextGroupId:  state.nextGroupId,
   };
-  iAmWriting = true;
-  try {
-    await set(stateRef, payload);
-  } catch(err) {
-    console.error('Firebase write error:', err);
-    showError('Could not save — check your connection.');
-    iAmWriting = false;
+  pendingWrites++;
+  for (let attempt = 1; attempt <= retries; attempt++) {
+    try {
+      await set(stateRef, payload);
+      return; // success — pendingWrites will be decremented in onValue
+    } catch(err) {
+      console.error(`Firebase write error (attempt ${attempt}/${retries}):`, err);
+      if (attempt === retries) {
+        pendingWrites--; // give up — release the counter so onValue isn't permanently suppressed
+        showError('Could not save — check your connection.');
+      } else {
+        // Exponential back-off: 500ms, 1000ms, …
+        await new Promise(res => setTimeout(res, 500 * attempt));
+      }
+    }
   }
 }
 
 // Subscribe: fires immediately with current data, then on every remote change
 let firstLoad = true;
 onValue(stateRef, (snapshot) => {
-  if (iAmWriting) { iAmWriting = false; return; }  // skip our own echo
+  if (pendingWrites > 0) { pendingWrites--; return; }  // skip echoes of our own writes
 
   const data = snapshot.val();
   if (!data) { renderAll(); } else {
@@ -1270,7 +1491,7 @@ function selectDoor(door) {
   document.getElementById('doorRight').classList.toggle('active', door === 'Right');
 }
 
-function addGroup() {
+async function addGroup() {
   const name           = document.getElementById('groupName').value.trim();
   const size           = parseInt(document.getElementById('groupSize').value);
   const preferParterre = document.getElementById('preferParterre').checked;
@@ -1279,39 +1500,90 @@ function addGroup() {
     showError('Please enter a valid group name and size (1–250).');
     return;
   }
-  if (preferParterre && size >= 39) {
+  if (preferParterre && size >= 38) {
     showError('Prefer Parterre only applies to groups under 38. Seating normally.');
   } else {
     clearError();
   }
 
-  const group = {
-    id:    state.nextGroupId++,
-    name, size,
-    door:           state.selectedDoor,
-    preferParterre: preferParterre && size < 39,
-    color: GROUP_COLORS[state.groups.length % GROUP_COLORS.length],
-    allocation: null,
-  };
+  // Lock the Seat Group button while the transaction is in flight
+  const btn = document.getElementById('seatGroupBtn');
+  btn.disabled = true;
+  pushUndo(); // snapshot before mutation so the action can be undone
 
-  const result = allocateGroup(group);
-  if (!result) {
-    state.nextGroupId--;
-    showError(`Could not seat ${size} — not enough contiguous seats available.`);
-    return;
+  try {
+    // runTransaction guarantees atomicity: if two users submit simultaneously,
+    // Firebase serialises the writes so neither silently overwrites the other.
+    let allocationResult = null;
+    await runTransaction(stateRef, (current) => {
+      if (!current) return current; // nothing in DB yet — abort and retry
+
+      // Work against the authoritative server snapshot, not local state
+      const txGroups       = current.groups       ?? [];
+      const txSeats        = current.seats        ?? {};
+      const txBlocked      = current.blockedSeats ?? {};
+      const txNextId       = current.nextGroupId  ?? 1;
+
+      const group = {
+        id:    txNextId,
+        name, size,
+        door:           state.selectedDoor,
+        preferParterre: preferParterre && size < 39,
+        color: GROUP_COLORS[txGroups.length % GROUP_COLORS.length],
+        allocation: null,
+      };
+
+      // Run allocation against the server snapshot
+      const savedSeats   = state.seats;
+      const savedBlocked = state.blockedSeats;
+      state.seats        = txSeats;
+      state.blockedSeats = txBlocked;
+
+      const result = allocateGroup(group);
+
+      if (!result) {
+        // Restore local state and abort transaction
+        state.seats        = savedSeats;
+        state.blockedSeats = savedBlocked;
+        allocationResult   = null;
+        return; // returning undefined aborts the transaction
+      }
+
+      group.allocation = result;
+      allocationResult = result;
+
+      // Build the committed state to write back
+      const newSeats = Object.assign({}, txSeats, state.seats);
+      state.seats        = savedSeats;
+      state.blockedSeats = savedBlocked;
+
+      return {
+        groups:       [...txGroups, group],
+        seats:        newSeats,
+        blockedSeats: txBlocked,
+        nextGroupId:  txNextId + 1,
+      };
+    });
+
+    if (!allocationResult) {
+      undoStack.pop(); // discard the snapshot — no mutation occurred
+      if (undoStack.length === 0) document.getElementById('undoBtn').disabled = true;
+      showError(`Could not seat ${size} — not enough contiguous seats available.`);
+    } else {
+      document.getElementById('groupName').value = '';
+      document.getElementById('groupSize').value = '';
+      // onValue will fire and re-sync state + renderAll after the transaction commits
+    }
+  } catch(err) {
+    undoStack.pop(); // discard snapshot on error too
+    if (undoStack.length === 0) document.getElementById('undoBtn').disabled = true;
+    console.error('Transaction error:', err);
+    showError('Could not save — check your connection.');
+  } finally {
+    btn.disabled = false;
   }
 
-  group.allocation = result;
-  state.groups.push(group);
-
-  document.getElementById('groupName').value = '';
-  document.getElementById('groupSize').value = '';
-
-  commitState();
-  renderAll();
-
-  // IMPROVEMENT 5 — On mobile, scroll the group list into view so the
-  // user sees the confirmation without having to manually scroll down
+  // IMPROVEMENT 5 — On mobile, scroll the group list into view
   if (window.innerWidth <= 600) {
     document.getElementById('groupList')
       .scrollIntoView({ behavior: 'smooth', block: 'nearest' });
@@ -1321,6 +1593,7 @@ function addGroup() {
 function removeGroup(id) {
   const group = state.groups.find(g => g.id === id);
   if (!group) return;
+  pushUndo();
   for (const sid of Object.keys(state.seats)) {
     if (state.seats[sid]?.groupId === id) delete state.seats[sid];
   }
@@ -1335,8 +1608,16 @@ function resetAll() {
   state.seats        = {};
   state.blockedSeats = {};
   state.nextGroupId  = 1;
+  undoStack.length   = 0; // prior history is irrelevant after a full reset
+  document.getElementById('undoBtn').disabled = true;
   commitState();
   renderAll();
+  // Re-open the first-row modal so users reconfigure reserved rows after reset
+  document.querySelectorAll('.frm-checkbox').forEach(cb => {
+    cb.checked = true;
+    cb.closest('.frm-check-row').classList.add('checked');
+  });
+  document.getElementById('firstRowModal').classList.remove('hidden');
 }
 
 // ── ERROR HELPERS ─────────────────────────────────────────────────────────────
@@ -1363,6 +1644,48 @@ function getSeatColor(seatId) {
   const d = state.seats[seatId];
   if (!d) return null;
   return groupColorMap.get(d.groupId) ?? '#888';
+}
+
+// ── SEAT DISPLAY NUMBERING ────────────────────────────────────────────────────
+// Left sections (OL, DCL, GL): seat 1 is at the aisle (rightmost, nearest center).
+// Internal IDs run 1→N left-to-right (outer wall → aisle), so we reverse the
+// displayed number so the aisle seat shows as 1.
+// Right sections (OR, DCR, GR): seat 1 is already at the aisle (leftmost, nearest
+// center), so no reversal needed.
+function getSeatRowCount(seatId) {
+  const parts = seatId.split('_');
+  const sec   = parts[0];          // e.g. OL, OR, DCL, DCR, GL, GR, OC, BC …
+  const row   = parts[1];          // row label e.g. BB, A, B …
+  switch(sec) {
+    case 'OL': { const r = ORCH_ROWS.find(x => x.label === row);   return r ? r.left   : 0; }
+    case 'OR': { const r = ORCH_ROWS.find(x => x.label === row);   return r ? r.right  : 0; }
+    case 'DCL':{ const r = DC_ROWS.find(x  => x.label === row);    return r ? r.left   : 0; }
+    case 'DCR':{ const r = DC_ROWS.find(x  => x.label === row);    return r ? r.right  : 0; }
+    case 'GL': { const r = GAL_ROWS.find(x => x.label === row);    return r ? r.left   : 0; }
+    case 'GR': { const r = GAL_ROWS.find(x => x.label === row);    return r ? r.right  : 0; }
+    default:   return 0;
+  }
+}
+function displayNum(seatId) {
+  const parts = seatId.split('_');
+  const sec   = parts[0];
+  const idx   = parseInt(parts[2], 10);
+  // Left sections (OL, DCL, GL): seats render left-to-right (1→N), aisle is on the RIGHT.
+  // OR: uses row-reverse CSS so seat 1 renders on the right (outer wall), aisle is on the LEFT (index N).
+  // All four need reversal so aisle seat displays as 1.
+  // DCR and GR: rendered as plain centered rows left-to-right; seat 1 is already at the
+  // LEFT (aisle side for these sections), so NO reversal needed — they match OR's convention naturally.
+  if (sec === 'OL' || sec === 'DCL' || sec === 'GL' || sec === 'OR') {
+    const total = getSeatRowCount(seatId);
+    return total - idx + 1;
+  }
+  // DCR, GR, center sections, balcony: keep natural order (seat 1 = aisle)
+  return idx;
+}
+function formatSeatId(seatId) {
+  const parts = seatId.split('_');
+  // parts: [section, row, index]  e.g. ['OL','BB','3']
+  return `${parts[0]}-${parts[1]}-${displayNum(seatId)}`;
 }
 
 function makeSeat(seatId, isFirst) {
@@ -1437,6 +1760,7 @@ function makeRow(pfx, label, count, isFirst, align = 'center') {
     // Only toggle seats that are not occupied
     const blockableIds = rowSeatIds.filter(id => !state.seats[id]);
     const allBlocked   = blockableIds.every(id => state.blockedSeats[id]);
+    pushUndo();
     blockableIds.forEach(id => {
       if (allBlocked) { delete state.blockedSeats[id]; }
       else            { state.blockedSeats[id] = true; }
@@ -1453,8 +1777,7 @@ function makeRow(pfx, label, count, isFirst, align = 'center') {
 function showTip(e, seatId, isFirst) {
   const tip = document.getElementById('tooltip');
   const d   = state.seats[seatId];
-  const parts = seatId.split('_');
-  let text = `Seat: ${parts.slice(1).join('-')}`;
+  let text = `Seat: ${formatSeatId(seatId)}`;
   if (isFirst)   text += ' [First Row — Reserved]';
   else if (d)    text += ` — ${d.groupName}`;
   else           text += ' — Available';
@@ -1474,6 +1797,7 @@ let dragBlockAction  = null;    // 'block' | 'unblock' — set on mousedown
 
 function toggleBlock(seatId) {
   if (state.seats[seatId]) return; // occupied seats cannot be blocked
+  pushUndo();
   if (state.blockedSeats[seatId]) {
     delete state.blockedSeats[seatId];
   } else {
@@ -1487,10 +1811,14 @@ function applyBlockDrag(seatId) {
   if (state.seats[seatId]) return; // never drag-block an occupied seat
   if (dragBlockAction === 'block' && !state.blockedSeats[seatId]) {
     state.blockedSeats[seatId] = true;
-    renderAll(); // optimistic local update; commitState fires on mouseup
+    // Optimistic targeted DOM update — avoids full re-render on every mouseenter
+    const el = document.querySelector(`.seat[data-seat-id="${seatId}"]`);
+    if (el) { el.classList.add('blocked'); el.classList.remove('occupied'); el.style.background = el.style.borderColor = ''; }
+    // commitState fires on mouseup; renderAll will do a clean reconcile then
   } else if (dragBlockAction === 'unblock' && state.blockedSeats[seatId]) {
     delete state.blockedSeats[seatId];
-    renderAll();
+    const el = document.querySelector(`.seat[data-seat-id="${seatId}"]`);
+    if (el) { el.classList.remove('blocked'); el.style.background = el.style.borderColor = ''; }
   }
 }
 
@@ -1499,8 +1827,7 @@ let _toastTimer = null;
 function showSeatToast(seatId, isFirst) {
   const toast = document.getElementById('seatToast');
   const d     = state.seats[seatId];
-  const parts = seatId.split('_');
-  let text = `Seat ${parts.slice(1).join('-')}`;
+  let text = `Seat ${formatSeatId(seatId)}`;
   if (isFirst)   text += ' — Reserved';
   else if (d)    text += ` — ${d.groupName}`;
   else           text += ' — Available';
@@ -1788,19 +2115,11 @@ function buildPdfReport() {
   let blockedHtml = '';
   const blockedIds = Object.keys(state.blockedSeats);
   if (blockedIds.length > 0) {
-    // Format seat IDs into human-readable labels (e.g. OL_A_3 → Orch Left · Row A · Seat 3)
-    const SEC_FULL = {
-      OL:'Orch Left', OC:'Orch Center', OR:'Orch Right',
-      PL:'Parterre Left', PR:'Parterre Right',
-      DCL:'DC Left', DCC:'DC Center', DCR:'DC Right',
-      GL:'Gallery Left', GC:'Gallery Center', GR:'Gallery Right',
-      BC:'Balcony',
-    };
     const labels = blockedIds.sort().map(id => {
       const parts  = id.split('_');
-      const sec    = SEC_FULL[parts[0]] ?? parts[0];
+      const sec    = SEC_NAMES[parts[0]] ?? parts[0];
       const row    = parts[1];
-      const seat   = parts[2];
+      const seat   = displayNum(id);
       return `${sec} · Row ${row} · Seat ${seat}`;
     });
     blockedHtml = `
@@ -1824,7 +2143,7 @@ function buildPdfReport() {
       <div class="rpt-footer">
         Reynolds Hall — Intelligent Seating System &nbsp;·&nbsp;
         Generated ${dateStr} at ${timeStr}
-        ${blockedIds && blockedIds.length > 0
+        ${state.groups.some(g => g.preferParterre && g.allocation)
           ? ' &nbsp;·&nbsp; ✦ Parterre Preferred'
           : ''}
       </div>
@@ -1832,11 +2151,52 @@ function buildPdfReport() {
   `;
 }
 
+// ── UNDO STACK ────────────────────────────────────────────────────────────────
+// Each entry is a deep snapshot of {groups, seats, blockedSeats, nextGroupId}.
+// We save a snapshot before every user-initiated mutation. Undo restores the
+// previous snapshot and pushes it to Firebase so all users see the rollback.
+// Max depth is capped at 20 to keep memory use bounded.
+const UNDO_MAX = 20;
+const undoStack = [];
+
+function snapshotState() {
+  return {
+    groups:       JSON.parse(JSON.stringify(state.groups)),
+    seats:        Object.assign({}, state.seats),
+    blockedSeats: Object.assign({}, state.blockedSeats),
+    nextGroupId:  state.nextGroupId,
+  };
+}
+
+function pushUndo() {
+  undoStack.push(snapshotState());
+  if (undoStack.length > UNDO_MAX) undoStack.shift();
+  document.getElementById('undoBtn').disabled = false;
+}
+
+function performUndo() {
+  if (!undoStack.length) return;
+  const snap = undoStack.pop();
+  state.groups       = snap.groups;
+  state.seats        = snap.seats;
+  state.blockedSeats = snap.blockedSeats;
+  state.nextGroupId  = snap.nextGroupId;
+  document.getElementById('undoBtn').disabled = undoStack.length === 0;
+  commitState();
+  renderAll();
+}
+
+document.getElementById('undoBtn').addEventListener('click', performUndo);
+
 // ── BUTTON WIRING ─────────────────────────────────────────────────────────────
 document.getElementById('doorLeft').addEventListener('click',  () => selectDoor('Left'));
 document.getElementById('doorRight').addEventListener('click', () => selectDoor('Right'));
 document.getElementById('seatGroupBtn').addEventListener('click', addGroup);
 document.getElementById('resetBtn').addEventListener('click', resetAll);
+document.getElementById('configFirstRowBtn').addEventListener('click', () => {
+  // Re-open the first-row modal so reserved rows can be reconfigured at any time
+  document.getElementById('firstRowModal').classList.remove('hidden');
+});
 document.getElementById('savePdfBtn').addEventListener('click', () => {
   buildPdfReport();
   // Small delay lets the DOM update before print dialog opens
@@ -1869,6 +2229,8 @@ document.addEventListener('mousedown', e => {
   const seatId = seat.dataset.seatId;
   if (!seatId || state.seats[seatId]) return; // ignore occupied seats
   isDraggingBlock = true;
+  // Snapshot once at the start of the drag gesture so the whole drag is one undo step
+  pushUndo();
   // Drag action is the opposite of the seat's current state
   dragBlockAction = state.blockedSeats[seatId] ? 'unblock' : 'block';
 });
@@ -1908,6 +2270,103 @@ summaryOverlayClose.addEventListener('click', () => {
 });
 summaryOverlay.addEventListener('click', (e) => {
   if (e.target === summaryOverlay) summaryOverlay.style.display = 'none';
+});
+
+// ── FIRST-ROW BLOCK MODAL ─────────────────────────────────────────────────────
+// Shows on page load. User selects which first rows to block as reserved.
+// Generates seat IDs for the chosen rows and adds them to state.blockedSeats.
+
+// Derives seat IDs for a first-row block selection directly from the row data
+// arrays so counts never drift out of sync with the theater layout definition.
+function getFirstRowSeatIds(section, row) {
+  const ids = [];
+  switch(`${section}_${row}`) {
+    case 'OL_BB': {
+      const r = ORCH_ROWS.find(x => x.label === 'BB');
+      if (r) for (let i = 1; i <= r.left;   i++) ids.push(`OL_BB_${i}`);
+      break;
+    }
+    case 'OC_AA': {
+      const r = ORCH_ROWS.find(x => x.label === 'AA');
+      if (r) for (let i = 1; i <= r.center; i++) ids.push(`OC_AA_${i}`);
+      break;
+    }
+    case 'OR_BB': {
+      const r = ORCH_ROWS.find(x => x.label === 'BB');
+      if (r) for (let i = 1; i <= r.right;  i++) ids.push(`OR_BB_${i}`);
+      break;
+    }
+    case 'DC_A': {
+      const r = DC_ROWS.find(x => x.label === 'A');
+      if (r) {
+        for (let i = 1; i <= r.left;   i++) ids.push(`DCL_A_${i}`);
+        for (let i = 1; i <= r.center; i++) ids.push(`DCC_A_${i}`);
+        for (let i = 1; i <= r.right;  i++) ids.push(`DCR_A_${i}`);
+      }
+      break;
+    }
+    case 'GAL_A': {
+      const r = GAL_ROWS.find(x => x.label === 'A');
+      if (r) {
+        for (let i = 1; i <= r.left;   i++) ids.push(`GL_A_${i}`);
+        for (let i = 1; i <= r.center; i++) ids.push(`GC_A_${i}`);
+        for (let i = 1; i <= r.right;  i++) ids.push(`GR_A_${i}`);
+      }
+      break;
+    }
+    case 'BAL_A': {
+      const r = BAL_ROWS.find(x => x.label === 'A');
+      if (r) for (let i = 1; i <= r.seats; i++) ids.push(`BC_A_${i}`);
+      break;
+    }
+  }
+  return ids;
+}
+
+// Wire checkbox labels to toggle .checked class
+document.querySelectorAll('.frm-check-row').forEach(label => {
+  const cb = label.querySelector('.frm-checkbox');
+  // Sync initial state
+  if (cb.checked) label.classList.add('checked');
+  cb.addEventListener('change', () => {
+    label.classList.toggle('checked', cb.checked);
+  });
+  // Clicking anywhere on the row toggles the checkbox
+  label.addEventListener('click', (e) => {
+    if (e.target !== cb) { cb.checked = !cb.checked; cb.dispatchEvent(new Event('change')); }
+  });
+});
+
+function applyFirstRowSelections() {
+  pushUndo();
+  const checkboxes = document.querySelectorAll('.frm-checkbox');
+  checkboxes.forEach(cb => {
+    const ids = getFirstRowSeatIds(cb.dataset.section, cb.dataset.row);
+    if (cb.checked) {
+      ids.forEach(id => { state.blockedSeats[id] = true; });
+    } else {
+      ids.forEach(id => { delete state.blockedSeats[id]; });
+    }
+  });
+}
+
+document.getElementById('frmBtnConfirm').addEventListener('click', () => {
+  applyFirstRowSelections();
+  document.getElementById('firstRowModal').classList.add('hidden');
+  commitState();
+  renderAll();
+});
+
+document.getElementById('frmBtnNone').addEventListener('click', () => {
+  document.querySelectorAll('.frm-checkbox').forEach(cb => {
+    cb.checked = false;
+    cb.closest('.frm-check-row').classList.remove('checked');
+  });
+  // Clear any previously applied first-row blocks and persist the change
+  applyFirstRowSelections();
+  document.getElementById('firstRowModal').classList.add('hidden');
+  commitState();
+  renderAll();
 });
 
 // Initial render while waiting for Firebase first response
