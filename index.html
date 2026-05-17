@@ -1515,6 +1515,7 @@ async function addGroup() {
     // runTransaction guarantees atomicity: if two users submit simultaneously,
     // Firebase serialises the writes so neither silently overwrites the other.
     let allocationResult = null;
+    let committedPayload = null;
     await runTransaction(stateRef, (current) => {
       if (!current) return current; // nothing in DB yet — abort and retry
 
@@ -1557,12 +1558,16 @@ async function addGroup() {
       state.seats        = savedSeats;
       state.blockedSeats = savedBlocked;
 
-      return {
+      // Capture the full committed payload so we can apply it locally after
+      // the transaction resolves, without waiting for the onValue echo.
+      committedPayload = {
         groups:       [...txGroups, group],
         seats:        newSeats,
         blockedSeats: txBlocked,
         nextGroupId:  txNextId + 1,
       };
+
+      return committedPayload;
     });
 
     if (!allocationResult) {
@@ -1570,9 +1575,17 @@ async function addGroup() {
       if (undoStack.length === 0) document.getElementById('undoBtn').disabled = true;
       showError(`Could not seat ${size} — not enough contiguous seats available.`);
     } else {
+      // Apply the committed state to local state immediately so the UI updates
+      // without waiting for Firebase's onValue echo (which caused the refresh bug).
+      state.groups       = committedPayload.groups;
+      state.seats        = committedPayload.seats;
+      state.blockedSeats = committedPayload.blockedSeats;
+      state.nextGroupId  = committedPayload.nextGroupId;
+      // Suppress the upcoming onValue echo from this transaction write
+      pendingWrites++;
+      renderAll();
       document.getElementById('groupName').value = '';
       document.getElementById('groupSize').value = '';
-      // onValue will fire and re-sync state + renderAll after the transaction commits
     }
   } catch(err) {
     undoStack.pop(); // discard snapshot on error too
