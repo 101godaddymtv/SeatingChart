@@ -7,158 +7,292 @@
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Cinzel:wght@400;600&family=Raleway:wght@300;400;500&display=swap');
 
+  /* ── DESIGN TOKENS ──────────────────────────────────────────────────────── */
   :root {
-    --bg-deep: #0a0810;
-    --bg-mid: #110e1a;
-    --bg-surface: #1a1528;
-    --bg-card: #1f1a30;
-    --gold: #c9a227;
-    --gold-light: #e8c44a;
-    --gold-dim: #7a621a;
+    --bg-deep:      #0a0810;
+    --bg-mid:       #110e1a;
+    --bg-surface:   #1a1528;
+    --bg-card:      #1f1a30;
+    --gold:         #c9a227;
+    --gold-light:   #e8c44a;
+    --gold-dim:     #7a621a;
     --purple-vivid: #7b3fa0;
-    --purple-mid: #5a2d78;
-    --purple-dim: #2d1a40;
-    --crimson: #8b1a2f;
+    --purple-mid:   #5a2d78;
+    --purple-dim:   #2d1a40;
+    --crimson:      #8b1a2f;
     --text-primary: #f0e8d0;
-    --text-secondary: #a89070;
-    --text-dim: #5a4a35;
-    --border: rgba(201,162,39,0.2);
-    --shadow-gold: 0 0 30px rgba(201,162,39,0.15);
-    --radius: 6px;
+    --text-secondary:#a89070;
+    --text-dim:     #5a4a35;
+    --border:       rgba(201,162,39,0.2);
+    --shadow-gold:  0 0 30px rgba(201,162,39,0.15);
+    --radius:       6px;
+
+    /* Seat size — overridden at each breakpoint */
+    --seat-size: 10px;
+    --seat-gap:  3px;
+    --row-label-w: 22px;
   }
 
   * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html { scroll-behavior: smooth; }
 
   body {
     font-family: 'Raleway', sans-serif;
     background: var(--bg-deep);
     color: var(--text-primary);
     min-height: 100vh;
+    /* Prevent horizontal overflow at body level */
+    overflow-x: hidden;
     background-image:
       radial-gradient(ellipse at 50% 0%, rgba(123,63,160,0.12) 0%, transparent 60%),
       repeating-linear-gradient(0deg, transparent, transparent 60px, rgba(201,162,39,0.02) 60px, rgba(201,162,39,0.02) 61px),
       repeating-linear-gradient(90deg, transparent, transparent 60px, rgba(201,162,39,0.02) 60px, rgba(201,162,39,0.02) 61px);
   }
 
-  /* ── SYNC BANNER ─────────────────────────── */
+  /* ── SYNC BANNER ────────────────────────────────────────────────────────── */
   #syncBanner {
     display: none;
     position: fixed; top: 0; left: 0; right: 0;
     background: rgba(123,63,160,0.92);
     color: var(--gold-light);
-    font-family: 'Cinzel', serif;
-    font-size: 12px;
-    letter-spacing: 2px;
-    text-align: center;
-    padding: 8px;
-    z-index: 9999;
-    border-bottom: 1px solid var(--gold-dim);
+    font-family: 'Cinzel', serif; font-size: 12px;
+    letter-spacing: 2px; text-align: center; padding: 8px;
+    z-index: 9999; border-bottom: 1px solid var(--gold-dim);
   }
   #syncBanner.show { display: block; }
 
-  /* ── CONNECTION STATUS DOT ───────────────── */
+  /* ── CONNECTION DOT ─────────────────────────────────────────────────────── */
   .conn-dot {
     width: 8px; height: 8px; border-radius: 50%;
     background: #888; box-shadow: 0 0 4px #888;
-    transition: background 0.4s, box-shadow 0.4s;
-    flex-shrink: 0;
+    transition: background 0.4s, box-shadow 0.4s; flex-shrink: 0;
   }
   .conn-dot.connected    { background: #4caf50; box-shadow: 0 0 6px #4caf50; animation: pulse 2s infinite; }
   .conn-dot.disconnected { background: #e05070; box-shadow: 0 0 6px #e05070; }
   @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.5} }
+  @keyframes spin  { to { transform: rotate(360deg); } }
+  @keyframes blockPulse {
+    0%,100% { box-shadow: 0 0 16px rgba(139,26,47,0.4); }
+    50%      { box-shadow: 0 0 28px rgba(139,26,47,0.7); }
+  }
 
-  /* ── HEADER ──────────────────────────────── */
+  /* ── MOVE MODE ──────────────────────────────────────────────────────────── */
+  .move-overlay {
+    display: none;
+    position: absolute; inset: 0;
+    background: rgba(123,63,160,0.15);
+    border: 2px dashed var(--purple-vivid);
+    border-radius: 6px; cursor: pointer; z-index: 20;
+    align-items: center; justify-content: center;
+    font-family: 'Cinzel', serif; font-size: 12px; font-weight: 600;
+    letter-spacing: 1.5px; color: var(--gold-light);
+    text-align: center; padding: 8px;
+    transition: background 0.15s; pointer-events: none;
+  }
+  body.move-mode .move-overlay          { display: flex; pointer-events: all; }
+  body.move-mode .move-overlay:hover    { background: rgba(123,63,160,0.40); border-color: var(--gold); color: var(--gold); }
+  .group-card.move-pending              { border-color: var(--purple-vivid) !important; box-shadow: 0 0 0 2px var(--purple-vivid), 0 0 16px rgba(123,63,160,0.4); }
+
+  .btn-move {
+    font-size: 11px; padding: 6px 12px; border-radius: 4px;
+    background: var(--purple-dim); border: 1px solid var(--purple-mid);
+    color: var(--gold-light); cursor: pointer; letter-spacing: 0.5px;
+    transition: background 0.15s; min-height: 36px;
+  }
+  .btn-move:hover  { background: var(--purple-mid); }
+  .btn-move.active { background: var(--purple-vivid); border-color: var(--gold-dim); }
+
+  #placeManuallyBtn {
+    margin-top: 8px; width: 100%;
+    background: linear-gradient(135deg, var(--purple-dim), var(--purple-mid));
+    border: 1px solid var(--purple-mid);
+  }
+  #placeManuallyBtn:hover { background: linear-gradient(135deg, var(--purple-mid), var(--purple-vivid)); }
+
+  /* ── HEADER ─────────────────────────────────────────────────────────────── */
   header {
     background: linear-gradient(180deg, rgba(17,14,26,0.98) 0%, rgba(10,8,16,0.95) 100%);
     border-bottom: 1px solid var(--border);
-    padding: 16px 32px;
+    padding: 14px 24px;
     display: flex; align-items: center; justify-content: space-between;
     position: sticky; top: 0; z-index: 100;
     box-shadow: 0 4px 40px rgba(0,0,0,0.6);
+    gap: 12px;
   }
   .header-logo {
-    font-family: 'Cinzel', serif; font-size: 22px;
-    color: var(--gold); letter-spacing: 3px;
+    font-family: 'Cinzel', serif; font-size: 20px;
+    color: var(--gold); letter-spacing: 2px;
     text-shadow: 0 0 20px rgba(201,162,39,0.4);
+    white-space: nowrap;
   }
   .header-logo span {
-    color: var(--text-secondary); font-size: 13px; display: block;
-    letter-spacing: 5px; font-family: 'Raleway', sans-serif;
+    color: var(--text-secondary); font-size: 11px; display: block;
+    letter-spacing: 4px; font-family: 'Raleway', sans-serif;
     font-weight: 300; margin-top: 2px;
   }
-  .header-meta { display: flex; gap: 24px; align-items: center; }
+  .header-meta { display: flex; gap: 16px; align-items: center; flex-shrink: 0; }
   .active-users {
     background: var(--purple-dim); border: 1px solid var(--purple-mid);
-    color: var(--gold-light); padding: 6px 14px; border-radius: 20px;
+    color: var(--gold-light); padding: 8px 14px; border-radius: 20px;
     font-size: 12px; letter-spacing: 1px;
-    display: flex; align-items: center; gap: 8px;
+    display: flex; align-items: center; gap: 8px; min-height: 44px;
   }
   .session-id { font-size: 11px; color: var(--text-dim); font-family: monospace; }
 
-  /* ── STATS BAR ───────────────────────────── */
+  /* ── STATS BAR ──────────────────────────────────────────────────────────── */
   .stats-bar {
     background: var(--bg-mid); border-bottom: 1px solid var(--border);
-    padding: 10px 32px; display: flex; gap: 32px; font-size: 12px; flex-wrap: wrap;
+    display: grid;
+    grid-template-columns: repeat(9, 1fr);
+    font-size: 12px;
   }
-  .stat { display: flex; flex-direction: column; gap: 2px; }
-  .stat-label { color: var(--text-dim); letter-spacing: 1px; text-transform: uppercase; font-size: 10px; }
-  .stat-value { color: var(--gold); font-family: 'Cinzel', serif; font-size: 16px; }
+  .stat {
+    display: flex; flex-direction: column; gap: 2px;
+    padding: 10px 12px;
+    border-right: 1px solid var(--border);
+  }
+  .stat:last-child { border-right: none; }
+  .stat-label { color: var(--text-dim); letter-spacing: 1px; text-transform: uppercase; font-size: 9px; }
+  .stat-value { color: var(--gold); font-family: 'Cinzel', serif; font-size: 15px; }
 
-  /* ── LAYOUT ──────────────────────────────── */
-  .main-layout {
-    display: grid; grid-template-columns: 320px 1fr;
-    gap: 0; min-height: calc(100vh - 120px);
+  /* ── ROOT LAYOUT ────────────────────────────────────────────────────────── */
+  /*
+   * iPad (landscape 1024px, portrait 768px) is the primary target.
+   * Desktop: sidebar | theater — side by side.
+   * iPad portrait / small tablet: panel tabs replace the sidebar;
+   *   theater fills the full width below the tab bar.
+   * Phone: same tab-panel system, seats shrink further.
+   */
+
+  .app-shell {
+    display: flex;
+    flex-direction: row;
+    height: calc(100vh - 88px); /* 88 = header + stats bar */
+    overflow: hidden;
   }
+
+  /* ── SIDEBAR (desktop) ──────────────────────────────────────────────────── */
   .sidebar {
-    background: var(--bg-mid); border-right: 1px solid var(--border);
-    padding: 24px 20px; overflow-y: auto;
-    display: flex; flex-direction: column; gap: 24px;
+    width: 300px;
+    min-width: 260px;
+    max-width: 320px;
+    flex-shrink: 0;
+    background: var(--bg-mid);
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
   }
 
-  /* ── SIDEBAR COMPONENTS ──────────────────── */
+  /* Sidebar inner scroll area */
+  .sidebar-scroll {
+    flex: 1;
+    overflow-y: auto;
+    padding: 20px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  /* ── THEATER COLUMN ─────────────────────────────────────────────────────── */
+  .theater-column {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    min-width: 0;
+  }
+
+  .theater-area {
+    flex: 1;
+    overflow-x: auto;
+    overflow-y: auto;
+    padding: 16px;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .theater-container {
+    /* Scale to fit available width while keeping proportions */
+    width: max-content;
+    min-width: 100%;
+    margin: 0 auto;
+  }
+
+  /* ── SUMMARY BAR ────────────────────────────────────────────────────────── */
+  .summary-area {
+    background: var(--bg-mid);
+    border-top: 1px solid var(--border);
+    padding: 12px 20px;
+    flex-shrink: 0;
+    max-height: 110px;
+    overflow-y: auto;
+  }
+  .summary-title {
+    font-family: 'Cinzel', serif; font-size: 11px; letter-spacing: 3px;
+    color: var(--gold); margin-bottom: 8px;
+  }
+  .summary-grid { display: flex; flex-wrap: wrap; gap: 8px; }
+  .summary-chip {
+    background: var(--bg-surface); border: 1px solid var(--border);
+    border-radius: 20px; padding: 5px 14px; font-size: 11px;
+    display: flex; gap: 8px; align-items: center;
+  }
+  .chip-color { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+
+  /* ── SIDEBAR COMPONENTS ─────────────────────────────────────────────────── */
   .section-title {
-    font-family: 'Cinzel', serif; font-size: 13px; letter-spacing: 3px;
-    color: var(--gold); text-transform: uppercase; margin-bottom: 14px;
+    font-family: 'Cinzel', serif; font-size: 12px; letter-spacing: 3px;
+    color: var(--gold); text-transform: uppercase; margin-bottom: 12px;
     display: flex; align-items: center; gap: 10px;
   }
   .section-title::after { content: ''; flex: 1; height: 1px; background: var(--border); }
-  .form-group { margin-bottom: 14px; }
+
+  .form-group { margin-bottom: 12px; }
   .form-label {
-    font-size: 11px; letter-spacing: 1px; color: var(--text-secondary);
-    text-transform: uppercase; margin-bottom: 6px; display: block;
+    font-size: 10px; letter-spacing: 1px; color: var(--text-secondary);
+    text-transform: uppercase; margin-bottom: 5px; display: block;
   }
   .form-input {
     width: 100%; background: var(--bg-surface); border: 1px solid var(--border);
-    color: var(--text-primary); padding: 10px 14px; border-radius: var(--radius);
-    font-family: 'Raleway', sans-serif; font-size: 14px;
+    color: var(--text-primary); padding: 11px 14px; border-radius: var(--radius);
+    font-family: 'Raleway', sans-serif; font-size: 15px;
     transition: border-color 0.2s, box-shadow 0.2s;
+    -webkit-appearance: none;
   }
   .form-input:focus { outline: none; border-color: var(--gold-dim); box-shadow: 0 0 0 3px rgba(201,162,39,0.1); }
+
   .door-select { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
   .door-btn {
-    padding: 10px; background: var(--bg-surface); border: 1px solid var(--border);
+    padding: 0 10px; background: var(--bg-surface); border: 1px solid var(--border);
     color: var(--text-secondary); border-radius: var(--radius); cursor: pointer;
     font-family: 'Raleway', sans-serif; font-size: 13px; letter-spacing: 1px;
     transition: all 0.2s; text-align: center;
+    min-height: 48px; display: flex; align-items: center; justify-content: center;
   }
   .door-btn:hover { border-color: var(--gold-dim); color: var(--gold); }
   .door-btn.active { background: var(--purple-dim); border-color: var(--gold); color: var(--gold-light); box-shadow: 0 0 12px rgba(201,162,39,0.2); }
+
   .btn-primary {
     width: 100%; padding: 13px;
     background: linear-gradient(135deg, var(--purple-mid), var(--purple-vivid));
     border: 1px solid var(--gold-dim); color: var(--gold-light);
     border-radius: var(--radius); cursor: pointer;
-    font-family: 'Cinzel', serif; font-size: 13px; letter-spacing: 2px;
+    font-family: 'Cinzel', serif; font-size: 12px; letter-spacing: 2px;
     transition: all 0.2s; text-transform: uppercase;
+    min-height: 48px;
   }
   .btn-primary:hover { background: linear-gradient(135deg, var(--purple-vivid), #9b4fc0); box-shadow: var(--shadow-gold); }
   .btn-primary:disabled { opacity: 0.4; cursor: not-allowed; }
+
   .btn-danger {
-    padding: 5px 10px; background: rgba(139,26,47,0.3);
-    border: 1px solid rgba(139,26,47,0.5); color: #e05070;
-    border-radius: 4px; cursor: pointer; font-size: 11px; transition: all 0.2s;
+    min-width: 44px; min-height: 44px; padding: 0 12px;
+    background: rgba(139,26,47,0.3); border: 1px solid rgba(139,26,47,0.5);
+    color: #e05070; border-radius: 4px; cursor: pointer; font-size: 14px;
+    transition: all 0.2s; display: flex; align-items: center; justify-content: center;
   }
   .btn-danger:hover { background: rgba(139,26,47,0.6); }
+
   .group-list { display: flex; flex-direction: column; gap: 8px; }
   .group-card {
     background: var(--bg-surface); border: 1px solid var(--border);
@@ -167,89 +301,158 @@
     position: relative; overflow: hidden;
   }
   .group-card::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; }
-  .group-card.orchestra::before   { background: var(--gold); }
-  .group-card.dress-circle::before{ background: #a04070; }
-  .group-card.gallery::before     { background: #4070a0; }
-  .group-card.balcony::before     { background: #408060; }
-  .group-card.parterre::before    { background: #a06020; }
-  .group-card.unallocated::before { background: var(--text-dim); }
+  .group-card.orchestra::before    { background: var(--gold); }
+  .group-card.dress-circle::before { background: #a04070; }
+  .group-card.gallery::before      { background: #4070a0; }
+  .group-card.balcony::before      { background: #408060; }
+  .group-card.parterre::before     { background: #a06020; }
+  .group-card.unallocated::before  { background: var(--text-dim); }
   .group-card-header { display: flex; align-items: center; justify-content: space-between; }
-  .group-name { font-family: 'Playfair Display', serif; font-weight: 600; color: var(--text-primary); }
-  .group-size { font-size: 11px; color: var(--text-secondary); }
+  .group-name     { font-family: 'Playfair Display', serif; font-weight: 600; color: var(--text-primary); }
+  .group-size     { font-size: 11px; color: var(--text-secondary); }
   .group-location { font-size: 11px; color: var(--gold); font-style: italic; }
-  .group-door { font-size: 10px; color: var(--text-dim); letter-spacing: 1px; }
-  .error-msg { color: #e05070; font-size: 12px; margin-top: 6px; display: none; }
-  .no-groups { color: var(--text-dim); font-size: 12px; text-align: center; padding: 20px; font-style: italic; }
+  .group-door     { font-size: 10px; color: var(--text-dim); letter-spacing: 1px; }
+  .error-msg      { color: #e05070; font-size: 12px; margin-top: 6px; display: none; }
+  .no-groups      { color: var(--text-dim); font-size: 12px; text-align: center; padding: 20px; font-style: italic; }
 
-  /* ── THEATER ─────────────────────────────── */
-  .theater-area { padding: 24px; overflow-x: auto; overflow-y: auto; }
-  .theater-container { max-width: 1100px; margin: 0 auto; }
-  .theater-title {
-    font-family: 'Cinzel', serif; font-size: 15px; letter-spacing: 4px;
-    color: var(--gold); text-align: center; margin-bottom: 20px;
+  .toggle-row {
+    display: flex; align-items: center; gap: 10px; padding: 10px 12px;
+    background: var(--bg-surface); border: 1px solid var(--border);
+    border-radius: var(--radius); cursor: pointer;
+    transition: border-color 0.2s; user-select: none; min-height: 48px;
   }
-  .legend { display: flex; flex-wrap: wrap; gap: 14px; justify-content: center; margin-bottom: 20px; }
+  .toggle-row:hover { border-color: var(--gold-dim); }
+  .toggle-row.active { border-color: var(--gold); background: var(--purple-dim); box-shadow: 0 0 10px rgba(201,162,39,0.15); }
+  .toggle-checkbox {
+    appearance: none; -webkit-appearance: none;
+    width: 20px; height: 20px; border-radius: 3px;
+    border: 1px solid var(--gold-dim); background: var(--bg-deep);
+    cursor: pointer; flex-shrink: 0;
+    transition: background 0.2s, border-color 0.2s; position: relative;
+  }
+  .toggle-checkbox:checked { background: var(--gold); border-color: var(--gold); }
+  .toggle-checkbox:checked::after { content: '✓'; position: absolute; top: 0; left: 3px; font-size: 13px; color: var(--bg-deep); font-weight: 700; }
+  .toggle-label { font-size: 12px; letter-spacing: 1px; color: var(--text-secondary); text-transform: uppercase; flex: 1; }
+  .toggle-row.active .toggle-label { color: var(--gold-light); }
+  .toggle-hint { font-size: 10px; color: var(--text-dim); margin-top: 5px; padding-left: 2px; font-style: italic; }
+
+  .btn-block-mode {
+    width: 100%; padding: 13px;
+    background: var(--bg-surface); border: 1px solid var(--border);
+    color: var(--text-secondary); border-radius: var(--radius); cursor: pointer;
+    font-family: 'Cinzel', serif; font-size: 12px; letter-spacing: 2px;
+    transition: all 0.2s; text-transform: uppercase;
+    display: flex; align-items: center; justify-content: center; gap: 10px;
+    min-height: 48px;
+  }
+  .btn-block-mode:hover { border-color: var(--gold-dim); color: var(--gold); }
+  .btn-block-mode.ada-btn.active {
+    background: linear-gradient(135deg, #1a3a5a, #2a6b9a);
+    border-color: #4aa3ff; color: #fff;
+    box-shadow: 0 0 12px rgba(74,163,255,0.35);
+  }
+  .btn-block-mode.active {
+    background: linear-gradient(135deg, var(--crimson), #6b0020);
+    border-color: #e05070; color: #ffb0b0;
+    box-shadow: 0 0 16px rgba(139,26,47,0.4);
+    animation: blockPulse 2s ease-in-out infinite;
+  }
+  .block-mode-hint {
+    font-size: 10px; color: var(--text-dim); text-align: center;
+    margin-top: 6px; font-style: italic; letter-spacing: 0.5px; display: none;
+  }
+  .block-mode-hint.visible { display: block; color: #e05070; }
+
+  /* ── THEATER MAP ────────────────────────────────────────────────────────── */
+  .theater-title {
+    font-family: 'Cinzel', serif; font-size: 14px; letter-spacing: 4px;
+    color: var(--gold); text-align: center; margin-bottom: 16px;
+  }
+  .legend { display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; margin-bottom: 16px; }
   .legend-item { display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--text-secondary); }
   .legend-dot { width: 12px; height: 12px; border-radius: 3px; }
   .l-empty    { background: var(--bg-surface); border: 1px solid var(--border); }
   .l-reserved { background: var(--text-dim); }
-  .section-wrap { margin-bottom: 28px; }
+  .l-blocked  {
+    background: var(--crimson); border: 1px solid #e05070;
+    position: relative; overflow: hidden;
+  }
+  .l-blocked::before, .l-blocked::after {
+    content: ''; position: absolute; top: 50%; left: 50%;
+    width: 130%; height: 1.5px; background: rgba(255,255,255,0.7);
+    transform-origin: center;
+  }
+  .l-blocked::before { transform: translate(-50%,-50%) rotate(45deg); }
+  .l-blocked::after  { transform: translate(-50%,-50%) rotate(-45deg); }
+
+  .section-wrap { margin-bottom: 24px; position: relative; }
   .section-header {
-    font-family: 'Cinzel', serif; font-size: 11px; letter-spacing: 3px;
-    color: var(--text-secondary); text-align: center; margin-bottom: 10px; text-transform: uppercase;
+    font-family: 'Cinzel', serif; font-size: 10px; letter-spacing: 3px;
+    color: var(--text-secondary); text-align: center; margin-bottom: 8px; text-transform: uppercase;
   }
   .stage-bar {
     background: linear-gradient(135deg, var(--gold-dim), var(--gold), var(--gold-dim));
-    color: var(--bg-deep); font-family: 'Cinzel', serif; font-size: 13px;
-    letter-spacing: 6px; text-align: center; padding: 10px; border-radius: 4px;
-    margin-bottom: 16px; text-transform: uppercase;
+    color: var(--bg-deep); font-family: 'Cinzel', serif; font-size: 12px;
+    letter-spacing: 6px; text-align: center; padding: 8px; border-radius: 4px;
+    margin-bottom: 14px; text-transform: uppercase;
     box-shadow: 0 4px 20px rgba(201,162,39,0.3);
   }
-  .orch-grid { display: grid; grid-template-columns: auto 1fr auto; gap: 6px; align-items: start; }
+
+  .orch-grid { display: grid; grid-template-columns: auto 1fr auto; gap: var(--seat-gap); align-items: start; }
   .orch-section { display: flex; flex-direction: column; gap: 2px; }
   .orch-center  { display: flex; flex-direction: column; gap: 2px; }
 
-  /* All seat rows default to centered (used by center orchestra, DC, gallery, balcony) */
-  .seat-row { display: flex; align-items: center; gap: 3px; justify-content: center; }
+  .seat-row       { display: flex; align-items: center; gap: var(--seat-gap); justify-content: center; }
+  .seat-row-left  { display: flex; align-items: center; gap: var(--seat-gap); justify-content: flex-end; flex-direction: row; }
+  .seat-row-right { display: flex; align-items: center; gap: var(--seat-gap); justify-content: flex-start; flex-direction: row-reverse; }
 
-  /* Orchestra Left — seats flow left-to-right, row hugs the right (center) edge.
-     Row label is on the left, seats extend rightward toward center orchestra. */
-  .seat-row-left {
-    display: flex; align-items: center; gap: 3px;
-    justify-content: flex-end; /* seats push toward center */
-    flex-direction: row;
-  }
-
-  /* Orchestra Right — seats flow left-to-right, row hugs the left (center) edge.
-     Row label is on the right, seats extend leftward toward center orchestra. */
-  .seat-row-right {
-    display: flex; align-items: center; gap: 3px;
-    justify-content: flex-start; /* seats push toward center */
-    flex-direction: row-reverse; /* label stays on right, seats fill leftward */
-  }
   .row-label {
-    font-family: 'Cinzel', serif; font-size: 10px; color: var(--text-dim);
-    width: 22px; text-align: center; flex-shrink: 0;
+    font-family: 'Cinzel', serif; font-size: 9px; color: var(--text-dim);
+    width: var(--row-label-w); text-align: center; flex-shrink: 0;
   }
   .seat {
-    width: 10px; height: 10px; border-radius: 2px;
+    width: var(--seat-size); height: var(--seat-size);
+    border-radius: 2px;
     background: var(--bg-surface); border: 1px solid rgba(201,162,39,0.12);
     cursor: pointer; transition: transform 0.1s, box-shadow 0.1s;
     position: relative; flex-shrink: 0;
   }
-  .seat:hover { transform: scale(1.4); z-index: 10; }
+  .seat:hover    { transform: scale(1.4); z-index: 10; }
   .seat.first-row { background: var(--bg-mid); border-color: rgba(100,80,40,0.2); cursor: not-allowed; opacity: 0.4; }
   .seat.occupied  { cursor: default; }
-  .parterre-wrap { display: grid; grid-template-columns: 1fr auto 1fr; gap: 16px; margin-top: 6px; }
-  .parterre-col { display: flex; flex-direction: column; gap: 2px; }
+
+  .parterre-wrap { display: grid; grid-template-columns: 1fr auto 1fr; gap: 12px; margin-top: 6px; }
+  .parterre-col  { display: flex; flex-direction: column; gap: 2px; }
   .parterre-center-label {
     display: flex; align-items: center; font-family: 'Cinzel', serif;
-    font-size: 10px; color: var(--text-dim); letter-spacing: 2px;
+    font-size: 9px; color: var(--text-dim); letter-spacing: 2px;
     writing-mode: vertical-rl; text-align: center;
   }
   .balcony-section { display: flex; flex-direction: column; gap: 2px; align-items: center; }
 
-  /* ── TOOLTIP ─────────────────────────────── */
+  /* ── BLOCKED SEATS ──────────────────────────────────────────────────────── */
+  .seat.blocked { background: var(--crimson) !important; border-color: #e05070 !important; cursor: crosshair; position: relative; }
+  .seat.blocked::before, .seat.blocked::after {
+    content: ''; position: absolute; top: 50%; left: 50%;
+    width: 130%; height: 1.5px; background: rgba(255,255,255,0.7); transform-origin: center;
+  }
+  .seat.blocked::before { transform: translate(-50%,-50%) rotate(45deg); }
+  .seat.blocked::after  { transform: translate(-50%,-50%) rotate(-45deg); }
+
+  body.block-mode .seat:not(.first-row) { cursor: crosshair; }
+  body.block-mode .seat:not(.first-row):not(.blocked):hover { background: rgba(139,26,47,0.5) !important; border-color: #e05070 !important; transform: scale(1.4); }
+  body.block-mode .seat.blocked:hover   { opacity: 0.7; transform: scale(1.4); }
+
+  /* ── ADA / ACCESSIBLE SEATS ─────────────────────────────────────────────── */
+  /* No visual difference by default — only a tooltip note (see showTip/showSeatToast).
+     Toggling "Highlight ADA Seats" adds a blue ring so staff can spot them at a glance,
+     without disturbing the seat's normal occupied/blocked color underneath. */
+  body.ada-highlight-mode .seat.ada-seat {
+    box-shadow: 0 0 0 2px #4aa3ff, 0 0 6px 1px rgba(74,163,255,0.65);
+  }
+  body.ada-highlight-mode .seat.ada-seat:hover { box-shadow: 0 0 0 2px #7cc0ff, 0 0 8px 2px rgba(124,192,255,0.8); }
+
+  /* ── TOOLTIP ────────────────────────────────────────────────────────────── */
   .tooltip {
     position: fixed; background: var(--bg-card); border: 1px solid var(--gold-dim);
     color: var(--text-primary); padding: 8px 12px; border-radius: var(--radius);
@@ -257,532 +460,268 @@
     white-space: nowrap; box-shadow: 0 4px 20px rgba(0,0,0,0.5); display: none;
   }
 
-  /* ── SUMMARY ─────────────────────────────── */
-  .summary-area { background: var(--bg-mid); border-top: 1px solid var(--border); padding: 16px 24px; }
-  .summary-title { font-family: 'Cinzel', serif; font-size: 12px; letter-spacing: 3px; color: var(--gold); margin-bottom: 12px; }
-  .summary-grid { display: flex; flex-wrap: wrap; gap: 10px; }
-  .summary-chip {
-    background: var(--bg-surface); border: 1px solid var(--border);
-    border-radius: 20px; padding: 5px 14px; font-size: 11px;
-    display: flex; gap: 8px; align-items: center;
-  }
-  .chip-color { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
-
-  /* ── PREFER PARTERRE TOGGLE ──────────────── */
-  .toggle-row {
-    display: flex; align-items: center; gap: 10px;
-    padding: 10px 12px;
-    background: var(--bg-surface);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    cursor: pointer;
-    transition: border-color 0.2s;
-    user-select: none;
-  }
-  .toggle-row:hover { border-color: var(--gold-dim); }
-  .toggle-row.active {
-    border-color: var(--gold);
-    background: var(--purple-dim);
-    box-shadow: 0 0 10px rgba(201,162,39,0.15);
-  }
-  .toggle-checkbox {
-    appearance: none; -webkit-appearance: none;
-    width: 16px; height: 16px; border-radius: 3px;
-    border: 1px solid var(--gold-dim);
-    background: var(--bg-deep);
-    cursor: pointer; flex-shrink: 0;
-    transition: background 0.2s, border-color 0.2s;
-    position: relative;
-  }
-  .toggle-checkbox:checked {
-    background: var(--gold);
-    border-color: var(--gold);
-  }
-  .toggle-checkbox:checked::after {
-    content: '✓';
-    position: absolute; top: -1px; left: 2px;
-    font-size: 11px; color: var(--bg-deep); font-weight: 700;
-  }
-  .toggle-label {
-    font-size: 12px; letter-spacing: 1px;
-    color: var(--text-secondary); text-transform: uppercase;
-    flex: 1;
-  }
-  .toggle-row.active .toggle-label { color: var(--gold-light); }
-  .toggle-hint {
-    font-size: 10px; color: var(--text-dim);
-    margin-top: 5px; padding-left: 2px;
-    font-style: italic;
-  }
-
-  /* ── SAVE AS PDF — print report styles ──────── */
-  #pdfReportFrame {
-    display: none;
-  }
-
-  @media print {
-    /* Hide everything except the report frame */
-    body > *:not(#pdfReportFrame) { display: none !important; }
-    #pdfReportFrame {
-      display: block !important;
-      position: fixed; inset: 0;
-      background: #fff; color: #111;
-      font-family: Georgia, serif;
-      padding: 0; margin: 0;
-    }
-  }
-
-  /* Report frame itself — only visible when printing */
-  #pdfReportFrame {
-    font-family: Georgia, 'Times New Roman', serif;
-  }
-  .rpt-page {
-    width: 100%; max-width: 780px;
-    margin: 0 auto; padding: 48px 48px 64px;
-    background: #fff; color: #111;
-    box-sizing: border-box;
-  }
-  .rpt-header {
-    text-align: center; border-bottom: 2px solid #8b1a2f;
-    padding-bottom: 18px; margin-bottom: 28px;
-  }
-  .rpt-title {
-    font-size: 26px; font-weight: bold; letter-spacing: 3px;
-    color: #1a0a00; text-transform: uppercase; margin-bottom: 4px;
-  }
-  .rpt-subtitle {
-    font-size: 12px; letter-spacing: 4px; color: #666;
-    text-transform: uppercase;
-  }
-  .rpt-meta {
-    font-size: 11px; color: #888; margin-top: 8px; letter-spacing: 1px;
-  }
-  .rpt-stats {
-    display: grid; grid-template-columns: repeat(4, 1fr);
-    gap: 12px; margin-bottom: 32px;
-    border: 1px solid #ddd; border-radius: 4px; padding: 16px;
-    background: #faf8f5;
-  }
-  .rpt-stat { text-align: center; }
-  .rpt-stat-label {
-    font-size: 9px; text-transform: uppercase; letter-spacing: 1px;
-    color: #888; margin-bottom: 3px;
-  }
-  .rpt-stat-value {
-    font-size: 20px; font-weight: bold; color: #8b1a2f;
-  }
-  .rpt-section-title {
-    font-size: 11px; text-transform: uppercase; letter-spacing: 3px;
-    color: #8b1a2f; border-bottom: 1px solid #e0ccc0;
-    padding-bottom: 6px; margin: 24px 0 12px;
-  }
-  .rpt-table {
-    width: 100%; border-collapse: collapse; font-size: 12px;
-  }
-  .rpt-table th {
-    background: #1a0a00; color: #f0e8d0;
-    padding: 8px 12px; text-align: left;
-    font-size: 10px; letter-spacing: 1px; text-transform: uppercase;
-    font-weight: normal;
-  }
-  .rpt-table td {
-    padding: 8px 12px; border-bottom: 1px solid #eee;
-    vertical-align: top;
-  }
-  .rpt-table tr:nth-child(even) td { background: #faf8f5; }
-  .rpt-table tr:last-child td { border-bottom: none; }
-  .rpt-color-dot {
-    display: inline-block; width: 10px; height: 10px;
-    border-radius: 50%; margin-right: 6px; vertical-align: middle;
-  }
-  .rpt-blocked-list {
-    font-size: 11px; color: #555; line-height: 1.8;
-    columns: 3; column-gap: 20px;
-  }
-  .rpt-footer {
-    margin-top: 40px; padding-top: 14px;
-    border-top: 1px solid #ddd;
-    font-size: 10px; color: #aaa; text-align: center; letter-spacing: 1px;
-  }
-  .rpt-no-data { font-size: 12px; color: #aaa; font-style: italic; }
-
-  /* ── BLOCKED SEATS ───────────────────────────── */
-  .seat.blocked {
-    background: var(--crimson) !important;
-    border-color: #e05070 !important;
-    cursor: crosshair;
-    position: relative;
-  }
-  /* X pattern drawn with two pseudo-element lines */
-  .seat.blocked::before,
-  .seat.blocked::after {
-    content: '';
-    position: absolute;
-    top: 50%; left: 50%;
-    width: 130%; height: 1.5px;
-    background: rgba(255,255,255,0.7);
-    transform-origin: center;
-  }
-  .seat.blocked::before { transform: translate(-50%,-50%) rotate(45deg); }
-  .seat.blocked::after  { transform: translate(-50%,-50%) rotate(-45deg); }
-
-  /* Block-mode active — theater cursor changes, seats pulse on hover */
-  body.block-mode .seat:not(.first-row) {
-    cursor: crosshair;
-  }
-  body.block-mode .seat:not(.first-row):not(.blocked):hover {
-    background: rgba(139,26,47,0.5) !important;
-    border-color: #e05070 !important;
-    transform: scale(1.4);
-  }
-  body.block-mode .seat.blocked:hover {
-    opacity: 0.7;
-    transform: scale(1.4);
-  }
-
-  /* Block-mode sidebar button active state */
-  .btn-block-mode {
-    width: 100%; padding: 13px;
-    background: var(--bg-surface);
-    border: 1px solid var(--border);
-    color: var(--text-secondary);
-    border-radius: var(--radius); cursor: pointer;
-    font-family: 'Cinzel', serif; font-size: 13px; letter-spacing: 2px;
-    transition: all 0.2s; text-transform: uppercase;
-    display: flex; align-items: center; justify-content: center; gap: 10px;
-    min-height: 44px;
-  }
-  .btn-block-mode:hover { border-color: var(--gold-dim); color: var(--gold); }
-  .btn-block-mode.active {
-    background: linear-gradient(135deg, var(--crimson), #6b0020);
-    border-color: #e05070; color: #ffb0b0;
-    box-shadow: 0 0 16px rgba(139,26,47,0.4);
-    animation: blockPulse 2s ease-in-out infinite;
-  }
-  @keyframes blockPulse {
-    0%,100% { box-shadow: 0 0 16px rgba(139,26,47,0.4); }
-    50%      { box-shadow: 0 0 28px rgba(139,26,47,0.7); }
-  }
-  .block-mode-hint {
-    font-size: 10px; color: var(--text-dim); text-align: center;
-    margin-top: 6px; font-style: italic; letter-spacing: 0.5px;
-    display: none;
-  }
-  .block-mode-hint.visible { display: block; color: #e05070; }
-
-  /* Legend dot for blocked */
-  .l-blocked {
-    background: var(--crimson); border: 1px solid #e05070;
-    position: relative; overflow: hidden;
-  }
-  .l-blocked::before, .l-blocked::after {
-    content: ''; position: absolute;
-    top: 50%; left: 50%; width: 130%; height: 1.5px;
-    background: rgba(255,255,255,0.7); transform-origin: center;
-  }
-  .l-blocked::before { transform: translate(-50%,-50%) rotate(45deg); }
-  .l-blocked::after  { transform: translate(-50%,-50%) rotate(-45deg); }
-
-  /* ── MOBILE SEAT TOAST (touch tooltip) ──────── */
+  /* ── SEAT TOAST (mobile) ────────────────────────────────────────────────── */
   #seatToast {
-    position: fixed; bottom: 72px; left: 50%; transform: translateX(-50%);
+    position: fixed; bottom: 16px; left: 50%; transform: translateX(-50%);
     background: var(--bg-card); border: 1px solid var(--gold-dim);
-    color: var(--text-primary); padding: 8px 18px;
-    border-radius: 20px; font-size: 12px; letter-spacing: 1px;
-    pointer-events: none; z-index: 9998;
+    color: var(--text-primary); padding: 8px 18px; border-radius: 20px;
+    font-size: 12px; letter-spacing: 1px; pointer-events: none; z-index: 9998;
     white-space: nowrap; box-shadow: 0 4px 20px rgba(0,0,0,0.6);
     opacity: 0; transition: opacity 0.2s ease;
   }
   #seatToast.visible { opacity: 1; }
 
-  /* ── THEATER LOADING OVERLAY ────────────────── */
+  /* ── LOADING OVERLAY ────────────────────────────────────────────────────── */
   #theaterLoading {
     position: absolute; inset: 0; z-index: 50;
     background: var(--bg-deep);
-    display: flex; flex-direction: column;
-    align-items: center; justify-content: center;
-    gap: 16px;
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px;
     transition: opacity 0.4s ease;
   }
   #theaterLoading.hidden { opacity: 0; pointer-events: none; }
   .loading-spinner {
     width: 36px; height: 36px; border-radius: 50%;
-    border: 3px solid var(--purple-dim);
-    border-top-color: var(--gold);
+    border: 3px solid var(--purple-dim); border-top-color: var(--gold);
     animation: spin 0.9s linear infinite;
   }
-  @keyframes spin { to { transform: rotate(360deg); } }
-  .loading-text {
-    font-family: 'Cinzel', serif; font-size: 11px;
-    letter-spacing: 3px; color: var(--text-dim);
-    text-transform: uppercase;
-  }
+  .loading-text { font-family: 'Cinzel', serif; font-size: 11px; letter-spacing: 3px; color: var(--text-dim); text-transform: uppercase; }
 
-  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  /* ── SCROLLBAR ──────────────────────────────────────────────────────────── */
+  ::-webkit-scrollbar { width: 5px; height: 5px; }
   ::-webkit-scrollbar-track { background: var(--bg-deep); }
   ::-webkit-scrollbar-thumb { background: var(--purple-dim); border-radius: 3px; }
   ::-webkit-scrollbar-thumb:hover { background: var(--purple-mid); }
 
-  /* ── FIRST-ROW BLOCK MODAL ───────────────────── */
+  /* ── FIRST-ROW MODAL ────────────────────────────────────────────────────── */
   #firstRowModal {
     position: fixed; inset: 0; z-index: 10000;
     background: rgba(0,0,0,0.82);
-    display: flex; align-items: center; justify-content: center;
-    padding: 20px;
+    display: flex; align-items: center; justify-content: center; padding: 16px;
   }
   #firstRowModal.hidden { display: none; }
   .frm-box {
-    background: var(--bg-card);
-    border: 1px solid var(--gold-dim);
-    border-radius: 10px;
-    padding: 32px 36px 28px;
-    max-width: 520px; width: 100%;
+    background: var(--bg-card); border: 1px solid var(--gold-dim); border-radius: 10px;
+    padding: 28px 28px 24px; max-width: 500px; width: 100%;
     box-shadow: 0 8px 60px rgba(0,0,0,0.8), 0 0 40px rgba(201,162,39,0.1);
+    max-height: 90vh; overflow-y: auto;
   }
-  .frm-title {
-    font-family: 'Cinzel', serif; font-size: 16px;
-    letter-spacing: 3px; color: var(--gold);
-    text-align: center; margin-bottom: 6px;
-    text-transform: uppercase;
-  }
-  .frm-subtitle {
-    font-size: 12px; color: var(--text-secondary);
-    text-align: center; margin-bottom: 24px;
-    letter-spacing: 0.5px; line-height: 1.5;
-  }
-  .frm-section {
-    margin-bottom: 20px;
-  }
-  .frm-section-label {
-    font-family: 'Cinzel', serif; font-size: 10px;
-    letter-spacing: 2px; color: var(--text-secondary);
-    text-transform: uppercase; margin-bottom: 10px;
-    border-bottom: 1px solid var(--border); padding-bottom: 6px;
-  }
-  .frm-checks { display: flex; flex-direction: column; gap: 8px; }
+  .frm-title    { font-family: 'Cinzel', serif; font-size: 15px; letter-spacing: 3px; color: var(--gold); text-align: center; margin-bottom: 6px; text-transform: uppercase; }
+  .frm-subtitle { font-size: 12px; color: var(--text-secondary); text-align: center; margin-bottom: 20px; letter-spacing: 0.5px; line-height: 1.5; }
+  .frm-section  { margin-bottom: 18px; }
+  .frm-section-label { font-family: 'Cinzel', serif; font-size: 10px; letter-spacing: 2px; color: var(--text-secondary); text-transform: uppercase; margin-bottom: 10px; border-bottom: 1px solid var(--border); padding-bottom: 6px; }
+  .frm-checks   { display: flex; flex-direction: column; gap: 8px; }
   .frm-check-row {
-    display: flex; align-items: center; gap: 12px;
-    padding: 10px 14px;
+    display: flex; align-items: center; gap: 12px; padding: 12px 14px;
     background: var(--bg-surface); border: 1px solid var(--border);
-    border-radius: var(--radius); cursor: pointer;
-    transition: border-color 0.2s, background 0.2s;
-    user-select: none;
+    border-radius: var(--radius); cursor: pointer; transition: border-color 0.2s, background 0.2s; user-select: none;
+    min-height: 52px;
   }
   .frm-check-row:hover { border-color: var(--gold-dim); }
-  .frm-check-row.checked {
-    border-color: var(--gold);
-    background: var(--purple-dim);
-    box-shadow: 0 0 10px rgba(201,162,39,0.15);
-  }
+  .frm-check-row.checked { border-color: var(--gold); background: var(--purple-dim); box-shadow: 0 0 10px rgba(201,162,39,0.15); }
   .frm-checkbox {
-    appearance: none; -webkit-appearance: none;
-    width: 18px; height: 18px; border-radius: 4px;
-    border: 1px solid var(--gold-dim);
-    background: var(--bg-deep);
-    cursor: pointer; flex-shrink: 0;
-    transition: background 0.2s, border-color 0.2s;
-    position: relative;
+    appearance: none; -webkit-appearance: none; width: 20px; height: 20px; border-radius: 4px;
+    border: 1px solid var(--gold-dim); background: var(--bg-deep); cursor: pointer; flex-shrink: 0;
+    transition: background 0.2s, border-color 0.2s; position: relative;
   }
   .frm-checkbox:checked { background: var(--gold); border-color: var(--gold); }
-  .frm-checkbox:checked::after {
-    content: '✓'; position: absolute;
-    top: -1px; left: 3px; font-size: 12px;
-    color: var(--bg-deep); font-weight: 700;
-  }
-  .frm-check-info { flex: 1; }
-  .frm-check-name {
-    font-size: 13px; color: var(--text-primary);
-    font-family: 'Playfair Display', serif; font-weight: 600;
-  }
+  .frm-checkbox:checked::after { content: '✓'; position: absolute; top: -1px; left: 3px; font-size: 13px; color: var(--bg-deep); font-weight: 700; }
+  .frm-check-info  { flex: 1; }
+  .frm-check-name  { font-size: 13px; color: var(--text-primary); font-family: 'Playfair Display', serif; font-weight: 600; }
   .frm-check-row.checked .frm-check-name { color: var(--gold-light); }
-  .frm-check-desc { font-size: 11px; color: var(--text-dim); margin-top: 2px; }
-  .frm-actions { display: flex; gap: 10px; margin-top: 24px; }
+  .frm-check-desc  { font-size: 11px; color: var(--text-dim); margin-top: 2px; }
+  .frm-actions     { display: flex; gap: 10px; margin-top: 20px; }
   .frm-btn-confirm {
-    flex: 1; padding: 13px;
+    flex: 1; padding: 14px;
     background: linear-gradient(135deg, var(--purple-mid), var(--purple-vivid));
     border: 1px solid var(--gold-dim); color: var(--gold-light);
     border-radius: var(--radius); cursor: pointer;
     font-family: 'Cinzel', serif; font-size: 13px; letter-spacing: 2px;
-    transition: all 0.2s; text-transform: uppercase;
+    transition: all 0.2s; text-transform: uppercase; min-height: 52px;
   }
-  .frm-btn-confirm:hover {
-    background: linear-gradient(135deg, var(--purple-vivid), #9b4fc0);
-    box-shadow: var(--shadow-gold);
-  }
+  .frm-btn-confirm:hover { background: linear-gradient(135deg, var(--purple-vivid), #9b4fc0); box-shadow: var(--shadow-gold); }
   .frm-btn-none {
-    padding: 13px 18px;
-    background: var(--bg-surface); border: 1px solid var(--border);
-    color: var(--text-secondary);
-    border-radius: var(--radius); cursor: pointer;
+    padding: 14px 18px; background: var(--bg-surface); border: 1px solid var(--border);
+    color: var(--text-secondary); border-radius: var(--radius); cursor: pointer;
     font-family: 'Cinzel', serif; font-size: 11px; letter-spacing: 1px;
-    transition: all 0.2s; text-transform: uppercase;
-    white-space: nowrap;
+    transition: all 0.2s; text-transform: uppercase; white-space: nowrap; min-height: 52px;
   }
   .frm-btn-none:hover { border-color: var(--gold-dim); color: var(--gold); }
 
-  /* ══════════════════════════════════════════════
-     IMPROVEMENT 1 — RESPONSIVE LAYOUT
-     Stack sidebar above theater on narrow screens.
-     Sidebar gets a collapsible drawer behaviour on
-     mobile via the #sidebarToggle button.
-     ══════════════════════════════════════════════ */
+  /* ── PDF PRINT ──────────────────────────────────────────────────────────── */
+  #pdfReportFrame { display: none; }
+  @media print {
+    body > *:not(#pdfReportFrame) { display: none !important; }
+    #pdfReportFrame { display: block !important; position: fixed; inset: 0; background: #fff; color: #111; font-family: Georgia, serif; padding: 0; margin: 0; }
+  }
+  #pdfReportFrame { font-family: Georgia, 'Times New Roman', serif; }
+  .rpt-page         { width: 100%; max-width: 780px; margin: 0 auto; padding: 48px 48px 64px; background: #fff; color: #111; box-sizing: border-box; }
+  .rpt-header       { text-align: center; border-bottom: 2px solid #8b1a2f; padding-bottom: 18px; margin-bottom: 28px; }
+  .rpt-title        { font-size: 26px; font-weight: bold; letter-spacing: 3px; color: #1a0a00; text-transform: uppercase; margin-bottom: 4px; }
+  .rpt-subtitle     { font-size: 12px; letter-spacing: 4px; color: #666; text-transform: uppercase; }
+  .rpt-meta         { font-size: 11px; color: #888; margin-top: 8px; letter-spacing: 1px; }
+  .rpt-stats        { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 32px; border: 1px solid #ddd; border-radius: 4px; padding: 16px; background: #faf8f5; }
+  .rpt-stat         { text-align: center; }
+  .rpt-stat-label   { font-size: 9px; text-transform: uppercase; letter-spacing: 1px; color: #888; margin-bottom: 3px; }
+  .rpt-stat-value   { font-size: 20px; font-weight: bold; color: #8b1a2f; }
+  .rpt-section-title{ font-size: 11px; text-transform: uppercase; letter-spacing: 3px; color: #8b1a2f; border-bottom: 1px solid #e0ccc0; padding-bottom: 6px; margin: 24px 0 12px; }
+  .rpt-table        { width: 100%; border-collapse: collapse; font-size: 12px; }
+  .rpt-table th     { background: #1a0a00; color: #f0e8d0; padding: 8px 12px; text-align: left; font-size: 10px; letter-spacing: 1px; text-transform: uppercase; font-weight: normal; }
+  .rpt-table td     { padding: 8px 12px; border-bottom: 1px solid #eee; vertical-align: top; }
+  .rpt-table tr:nth-child(even) td { background: #faf8f5; }
+  .rpt-table tr:last-child td { border-bottom: none; }
+  .rpt-color-dot    { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 6px; vertical-align: middle; }
+  .rpt-blocked-list { font-size: 11px; color: #555; line-height: 1.8; columns: 3; column-gap: 20px; }
+  .rpt-footer       { margin-top: 40px; padding-top: 14px; border-top: 1px solid #ddd; font-size: 10px; color: #aaa; text-align: center; letter-spacing: 1px; }
+  .rpt-no-data      { font-size: 12px; color: #aaa; font-style: italic; }
 
-  /* Collapsible sidebar toggle button — hidden on desktop */
-  #sidebarToggle {
+  /* ═══════════════════════════════════════════════════════════════════════════
+     TABLET PANEL SYSTEM
+     On screens ≤ 900px (iPad portrait and smaller), the sidebar becomes a
+     bottom panel with three tabs: Add Group | Queue | Actions.
+     The theater fills the full width above the tab bar.
+     ═══════════════════════════════════════════════════════════════════════════ */
+
+  /* Tab bar — hidden on desktop */
+  #tabBar {
     display: none;
-    width: 100%; padding: 12px 20px;
-    background: var(--bg-mid); border: none;
-    border-bottom: 1px solid var(--border);
-    color: var(--gold); font-family: 'Cinzel', serif;
-    font-size: 12px; letter-spacing: 2px;
-    cursor: pointer; text-align: left;
-    align-items: center; gap: 10px;
   }
-  #sidebarToggle .toggle-arrow {
-    margin-left: auto; transition: transform 0.3s;
-    font-size: 14px;
+  /* Tab panels — always rendered, visibility controlled by JS */
+  .tab-panel {
+    display: none;
   }
-  #sidebarToggle.open .toggle-arrow { transform: rotate(180deg); }
+  /* Panel container — hidden on desktop */
+  #panelContainer {
+    display: none;
+  }
+  /* Legacy mobile summary drawer button — hidden; summary is in Actions tab */
+  #summaryDrawerBtn { display: none; }
+  #summaryOverlay   { display: none !important; }
 
-  /* ══════════════════════════════════════════════
-     IMPROVEMENT 3 — TOUCH-FRIENDLY CONTROLS
-     Minimum 44px tap targets on all interactive
-     elements throughout.
-     ══════════════════════════════════════════════ */
-  .door-btn   { min-height: 44px; }
-  .btn-primary{ min-height: 44px; }
-  .btn-danger {
-    min-width: 44px; min-height: 44px;
-    display: flex; align-items: center; justify-content: center;
-    padding: 0 12px; font-size: 14px;
-  }
-  .toggle-row { min-height: 44px; }
-  .toggle-checkbox { width: 20px; height: 20px; }
-  .toggle-checkbox:checked::after { top: 0px; left: 3px; font-size: 13px; }
-
-  /* ══════════════════════════════════════════════
-     IMPROVEMENT 7 — SUMMARY DRAWER (mobile)
-     The summary panel becomes a slide-up drawer
-     triggered by a fixed footer button on mobile.
-     On desktop it stays as the bottom bar.
-     ══════════════════════════════════════════════ */
-  #summaryDrawerBtn {
-    display: none; /* shown only on mobile via media query */
-    position: fixed; bottom: 0; left: 0; right: 0; z-index: 200;
-    padding: 14px 20px;
-    background: linear-gradient(135deg, var(--purple-mid), var(--purple-vivid));
-    border: none; border-top: 1px solid var(--gold-dim);
-    color: var(--gold-light); font-family: 'Cinzel', serif;
-    font-size: 12px; letter-spacing: 2px; cursor: pointer;
-    text-align: center;
-  }
-  .summary-area {
-    background: var(--bg-mid); border-top: 1px solid var(--border);
-    padding: 16px 24px;
-    transition: max-height 0.35s ease, padding 0.35s ease;
-  }
-  .summary-area.drawer-closed {
-    max-height: 0; padding-top: 0; padding-bottom: 0; overflow: hidden;
-  }
-
-  /* ══════════════════════════════════════════════
-     TABLET  (≤ 900px)
-     ══════════════════════════════════════════════ */
   @media (max-width: 900px) {
 
-    /* IMPROVEMENT 6 — Typography scaling */
-    .header-logo { font-size: 17px; letter-spacing: 2px; }
+    /* ── STATS BAR: 3-column grid on tablet ── */
+    .stats-bar {
+      grid-template-columns: repeat(3, 1fr);
+    }
+
+    /* ── ROOT LAYOUT: stack theater + panel vertically ── */
+    .app-shell {
+      flex-direction: column;
+      height: calc(100vh - 56px); /* slimmer header on tablet */
+    }
+
+    /* Hide the desktop sidebar */
+    .sidebar { display: none; }
+
+    /* Theater column fills remaining height above panel */
+    .theater-column {
+      flex: 1;
+      min-height: 0;
+      overflow: hidden;
+    }
+
+    /* Summary bar hidden on tablet — shown in Actions tab instead */
+    .summary-area { display: none; }
+
+    /* ── TAB BAR ── */
+    #tabBar {
+      display: flex;
+      flex-shrink: 0;
+      background: var(--bg-mid);
+      border-top: 1px solid var(--border);
+      z-index: 50;
+    }
+    .tab-btn {
+      flex: 1; padding: 12px 8px; background: none; border: none;
+      border-top: 2px solid transparent;
+      color: var(--text-dim); font-family: 'Cinzel', serif;
+      font-size: 10px; letter-spacing: 1.5px; cursor: pointer;
+      text-transform: uppercase; transition: all 0.2s;
+      display: flex; flex-direction: column; align-items: center; gap: 3px;
+      min-height: 56px; justify-content: center;
+    }
+    .tab-btn .tab-icon { font-size: 16px; }
+    .tab-btn:hover { color: var(--gold-dim); }
+    .tab-btn.active {
+      border-top-color: var(--gold);
+      color: var(--gold);
+      background: var(--bg-surface);
+    }
+
+    /* ── PANEL CONTAINER ── */
+    #panelContainer {
+      display: block;
+      flex-shrink: 0;
+      background: var(--bg-mid);
+      border-top: 1px solid var(--border);
+      overflow: hidden;
+      /* Animate open/close */
+      max-height: 0;
+      transition: max-height 0.3s ease;
+    }
+    #panelContainer.open {
+      max-height: 420px;
+    }
+
+    /* Panel scroll inner */
+    .tab-panel {
+      padding: 16px;
+      overflow-y: auto;
+      max-height: 420px;
+      display: none;
+    }
+    .tab-panel.active { display: block; }
+
+    /* ── SEAT SIZE: medium ── */
+    :root {
+      --seat-size: 9px;
+      --seat-gap:  2px;
+      --row-label-w: 18px;
+    }
+    .seat { width: var(--seat-size); height: var(--seat-size); }
+    .theater-area { padding: 12px 10px; }
+    .theater-title { font-size: 12px; letter-spacing: 3px; margin-bottom: 12px; }
+    .stage-bar { font-size: 10px; letter-spacing: 4px; padding: 7px; }
+    .section-header { font-size: 9px; }
+    .section-wrap { margin-bottom: 18px; }
+
+    /* Slim header */
+    header { padding: 10px 16px; }
+    .header-logo { font-size: 16px; letter-spacing: 2px; }
     .header-logo span { font-size: 10px; letter-spacing: 3px; }
     .session-id { display: none; }
-
-    /* IMPROVEMENT 4 — Stats bar: 2×4 grid */
-    .stats-bar {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 8px 16px;
-      padding: 10px 16px;
-    }
-    .stat-value { font-size: 14px; }
-
-    /* IMPROVEMENT 1 — Responsive layout */
-    .main-layout {
-      grid-template-columns: 1fr;
-      grid-template-rows: auto 1fr;
-      min-height: unset;
-    }
-    .sidebar {
-      border-right: none;
-      border-bottom: 1px solid var(--border);
-      max-height: none;
-      overflow-y: visible;
-    }
+    .active-users { padding: 6px 12px; font-size: 11px; }
   }
 
-  /* ══════════════════════════════════════════════
-     MOBILE  (≤ 600px)
-     ══════════════════════════════════════════════ */
   @media (max-width: 600px) {
 
-    /* IMPROVEMENT 6 — Typography: header shrinks */
-    header { padding: 12px 16px; }
-    .header-logo { font-size: 14px; letter-spacing: 1px; }
-    .header-logo span { display: none; }
-    .active-users { padding: 5px 10px; font-size: 11px; }
-
-    /* IMPROVEMENT 4 — Stats bar: horizontal scroll strip */
+    /* ── STATS BAR: horizontal scroll strip ── */
     .stats-bar {
-      display: flex; flex-wrap: nowrap;
-      overflow-x: auto; gap: 0;
-      padding: 0;
-      -webkit-overflow-scrolling: touch;
-      scrollbar-width: none;
+      display: flex; flex-wrap: nowrap; overflow-x: auto; grid-template-columns: unset;
+      -webkit-overflow-scrolling: touch; scrollbar-width: none;
     }
     .stats-bar::-webkit-scrollbar { display: none; }
-    .stat {
-      flex: 0 0 auto;
-      padding: 10px 14px;
-      border-right: 1px solid var(--border);
-      min-width: 80px;
-    }
+    .stat { flex: 0 0 auto; min-width: 72px; border-right: 1px solid var(--border); padding: 8px 10px; }
     .stat:last-child { border-right: none; }
-    .stat-label { font-size: 9px; }
-    .stat-value  { font-size: 15px; }
+    .stat-value { font-size: 14px; }
 
-    /* IMPROVEMENT 1 — Sidebar toggle button */
-    #sidebarToggle { display: flex; }
-    .sidebar {
-      padding: 0;
-      overflow: hidden;
-      max-height: 0;
-      transition: max-height 0.35s ease, padding 0.35s ease;
+    /* Seat size: small phone */
+    :root {
+      --seat-size: 7px;
+      --seat-gap:  2px;
+      --row-label-w: 14px;
     }
-    .sidebar.open {
-      max-height: 2000px;
-      padding: 20px 16px;
-      overflow-y: auto;
-    }
+    .seat { width: var(--seat-size); height: var(--seat-size); }
+    .row-label { font-size: 7px; width: var(--row-label-w); }
+    .theater-area { padding: 8px 6px; }
 
-    /* IMPROVEMENT 3 — Larger tap targets on mobile */
-    .door-btn    { min-height: 48px; font-size: 14px; }
-    .btn-primary { min-height: 48px; font-size: 12px; }
-    .form-input  { padding: 12px 14px; font-size: 16px; /* prevents iOS zoom */ }
+    header { padding: 8px 12px; }
+    .header-logo { font-size: 13px; }
+    .header-logo span { display: none; }
 
-    /* IMPROVEMENT 2 — Theater: zone view hides individual seats */
-    .seat { width: 7px; height: 7px; }
-    .row-label { font-size: 8px; width: 16px; }
-    .theater-area { padding: 12px 8px; }
-    .stage-bar { font-size: 10px; letter-spacing: 3px; padding: 8px; }
-    .section-header { font-size: 9px; letter-spacing: 2px; }
-
-    /* IMPROVEMENT 7 — Summary becomes slide-up drawer */
-    #summaryDrawerBtn { display: block; }
-    .summary-area { display: none; } /* replaced by drawer */
-    /* Add bottom padding so content isn't hidden behind fixed btn */
-    .theater-area { padding-bottom: 64px; }
-
-    /* IMPROVEMENT 5 — Scroll form into view after submission
-       (handled in JS — just ensure smooth scroll is on) */
-    html { scroll-behavior: smooth; }
+    /* Taller panel on phone */
+    #panelContainer.open { max-height: 55vh; }
+    .tab-panel { max-height: 55vh; }
   }
 </style>
 </head>
@@ -884,84 +823,114 @@
   <div class="stat"><span class="stat-label">Balcony</span><span class="stat-value" id="statBal">—</span></div>
 </div>
 
-<button id="sidebarToggle">
-  ✦ ADD GROUP &amp; QUEUE
-  <span class="toggle-arrow">▼</span>
-</button>
 
-<div class="main-layout">
+<div class="app-shell">
+
+  <!-- ══ DESKTOP SIDEBAR ══════════════════════════════════════════════════ -->
   <div class="sidebar">
-    <div>
-      <div class="section-title">Add Group</div>
-      <div class="form-group">
-        <label class="form-label">Group Name</label>
-        <input class="form-input" id="groupName" type="text" placeholder="e.g. Smith Family" maxlength="40">
-      </div>
-      <div class="form-group">
-        <label class="form-label">Group Size (max 250)</label>
-        <input class="form-input" id="groupSize" type="number" min="1" max="250" placeholder="1–250" inputmode="numeric">
-      </div>
-      <div class="form-group">
-        <label class="form-label">Entry Door</label>
-        <div class="door-select">
-          <button class="door-btn active" id="doorLeft">⬅ LEFT</button>
-          <button class="door-btn"        id="doorRight">RIGHT ➡</button>
+    <div class="sidebar-scroll">
+
+      <div>
+        <div class="section-title">Add Group</div>
+        <div class="form-group">
+          <label class="form-label">Group Name</label>
+          <input class="form-input" id="groupName" type="text" placeholder="e.g. Smith Family" maxlength="40">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Group Size (max 250)</label>
+          <input class="form-input" id="groupSize" type="number" min="1" max="250" placeholder="1–250" inputmode="numeric">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Entry Door</label>
+          <div class="door-select">
+            <button class="door-btn active" id="doorLeft">⬅ LEFT</button>
+            <button class="door-btn"        id="doorRight">RIGHT ➡</button>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="toggle-row" id="parterreToggleRow" for="preferParterre">
+            <input type="checkbox" class="toggle-checkbox" id="preferParterre">
+            <span class="toggle-label">Prefer Parterre</span>
+          </label>
+          <div class="toggle-hint" id="parterreHint">Only applies to groups under 38</div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Section Preference</label>
+          <select class="form-input" id="sectionPref" style="cursor:pointer;">
+            <option value="auto">Auto (algorithm decides)</option>
+            <option value="orch">Orchestra / Parterre…</option>
+            <option value="dc">Dress Circle — Level 2</option>
+            <option value="gallery">Gallery — Level 3</option>
+            <option value="balcony">Balcony — Level 4</option>
+          </select>
+          <div id="orchSubRow" style="display:none;margin-top:6px;">
+            <label class="form-label" style="margin-bottom:4px;">Orchestra / Parterre Sub-section</label>
+            <select class="form-input" id="orchSubPref" style="cursor:pointer;">
+              <option value="orch_auto">Auto (best fit within floor)</option>
+              <option value="OL">Orchestra Left</option>
+              <option value="OC">Orchestra Center</option>
+              <option value="OR">Orchestra Right</option>
+              <option value="PL">Parterre Left</option>
+              <option value="PR">Parterre Right</option>
+              <option value="part_auto">Parterre (either side)</option>
+            </select>
+          </div>
+          <div class="toggle-hint" id="sectionPrefHint">Falls back to Auto if preferred level is full</div>
+        </div>
+        <div class="error-msg" id="errorMsg"></div>
+        <button class="btn-primary" id="seatGroupBtn">SEAT GROUP</button>
+        <button class="btn-primary" id="placeManuallyBtn">✦ PLACE MANUALLY</button>
+        <div class="toggle-hint" style="margin-top:4px;" id="placeManuallyHint">
+          Enter name &amp; size, then click a section on the map
         </div>
       </div>
-      <div class="form-group">
-        <label class="toggle-row" id="parterreToggleRow" for="preferParterre">
-          <input type="checkbox" class="toggle-checkbox" id="preferParterre">
-          <span class="toggle-label">Prefer Parterre</span>
-        </label>
-        <div class="toggle-hint" id="parterreHint">Only applies to groups under 38</div>
-      </div>
-      <div class="error-msg" id="errorMsg"></div>
-      <button class="btn-primary" id="seatGroupBtn">SEAT GROUP</button>
-    </div>
 
-    <div>
-      <div class="section-title">Group Queue</div>
-      <div class="group-list" id="groupList">
-        <div class="no-groups">Connecting to Firebase…</div>
+      <div>
+        <div class="section-title">Group Queue</div>
+        <div id="moveModeHint" style="display:none;padding:8px 10px;margin-bottom:8px;
+          background:var(--purple-dim);border:1px solid var(--purple-mid);border-radius:6px;
+          font-size:11px;color:var(--gold-light);letter-spacing:0.5px;line-height:1.5;">
+          ✦ MOVE MODE — click a highlighted section on the map to place the group there.
+          <br><a id="cancelMoveBtn" style="color:var(--gold);cursor:pointer;text-decoration:underline;">Cancel</a>
+        </div>
+        <div class="group-list" id="groupList">
+          <div class="no-groups">Connecting to Firebase…</div>
+        </div>
       </div>
-    </div>
 
-    <div>
-      <div class="section-title">Actions</div>
-      <button class="btn-block-mode" id="blockModeBtn">⊘ Block Seats</button>
-      <div class="block-mode-hint" id="blockModeHint">
-        Click seats to block · Drag to block a range · Click row label to block entire row
+      <div>
+        <div class="section-title">Actions</div>
+        <button class="btn-block-mode" id="blockModeBtn">⊘ Block Seats</button>
+        <div class="block-mode-hint" id="blockModeHint">
+          Click seats to block · Drag to block a range · Click row label to block entire row
+        </div>
+        <button class="btn-block-mode ada-btn" id="adaHighlightBtn" style="margin-top:8px;">♿ Highlight ADA Seats</button>
+        <div style="margin-top:10px; display:flex; flex-direction:column; gap:8px;">
+          <button class="btn-primary" id="undoBtn"
+            style="background:linear-gradient(135deg,#3a2a1a,#6b4a20);" disabled>
+            ↩ UNDO LAST ACTION
+          </button>
+          <button class="btn-primary" id="configFirstRowBtn"
+            style="background:linear-gradient(135deg,#2a2a5a,#3a3a8a);">
+            ⊘ CONFIGURE RESERVED ROWS
+          </button>
+          <button class="btn-primary" id="savePdfBtn"
+            style="background:linear-gradient(135deg,#1a4a2a,#2a6b40);">
+            ↓ SAVE AS PDF
+          </button>
+          <button class="btn-primary" id="resetBtn"
+            style="background:linear-gradient(135deg,var(--crimson),#6b0020);">
+            RESET THEATER
+          </button>
+        </div>
       </div>
-      <div style="margin-top:10px;">
-        <button class="btn-primary" id="undoBtn"
-          style="background:linear-gradient(135deg,#3a2a1a,#6b4a20); margin-bottom:10px;" disabled>
-          ↩ UNDO LAST ACTION
-        </button>
-      </div>
-      <div style="margin-top:0;">
-        <button class="btn-primary" id="configFirstRowBtn"
-          style="background:linear-gradient(135deg,#2a2a5a,#3a3a8a); margin-bottom:10px;">
-          ⊘ CONFIGURE RESERVED ROWS
-        </button>
-      </div>
-      <div style="margin-top:0;">
-        <button class="btn-primary" id="savePdfBtn"
-          style="background:linear-gradient(135deg,#1a4a2a,#2a6b40); margin-bottom:10px;">
-          ↓ SAVE AS PDF
-        </button>
-      </div>
-      <div style="margin-top:0;">
-        <button class="btn-primary" id="resetBtn"
-          style="background:linear-gradient(135deg,var(--crimson),#6b0020);">
-          RESET THEATER
-        </button>
-      </div>
-    </div>
-  </div>
 
-  <div style="display:flex;flex-direction:column;overflow:hidden;">
+    </div>
+  </div><!-- /sidebar -->
+
+  <!-- ══ THEATER COLUMN ════════════════════════════════════════════════════ -->
+  <div class="theater-column">
     <div class="theater-area" style="position:relative;">
-      <!-- Loading overlay — hidden after first Firebase response -->
       <div id="theaterLoading">
         <div class="loading-spinner"></div>
         <div class="loading-text">Connecting to Firebase…</div>
@@ -974,30 +943,44 @@
           <div id="legendGroups"></div>
         </div>
 
-        <div class="section-wrap">
+        <div class="section-wrap" style="position:relative;">
           <div class="stage-bar">✦ STAGE ✦</div>
           <div class="section-header">ORCHESTRA &amp; PARTERRE</div>
-          <div class="orch-grid">
-            <div class="orch-section" id="orchLeft"></div>
-            <div class="orch-center"  id="orchCenter"></div>
-            <div class="orch-section" id="orchRight"></div>
+          <div class="orch-grid" style="position:relative;">
+            <div style="position:relative;">
+              <div class="move-overlay" data-move-sections="OL">Orch Left</div>
+              <div class="section-header" style="font-size:9px;text-align:center;">ORCH LEFT</div>
+              <div class="orch-section" id="orchLeft"></div>
+            </div>
+            <div style="position:relative;">
+              <div class="move-overlay" data-move-sections="OC">Orch Center</div>
+              <div class="orch-center" id="orchCenter"></div>
+            </div>
+            <div style="position:relative;">
+              <div class="move-overlay" data-move-sections="OR">Orch Right</div>
+              <div class="section-header" style="font-size:9px;text-align:center;">ORCH RIGHT</div>
+              <div class="orch-section" id="orchRight"></div>
+            </div>
           </div>
           <div class="parterre-wrap" style="margin-top:12px;">
-            <div>
+            <div style="position:relative;">
+              <div class="move-overlay" data-move-sections="PL">Parterre Left</div>
               <div class="section-header" style="font-size:9px;">PARTERRE LEFT</div>
               <div class="parterre-col" id="parterreLeft"></div>
             </div>
             <div class="parterre-center-label">PARTERRE BOXES</div>
-            <div>
+            <div style="position:relative;">
+              <div class="move-overlay" data-move-sections="PR">Parterre Right</div>
               <div class="section-header" style="font-size:9px;">PARTERRE RIGHT</div>
               <div class="parterre-col" id="parterreRight"></div>
             </div>
           </div>
         </div>
 
-        <div class="section-wrap">
+        <div class="section-wrap" style="position:relative;">
+          <div class="move-overlay" data-move-sections="DCL,DCC,DCR">Dress Circle</div>
           <div class="section-header">DRESS CIRCLE — LEVEL 2</div>
-          <div style="display:grid;grid-template-columns:1fr auto 1fr;gap:6px;">
+          <div style="display:grid;grid-template-columns:1fr auto 1fr auto 1fr;gap:6px;">
             <div>
               <div class="section-header" style="font-size:9px;">DRESS CIRCLE LEFT</div>
               <div id="dcLeft"></div>
@@ -1007,16 +990,18 @@
               <div class="section-header" style="font-size:9px;">DRESS CIRCLE CENTER</div>
               <div id="dcCenter"></div>
             </div>
-          </div>
-          <div style="margin-top:8px;">
-            <div class="section-header" style="font-size:9px;">DRESS CIRCLE RIGHT</div>
-            <div id="dcRight"></div>
+            <div style="width:20px;"></div>
+            <div>
+              <div class="section-header" style="font-size:9px;">DRESS CIRCLE RIGHT</div>
+              <div id="dcRight"></div>
+            </div>
           </div>
         </div>
 
-        <div class="section-wrap">
+        <div class="section-wrap" style="position:relative;">
+          <div class="move-overlay" data-move-sections="GL,GC,GR">Gallery</div>
           <div class="section-header">GALLERY — LEVEL 3</div>
-          <div style="display:grid;grid-template-columns:1fr auto 1fr;gap:6px;">
+          <div style="display:grid;grid-template-columns:1fr auto 1fr auto 1fr;gap:6px;">
             <div>
               <div class="section-header" style="font-size:9px;">GALLERY LEFT</div>
               <div id="galLeft"></div>
@@ -1026,19 +1011,22 @@
               <div class="section-header" style="font-size:9px;">GALLERY CENTER</div>
               <div id="galCenter"></div>
             </div>
-          </div>
-          <div style="margin-top:8px;">
-            <div class="section-header" style="font-size:9px;">GALLERY RIGHT</div>
-            <div id="galRight"></div>
+            <div style="width:20px;"></div>
+            <div>
+              <div class="section-header" style="font-size:9px;">GALLERY RIGHT</div>
+              <div id="galRight"></div>
+            </div>
           </div>
         </div>
 
-        <div class="section-wrap">
+        <div class="section-wrap" style="position:relative;">
+          <div class="move-overlay" data-move-sections="BC">Balcony</div>
           <div class="section-header">BALCONY — LEVEL 4</div>
           <div class="balcony-section" id="balconyCenter"></div>
         </div>
-      </div>
-    </div>
+
+      </div><!-- /theater-container -->
+    </div><!-- /theater-area -->
 
     <div class="summary-area">
       <div class="summary-title">ALLOCATION SUMMARY</div>
@@ -1046,33 +1034,125 @@
         <div style="color:var(--text-dim);font-size:12px;font-style:italic;">No groups allocated yet.</div>
       </div>
     </div>
-  </div>
+  </div><!-- /theater-column -->
+
+</div><!-- /app-shell -->
+
+<!-- ══ TABLET TAB BAR ════════════════════════════════════════════════════════ -->
+<div id="tabBar">
+  <button class="tab-btn" data-tab="add">
+    <span class="tab-icon">✦</span>Add Group
+  </button>
+  <button class="tab-btn" data-tab="queue">
+    <span class="tab-icon">☰</span>Queue
+  </button>
+  <button class="tab-btn" data-tab="actions">
+    <span class="tab-icon">⚙</span>Actions
+  </button>
 </div>
 
-<!-- IMPROVEMENT 5 — inputmode on size field for numeric mobile keyboard -->
-<!-- handled via attribute on the input element itself, see below -->
+<!-- ══ TABLET PANEL CONTAINER ════════════════════════════════════════════════ -->
+<div id="panelContainer">
 
-<!-- IMPROVEMENT 7 — Mobile summary drawer -->
-<button id="summaryDrawerBtn">▲ ALLOCATION SUMMARY</button>
+  <!-- ADD GROUP panel -->
+  <div class="tab-panel" id="panel-add">
+    <div class="form-group">
+      <label class="form-label">Group Name</label>
+      <input class="form-input" id="groupName2" type="text" placeholder="e.g. Smith Family" maxlength="40">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Group Size (max 250)</label>
+      <input class="form-input" id="groupSize2" type="number" min="1" max="250" placeholder="1–250" inputmode="numeric">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Entry Door</label>
+      <div class="door-select">
+        <button class="door-btn active" id="doorLeft2">⬅ LEFT</button>
+        <button class="door-btn"        id="doorRight2">RIGHT ➡</button>
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="toggle-row" id="parterreToggleRow2" for="preferParterre2">
+        <input type="checkbox" class="toggle-checkbox" id="preferParterre2">
+        <span class="toggle-label">Prefer Parterre</span>
+      </label>
+      <div class="toggle-hint">Only applies to groups under 38</div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Section Preference</label>
+      <select class="form-input" id="sectionPref2" style="cursor:pointer;">
+        <option value="auto">Auto (algorithm decides)</option>
+        <option value="orch">Orchestra / Parterre…</option>
+        <option value="dc">Dress Circle — Level 2</option>
+        <option value="gallery">Gallery — Level 3</option>
+        <option value="balcony">Balcony — Level 4</option>
+      </select>
+      <div id="orchSubRow2" style="display:none;margin-top:6px;">
+        <label class="form-label" style="margin-bottom:4px;">Orchestra / Parterre Sub-section</label>
+        <select class="form-input" id="orchSubPref2" style="cursor:pointer;">
+          <option value="orch_auto">Auto (best fit within floor)</option>
+          <option value="OL">Orchestra Left</option>
+          <option value="OC">Orchestra Center</option>
+          <option value="OR">Orchestra Right</option>
+          <option value="PL">Parterre Left</option>
+          <option value="PR">Parterre Right</option>
+          <option value="part_auto">Parterre (either side)</option>
+        </select>
+      </div>
+      <div class="toggle-hint">Falls back to Auto if preferred level is full</div>
+    </div>
+    <div class="error-msg" id="errorMsg2"></div>
+    <button class="btn-primary" id="seatGroupBtn2">SEAT GROUP</button>
+    <button class="btn-primary" id="placeManuallyBtn2" style="margin-top:8px;">✦ PLACE MANUALLY</button>
+  </div>
 
-<!-- Mobile summary overlay (mirrors the desktop summary area) -->
-<div id="summaryOverlay" style="
-  display:none; position:fixed; bottom:0; left:0; right:0; z-index:190;
-  background:var(--bg-mid); border-top:1px solid var(--border);
-  padding:16px 20px 80px; max-height:60vh; overflow-y:auto;
-  box-shadow:0 -8px 40px rgba(0,0,0,0.6);
-">
-  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
-    <div class="summary-title" style="margin:0;">ALLOCATION SUMMARY</div>
-    <button id="summaryOverlayClose" style="
-      background:none;border:none;color:var(--text-secondary);
-      font-size:18px;cursor:pointer;padding:4px 8px;
-    ">✕</button>
+  <!-- QUEUE panel -->
+  <div class="tab-panel" id="panel-queue">
+    <div id="moveModeHint2" style="display:none;padding:8px 10px;margin-bottom:8px;
+      background:var(--purple-dim);border:1px solid var(--purple-mid);border-radius:6px;
+      font-size:11px;color:var(--gold-light);letter-spacing:0.5px;line-height:1.5;">
+      ✦ MOVE MODE — click a highlighted section on the map to place the group there.
+      <br><a id="cancelMoveBtn2" style="color:var(--gold);cursor:pointer;text-decoration:underline;">Cancel</a>
+    </div>
+    <div class="group-list" id="groupList2">
+      <div class="no-groups">No groups yet.</div>
+    </div>
   </div>
-  <div class="summary-grid" id="summaryGridMobile">
-    <div style="color:var(--text-dim);font-size:12px;font-style:italic;">No groups allocated yet.</div>
+
+  <!-- ACTIONS panel -->
+  <div class="tab-panel" id="panel-actions">
+    <div style="display:flex;flex-direction:column;gap:8px;">
+      <button class="btn-block-mode" id="blockModeBtn2">⊘ Block Seats</button>
+      <div class="block-mode-hint" id="blockModeHint2">
+        Click seats to block · Drag to block a range · Click row label to block entire row
+      </div>
+      <button class="btn-block-mode ada-btn" id="adaHighlightBtn2">♿ Highlight ADA Seats</button>
+      <button class="btn-primary" id="undoBtn2"
+        style="background:linear-gradient(135deg,#3a2a1a,#6b4a20);" disabled>
+        ↩ UNDO LAST ACTION
+      </button>
+      <button class="btn-primary" id="configFirstRowBtn2"
+        style="background:linear-gradient(135deg,#2a2a5a,#3a3a8a);">
+        ⊘ CONFIGURE RESERVED ROWS
+      </button>
+      <button class="btn-primary" id="savePdfBtn2"
+        style="background:linear-gradient(135deg,#1a4a2a,#2a6b40);">
+        ↓ SAVE AS PDF
+      </button>
+      <button class="btn-primary" id="resetBtn2"
+        style="background:linear-gradient(135deg,var(--crimson),#6b0020);">
+        RESET THEATER
+      </button>
+      <div style="margin-top:8px;">
+        <div class="summary-title">ALLOCATION SUMMARY</div>
+        <div class="summary-grid" id="summaryGridMobile">
+          <div style="color:var(--text-dim);font-size:12px;font-style:italic;">No groups allocated yet.</div>
+        </div>
+      </div>
+    </div>
   </div>
-</div>
+
+</div><!-- /panelContainer -->
 
 <!-- ── PDF REPORT FRAME — populated by JS, printed via window.print() ── -->
 <div id="pdfReportFrame"></div>
@@ -1153,21 +1233,21 @@ const PARTERRE_RIGHT_ROWS = [
   {label:'W', seats:8}, {label:'V', seats:6},
 ];
 const DC_ROWS = [
-  {label:'A', left:11,  center:17,  right:11,  first:true},
+  {label:'A', left:11,  center:17,  right:11,  first:false},
   {label:'B', left:10, center:18, right:10, first:false},
   {label:'C', left:10, center:19, right:10, first:false},
   {label:'D', left:9,  center:20, right:9,  first:false},
   {label:'E', left:9,  center:19, right:9,  first:false},
 ];
 const GAL_ROWS = [
-  {label:'A', left:9, center:16,  right:9,  first:true},
+  {label:'A', left:9, center:16,  right:9,  first:false},
   {label:'B', left:9, center:18, right:9,  first:false},
   {label:'C', left:9, center:19, right:9,  first:false},
   {label:'D', left:9, center:20, right:9,  first:false},
   {label:'E', left:9, center:21, right:9,  first:false},
 ];
 const BAL_ROWS = [
-  {label:'A', seats:42,  first:true},
+  {label:'A', seats:42,  first:false},
   {label:'B', seats:42}, {label:'C', seats:43}, {label:'D', seats:44},
   {label:'E', seats:45}, {label:'F', seats:46}, {label:'G', seats:45},
   {label:'H', seats:46}, {label:'J', seats:45}, {label:'K', seats:44},
@@ -1276,6 +1356,43 @@ function getAvailable(sec) {
   return out;
 }
 
+
+// ── ROW-ACROSS ALLOCATION FOR DRESS CIRCLE & GALLERY ─────────────────────────
+// Returns available seats interleaved row-by-row across Left, Center, Right so
+// a group fills row B across all three sections before moving to row C, etc.
+function getAvailableByRow(rows, sections) {
+  // sections = [{pfx:'DCL', fn: r=>r.left}, {pfx:'DCC', fn:r=>r.center}, ...]
+  const out = [];
+  for (const row of rows) {
+    if (row.first) continue;
+    for (const {pfx, fn} of sections) {
+      const n = fn(row);
+      for (let i = 1; i <= n; i++) {
+        const id = `${pfx}_${row.label}_${i}`;
+        if (!state.seats[id] && !state.blockedSeats[id]) out.push(id);
+      }
+    }
+  }
+  return out;
+}
+
+function tryAllocRows(rows, sections, size, group) {
+  const pool = getAvailableByRow(rows, sections);
+  if (pool.length < size) return null;
+  const chosen = pool.slice(0, size);
+  const pending = {};
+  for (const id of chosen) {
+    if (state.seats[id] || state.blockedSeats[id]) return null;
+    pending[id] = {groupId: group.id, groupName: group.name};
+  }
+  Object.assign(state.seats, pending);
+  const used = [...new Set(chosen.map(id => id.split('_')[0]))];
+  return {seats: chosen, location: used.map(u => SEC_NAMES[u]).join(' + '), sections: used};
+}
+
+const DC_SECTIONS  = [{pfx:'DCL', fn:r=>r.left}, {pfx:'DCC', fn:r=>r.center}, {pfx:'DCR', fn:r=>r.right}];
+const GAL_SECTIONS = [{pfx:'GL',  fn:r=>r.left}, {pfx:'GC',  fn:r=>r.center}, {pfx:'GR',  fn:r=>r.right}];
+
 function tryAlloc(secs, size, group) {
   const pool = secs.flatMap(s => getAvailable(s));
   if (pool.length < size) return null;
@@ -1294,75 +1411,117 @@ function tryAlloc(secs, size, group) {
 }
 
 function allocateGroup(group) {
-  const {size, door, preferParterre} = group;
+  const {size, door, preferParterre, sectionPref = 'auto'} = group;
   const side     = door === 'Left' ? 'OL' : 'OR';
   const partSide = door === 'Left' ? 'PL' : 'PR';
-  const sideAv   = calcAvail(side);
-  const partAv   = calcAvail(partSide);
   const ocAv     = calcAvail('OC');
   const dcAv     = sumAvail(['DCL','DCC','DCR']);
   const galAv    = sumAvail(['GL','GC','GR']);
   const balAv    = calcAvail('BC');
+
+  // ── SECTION PREFERENCE: try the chosen level first, fall back to auto ────
+  if (sectionPref === 'dc') {
+    if (dcAv >= size) {
+      const r = tryAllocRows(DC_ROWS, DC_SECTIONS, size, group);
+      if (r) return r;
+    }
+  } else if (sectionPref === 'gallery') {
+    if (galAv >= size) {
+      const r = tryAllocRows(GAL_ROWS, GAL_SECTIONS, size, group);
+      if (r) return r;
+    }
+  } else if (sectionPref === 'balcony') {
+    if (balAv >= size) {
+      const r = tryAlloc(['BC'], size, group);
+      if (r) return r;
+    }
+  } else if (sectionPref === 'orch') {
+    const sideAv   = calcAvail(side);
+    const partAv   = calcAvail(partSide);
+    const overflow = size - sideAv;
+    const sub      = group.orchSubPref ?? 'orch_auto';
+
+    // ── Specific sub-section requested ───────────────────────────────────
+    if (sub === 'OL' || sub === 'OC' || sub === 'OR') {
+      const av = calcAvail(sub);
+      if (av >= size) return tryAlloc([sub], size, group);
+      // Sub-section doesn't have enough room — fall back to full orch floor
+    } else if (sub === 'PL' || sub === 'PR') {
+      const av = calcAvail(sub);
+      if (av >= size) return tryAlloc([sub], size, group);
+      const other = sub === 'PL' ? 'PR' : 'PL';
+      if (calcAvail(other) >= size) return tryAlloc([other], size, group);
+    } else if (sub === 'part_auto') {
+      const plAv = calcAvail('PL'); const prAv = calcAvail('PR');
+      const doorAv  = partSide === 'PL' ? plAv : prAv;
+      const otherAv = partSide === 'PL' ? prAv : plAv;
+      const otherSide = partSide === 'PL' ? 'PR' : 'PL';
+      if (doorAv  >= size) return tryAlloc([partSide], size, group);
+      if (otherAv >= size) return tryAlloc([otherSide], size, group);
+    }
+
+    // ── orch_auto or fallback from specific sub-section ───────────────────
+    if (preferParterre && size <= PARTERRE_MAX_SIZE) {
+      const plAv = calcAvail('PL'); const prAv = calcAvail('PR');
+      const doorPart  = partSide; const otherPart = partSide === 'PL' ? 'PR' : 'PL';
+      const doorAv    = partSide === 'PL' ? plAv : prAv;
+      const otherAv   = partSide === 'PL' ? prAv : plAv;
+      const bestPart  = doorAv >= size ? doorPart : (otherAv >= size ? otherPart : null);
+      if (bestPart) return tryAlloc([bestPart], size, group);
+    }
+    if (sideAv >= size)                                                                return tryAlloc([side], size, group);
+    if (sideAv > 0 && overflow <= PARTERRE_OVERFLOW_MAX && partAv >= overflow)         return tryAlloc([side, partSide], size, group);
+    if (sideAv < 10 && size <= PARTERRE_MAX_SIZE && partAv >= size)                    return tryAlloc([partSide], size, group);
+    if (!(ocAv < OC_LARGE_GROUP_MIN && size > OC_LARGE_GROUP_MIN - 1) && ocAv >= size) return tryAlloc(['OC'], size, group);
+    const olAv = calcAvail('OL'); const orAv = calcAvail('OR');
+    const orchFloorAv = olAv + ocAv + orAv;
+    if (orchFloorAv >= size) {
+      const sections = [{sec:'OL',av:olAv},{sec:'OC',av:ocAv},{sec:'OR',av:orAv}]
+        .sort((a,b) => b.av - a.av).map(s => s.sec);
+      return tryAlloc(sections, size, group);
+    }
+    const orchPartAv = sumAvail(['OL','OC','OR','PL','PR']);
+    if (orchPartAv >= size) return tryAlloc(['OL','OC','OR','PL','PR'], size, group);
+    return null;
+  }
+
+  // ── AUTO ROUTING (default, and fallback for preferred-but-full levels) ────
+  const sideAv   = calcAvail(side);
+  const partAv   = calcAvail(partSide);
   const overflow = size - sideAv;
 
-  // ── PREFER PARTERRE (groups < 38, user opted in) ──────────────────────────
-  // Choose whichever Parterre side has more availability.
-  // Fall through to normal routing if neither side has enough room.
   if (preferParterre && size <= PARTERRE_MAX_SIZE) {
-    const plAv = calcAvail('PL');
-    const prAv = calcAvail('PR');
-    // Pick the door-side parterre first; fall back to the other side if it has more room
-    const doorPart  = partSide;
-    const otherPart = partSide === 'PL' ? 'PR' : 'PL';
+    const plAv = calcAvail('PL'); const prAv = calcAvail('PR');
+    const doorPart  = partSide; const otherPart = partSide === 'PL' ? 'PR' : 'PL';
     const doorAv    = partSide === 'PL' ? plAv : prAv;
     const otherAv   = partSide === 'PL' ? prAv : plAv;
     const bestPart  = doorAv >= size ? doorPart : (otherAv >= size ? otherPart : null);
     if (bestPart) return tryAlloc([bestPart], size, group);
-    // Neither side alone fits — fall through to normal routing.
-    // Groups must fit within one Parterre side; no cross-side splits.
   }
 
-  // ── NORMAL ROUTING ────────────────────────────────────────────────────────
-  if (sideAv >= size)                                                          return tryAlloc([side], size, group);
-  if (sideAv > 0 && overflow <= PARTERRE_OVERFLOW_MAX && partAv >= overflow)   return tryAlloc([side, partSide], size, group);
-  if (sideAv < 10 && size <= PARTERRE_MAX_SIZE && partAv >= size)              return tryAlloc([partSide], size, group);
-  // ── STEP 4: Orchestra Center ──────────────────────────────────────────────
+  if (sideAv >= size)                                                                return tryAlloc([side], size, group);
+  if (sideAv > 0 && overflow <= PARTERRE_OVERFLOW_MAX && partAv >= overflow)         return tryAlloc([side, partSide], size, group);
+  if (sideAv < 10 && size <= PARTERRE_MAX_SIZE && partAv >= size)                    return tryAlloc([partSide], size, group);
   if (!(ocAv < OC_LARGE_GROUP_MIN && size > OC_LARGE_GROUP_MIN - 1) && ocAv >= size) return tryAlloc(['OC'], size, group);
 
-  // ── STEP 4b: Full orchestra floor as a combined pool ─────────────────────
-  // Reached only when no single orchestra section (side OR center) can fit
-  // the group on its own. We treat OL, OC, and OR as one pool, filling the
-  // fullest sections first so seats stay as compact as possible, before
-  // escalating to any upper level.
   {
-    const olAv = calcAvail('OL');
-    const orAv = calcAvail('OR');
+    const olAv = calcAvail('OL'); const orAv = calcAvail('OR');
     const orchFloorAv = olAv + ocAv + orAv;
     if (orchFloorAv >= size) {
-      // Sort the three sections largest-first so tryAlloc fills the fullest
-      // section before touching smaller remnants.
-      const sections = [
-        { sec: 'OL', av: olAv },
-        { sec: 'OC', av: ocAv },
-        { sec: 'OR', av: orAv },
-      ].sort((a, b) => b.av - a.av).map(s => s.sec);
+      const sections = [{sec:'OL',av:olAv},{sec:'OC',av:ocAv},{sec:'OR',av:orAv}]
+        .sort((a,b) => b.av - a.av).map(s => s.sec);
       return tryAlloc(sections, size, group);
     }
   }
 
   if (dcAv >= UPPER_LEVEL_MIN_AV && dcAv >= size) {
-    const r = tryAlloc(['DCL','DCC','DCR'], size, group); if (r) return r;
+    const r = tryAllocRows(DC_ROWS, DC_SECTIONS, size, group); if (r) return r;
   }
   if (galAv >= UPPER_LEVEL_MIN_AV && galAv >= size) {
-    const r = tryAlloc(['GL','GC','GR'], size, group); if (r) return r;
+    const r = tryAllocRows(GAL_ROWS, GAL_SECTIONS, size, group); if (r) return r;
   }
   if (balAv >= size) return tryAlloc(['BC'], size, group);
 
-  // ── FINAL CATCH-ALL: try every remaining section as a combined pool ────────
-  // Reached only when the structured routing above failed — e.g. the hall is
-  // heavily fragmented and no single section or pairing has enough contiguous
-  // room. We gather all available seats across every section and seat the group
-  // wherever space exists, rather than returning null unnecessarily.
   {
     const allSecs = ['OL','OC','OR','PL','PR','DCL','DCC','DCR','GL','GC','GR','BC'];
     const totalAv = allSecs.reduce((t, s) => t + calcAvail(s), 0);
@@ -1495,6 +1654,8 @@ async function addGroup() {
   const name           = document.getElementById('groupName').value.trim();
   const size           = parseInt(document.getElementById('groupSize').value);
   const preferParterre = document.getElementById('preferParterre').checked;
+  const sectionPref    = document.getElementById('sectionPref').value;
+  const orchSubPref    = document.getElementById('orchSubPref').value;
 
   if (!name || isNaN(size) || size < 1 || size > 250) {
     showError('Please enter a valid group name and size (1–250).');
@@ -1530,6 +1691,8 @@ async function addGroup() {
         name, size,
         door:           state.selectedDoor,
         preferParterre: preferParterre && size < 39,
+        sectionPref,
+        orchSubPref,
         color: GROUP_COLORS[txGroups.length % GROUP_COLORS.length],
         allocation: null,
       };
@@ -1586,6 +1749,10 @@ async function addGroup() {
       renderAll();
       document.getElementById('groupName').value = '';
       document.getElementById('groupSize').value = '';
+      document.getElementById('sectionPref').value = 'auto';
+      document.getElementById('orchSubPref').value = 'orch_auto';
+      document.getElementById('orchSubRow').style.display = 'none';
+      if (window._clearTabletForm) window._clearTabletForm();
     }
   } catch(err) {
     undoStack.pop(); // discard snapshot on error too
@@ -1701,9 +1868,123 @@ function formatSeatId(seatId) {
   return `${parts[0]}-${parts[1]}-${displayNum(seatId)}`;
 }
 
+// ── ADA / ACCESSIBLE SEATING ───────────────────────────────────────────────────
+// PLACEHOLDER LIST — swap these for Reynolds Hall's real accessible seating
+// plan once you have it.
+//
+// IMPORTANT: keys here use the DISPLAYED seat label — the exact text you see
+// in the on-screen tooltip, e.g. "OL-B-1" — NOT the internal seat ID (which
+// for OL/OR/DCL/GL sections is deliberately reversed under the hood so the
+// aisle seat always shows as seat 1). Just hover/tap the seat you want, copy
+// what the tooltip shows after "Seat: ", and use that string as the key.
+// This means you can never accidentally designate the wrong physical seat.
+//
+// To swap in the real list:
+//   1. Replace the entries in ADA_SEATS with the real seats' displayed labels.
+//   2. In ADA_SEAT_LABELS, map any of those same labels to whichever text you
+//      want shown — 'Wheelchair Space', 'Companion Seat', or anything else.
+//      A seat listed in ADA_SEATS but left OUT of ADA_SEAT_LABELS just shows
+//      the generic ADA_DEFAULT_LABEL instead.
+//
+// This does NOT block these seats from normal group allocation — it only
+// adds a tooltip note and lets staff toggle a highlight via the sidebar
+// "Highlight ADA Seats" button.
+const ADA_SEATS = new Set([
+  'OL-B-1',   'OL-B-2',     // Orchestra Left, row B
+  'OL-B-3',   'OL-B-4',     // Orchestra Left, row B
+  'OL-B-5',   'OL-B-6',     // Orchestra Left, row B
+  'OL-B-7',                 // Orchestra Left, row B
+  'OR-B-1',   'OR-B-2',     // Orchestra Right, row B
+  'OR-B-3',   'OR-B-4',     // Orchestra Right, row B
+  'OR-B-5',   'OR-B-6',     // Orchestra Right, row B
+  'OR-B-7',                 // Orchestra Right, row B
+  'OL-ZZ-1',  'OL-ZZ-2',    // Orchestra Left, back row (ZZ)
+  'OL-ZZ-3',  'OL-ZZ-4',    // Orchestra Left, back row (ZZ)
+  'OL-ZZ-5',  'OL-ZZ-6',    // Orchestra Left, back row (ZZ)
+  'OL-ZZ-7',                // Orchestra Left, back row (ZZ)
+  'OR-ZZ-1',  'OR-ZZ-2',    // Orchestra Right, back row (ZZ)
+  'OR-ZZ-3',  'OR-ZZ-4',    // Orchestra Right, back row (ZZ)
+  'OR-ZZ-5',  'OR-ZZ-6',    // Orchestra Right, back row (ZZ)
+  'OR-ZZ-7',                // Orchestra Right, back row (ZZ)
+  'DCL-E-1',  'DCL-E-2',    // Dress Circle Left, last row (E)
+  'DCL-E-3',  'DCL-E-4',    // Dress Circle Left, last row (E)
+  'DCL-E-5',  'DCL-E-6',    // Dress Circle Left, last row (E)
+  'DCL-E-7',                // Dress Circle Left, last row (E)
+  'DCR-E-1',  'DCR-E-2',    // Dress Circle Right, last row (E)
+  'DCR-E-3',  'DCR-E-4',    // Dress Circle Right, last row (E)
+  'DCR-E-5',  'DCR-E-6',    // Dress Circle Right, last row (E)
+  'DCR-E-7',                // Dress Circle Right, last row (E)
+  'DCC-E-1',  'DCC-E-2',    // Dress Circle Center, last row (E)
+  'DCC-E-3',  'DCC-E-4',    // Dress Circle Center, last row (E)
+  'DCC-E-16', 'DCC-E-17',   // Dress Circle Center, last row (E)
+  'DCC-E-18', 'DCC-E-19',   // Dress Circle Center, last row (E)
+  'GL-E-1',   'GL-E-2',    // Gallery Left, last row (E)
+  'GL-E-3',   'GL-E-4',    // Gallery Left, last row (E)
+  'GL-E-5',   'GL-E-6',    // Gallery Left, last row (E)
+  'GL-E-7',                // Gallery Left, last row (E)
+  'GR-E-1',   'GR-E-2',    // Gallery Right, last row (E)
+  'GR-E-3',   'GR-E-4',    //Gallery Right, last row (E)
+  'GR-E-5',   'GR-E-6',    // Gallery Right, last row (E)
+  'GR-E-7',                // Gallery Right, last row (E)
+  'GC-E-1',   'GC-E-2',    // Gallery Center, last row (E)
+  'GC-E-3',   'GC-E-4',    // Gallery Center, last row (E)
+  'GC-E-16',  'GC-E-17',   // Gallery Center, last row (E)
+  'GC-E-18',  'GC-E-19',   // Gallery Center, last row (E)
+  ]);
+
+const ADA_SEAT_LABELS = {
+  'OL-B-1':   'Wheelchair Space',   'OL-B-2':   'Companion Seat',
+  'OL-B-3':   'Wheelchair Space',   'OL-B-4':   'Companion Seat',
+  'OL-B-5':   'Wheelchair Space',   'OL-B-6':   'Companion Seat',
+  'OL-B-7':   'Companion Seat',
+  'OR-B-1':   'Wheelchair Space',   'OR-B-2':   'Companion Seat',
+  'OR-B-3':   'Wheelchair Space',   'OR-B-4':   'Companion Seat',
+  'OR-B-5':   'Wheelchair Space',   'OR-B-6':   'Companion Seat',
+  'OR-B-7':   'Companion Seat',
+  'OL-ZZ-1':  'Wheelchair Space',   'OL-ZZ-2':  'Companion Seat',
+  'OL-ZZ-3':  'Wheelchair Space',   'OL-ZZ-4':  'Companion Seat',
+  'OL-ZZ-5':  'Wheelchair Space',   'OL-ZZ-6':  'Companion Seat',
+  'OL-ZZ-7':  'Companion Seat',
+  'OR-ZZ-1':  'Wheelchair Space',   'OR-ZZ-2':  'Companion Seat',
+  'OR-ZZ-3':  'Wheelchair Space',   'OR-ZZ-4':  'Companion Seat',
+  'OR-ZZ-5':  'Wheelchair Space',   'OR-ZZ-6':  'Companion Seat',
+  'OR-ZZ-7':  'Companion Seat',
+  'DCL-E-1':  'Wheelchair Space',   'DCL-E-2':  'Companion Seat',
+  'DCL-E-3':  'Wheelchair Space',   'DCL-E-4':  'Companion Seat',
+  'DCL-E-5':  'Wheelchair Space',   'DCL-E-6':  'Companion Seat',
+  'DCL-E-7':  'Companion Seat',
+  'DCR-E-1':  'Wheelchair Space',   'DCR-E-2':  'Companion Seat',
+  'DCR-E-3':  'Wheelchair Space',   'DCR-E-4':  'Companion Seat',
+  'DCR-E-5':  'Wheelchair Space',   'DCR-E-6':  'Companion Seat',
+  'DCR-E-7':  'Companion Seat',
+  'DCC-E-1':  'Wheelchair Space',   'DCC-E-2':  'Companion Seat',
+  'DCC-E-3':  'Wheelchair Space',   'DCC-E-4':  'Companion Seat',
+  'DCC-E-16': 'Wheelchair Space',   'DCC-E-17': 'Companion Seat',
+  'DCC-E-18': 'Wheelchair Space',   'DCC-E-19': 'Companion Seat',
+  'GL-E-1':   'Wheelchair Space',   'GL-E-2':  'Companion Seat',
+  'GL-E-3':  'Wheelchair Space',   'GL-E-4':  'Companion Seat',
+  'GL-E-5':  'Wheelchair Space',   'GL-E-6':  'Companion Seat',
+  'GL-E-7':  'Companion Seat',
+  'GR-E-1':  'Wheelchair Space',   'GR-E-2':  'Companion Seat',
+  'GR-E-3':  'Wheelchair Space',   'GR-E-4':  'Companion Seat',
+  'GR-E-5':  'Wheelchair Space',   'GR-E-6':  'Companion Seat',
+  'GR-E-7':  'Companion Seat',
+  'GC-E-1':  'Wheelchair Space',   'GC-E-2':  'Companion Seat',
+  'GC-E-3':  'Wheelchair Space',   'GC-E-4':  'Companion Seat',
+  'GC-E-16': 'Wheelchair Space',   'GC-E-17': 'Companion Seat',
+  'GC-E-18': 'Wheelchair Space',   'GC-E-19': 'Companion Seat',
+  // Any seat in ADA_SEATS but not listed here falls back to the generic
+  // label below — handy for venues that don't distinguish the two.
+};
+const ADA_DEFAULT_LABEL = 'Wheelchair Accessible';
+function isAdaSeat(seatId) { return ADA_SEATS.has(formatSeatId(seatId)); }
+function getAdaLabel(seatId) {
+  return ADA_SEAT_LABELS[formatSeatId(seatId)] || ADA_DEFAULT_LABEL;
+}
+
 function makeSeat(seatId, isFirst) {
   const div = document.createElement('div');
-  div.className = 'seat' + (isFirst ? ' first-row' : '');
+  div.className = 'seat' + (isFirst ? ' first-row' : '') + (isAdaSeat(seatId) ? ' ada-seat' : '');
   div.dataset.seatId = seatId;
 
   const isBlocked = !!state.blockedSeats[seatId];
@@ -1725,7 +2006,7 @@ function makeSeat(seatId, isFirst) {
     if (!blockModeActive) hideTip();
   });
 
-  // Click — toggle block in block mode, ignore if occupied (unless already blocked)
+  // Click — block mode only (move mode is handled at section level)
   div.addEventListener('click', () => {
     if (!blockModeActive || isFirst) return;
     toggleBlock(seatId);
@@ -1794,6 +2075,7 @@ function showTip(e, seatId, isFirst) {
   if (isFirst)   text += ' [First Row — Reserved]';
   else if (d)    text += ` — ${d.groupName}`;
   else           text += ' — Available';
+  if (isAdaSeat(seatId)) text += ` ♿ [${getAdaLabel(seatId)}]`;
   tip.textContent = text; tip.style.display = 'block';
   moveTooltip(e);
 }
@@ -1844,6 +2126,7 @@ function showSeatToast(seatId, isFirst) {
   if (isFirst)   text += ' — Reserved';
   else if (d)    text += ` — ${d.groupName}`;
   else           text += ' — Available';
+  if (isAdaSeat(seatId)) text += ` ♿ [${getAdaLabel(seatId)}]`;
   toast.textContent = text;
   toast.classList.add('visible');
   clearTimeout(_toastTimer);
@@ -1907,13 +2190,14 @@ function getSectionClass(secs) {
   return 'unallocated';
 }
 
-function renderGroupList() {
+let renderGroupList = function() {
   const el = document.getElementById('groupList');
   if (!state.groups.length) { el.innerHTML = '<div class="no-groups">No groups added yet</div>'; return; }
   el.innerHTML = '';
   state.groups.forEach(g => {
     const card = document.createElement('div');
-    card.className = `group-card ${getSectionClass(g.allocation?.sections)}`;
+    const isPending = moveModeActive && movePendingGroup?.id === g.id;
+    card.className = `group-card ${getSectionClass(g.allocation?.sections)}${isPending ? ' move-pending' : ''}`;
 
     // Build header row
     const header = document.createElement('div');
@@ -1932,8 +2216,22 @@ function renderGroupList() {
     removeBtn.textContent = '✕';
     removeBtn.addEventListener('click', () => removeGroup(g.id));
 
+    const moveBtn = document.createElement('button');
+    moveBtn.className = 'btn-move' + (moveModeActive && movePendingGroup?.id === g.id ? ' active' : '');
+    moveBtn.textContent = moveModeActive && movePendingGroup?.id === g.id ? '✦ Moving…' : '→ Move';
+    moveBtn.title = 'Move this group to a different section';
+    moveBtn.addEventListener('click', () => {
+      if (moveModeActive && movePendingGroup?.id === g.id) { exitMoveMode(); return; }
+      enterMoveMode(g);
+    });
+
+    const btnRow = document.createElement('div');
+    btnRow.style.cssText = 'display:flex;gap:4px;align-items:center;';
+    btnRow.appendChild(moveBtn);
+    btnRow.appendChild(removeBtn);
+
     header.appendChild(nameWrap);
-    header.appendChild(removeBtn);
+    header.appendChild(btnRow);
 
     // Meta row
     const meta = document.createElement('div');
@@ -1967,12 +2265,30 @@ function renderGroupList() {
       badge.textContent = '✦ PARTERRE PREFERRED';
       card.appendChild(badge);
     }
+    if (g.sectionPref && g.sectionPref !== 'auto') {
+      const prefLabels = {
+        orch: 'Orchestra/Parterre', dc: 'Dress Circle',
+        gallery: 'Gallery', balcony: 'Balcony',
+      };
+      const subLabels = {
+        OL: 'Orch Left', OC: 'Orch Center', OR: 'Orch Right',
+        PL: 'Parterre Left', PR: 'Parterre Right',
+        part_auto: 'Parterre', orch_auto: '',
+      };
+      const subText = g.orchSubPref && g.sectionPref === 'orch' && subLabels[g.orchSubPref]
+        ? subLabels[g.orchSubPref]
+        : (prefLabels[g.sectionPref] ?? g.sectionPref);
+      const badge = document.createElement('div');
+      badge.style.cssText = 'font-size:10px;color:var(--purple-vivid);letter-spacing:1px;margin-top:2px;';
+      badge.textContent = `⬆ ${subText} PREFERRED`;
+      card.appendChild(badge);
+    }
 
     el.appendChild(card);
   });
 }
 
-function renderSummary() {
+let renderSummary = function() {
   // Render into both the desktop bar and the mobile overlay
   ['summaryGrid', 'summaryGridMobile'].forEach(elId => {
     const el = document.getElementById(elId);
@@ -2022,13 +2338,14 @@ function renderStats() {
   document.getElementById('statBal').textContent  = `${TOTAL_BAL - calcAvail('BC')} / ${TOTAL_BAL}`;
 }
 
-function renderAll() {
+let renderAll = function() {
   // FIX 5 — Rebuild the O(1) lookup map before any render function runs
   groupColorMap = new Map(state.groups.map(g => [g.id, g.color]));
 
   renderOrchestra(); renderParterre(); renderDressCircle();
   renderGallery();   renderBalcony();  renderGroupList();
   renderSummary();   renderLegend();   renderStats();
+
 }
 
 // ── SAVE AS PDF ───────────────────────────────────────────────────────────────
@@ -2219,17 +2536,127 @@ document.getElementById('preferParterre').addEventListener('change', function() 
   document.getElementById('parterreToggleRow').classList.toggle('active', this.checked);
 });
 
+document.getElementById('sectionPref').addEventListener('change', function() {
+  document.getElementById('orchSubRow').style.display = this.value === 'orch' ? 'block' : 'none';
+});
+
+// ── MOVE MODE ─────────────────────────────────────────────────────────────────
+let moveModeActive   = false;
+let movePendingGroup = null;
+
+function enterMoveMode(group) {
+  if (blockModeActive) blockModeBtn.click();
+  moveModeActive   = true;
+  movePendingGroup = group;
+  document.body.classList.add('move-mode');
+  document.getElementById('moveModeHint').style.display = 'block';
+  clearError();
+  renderAll();
+}
+
+function exitMoveMode() {
+  moveModeActive   = false;
+  movePendingGroup = null;
+  document.body.classList.remove('move-mode');
+  document.getElementById('moveModeHint').style.display = 'none';
+  renderAll();
+}
+
+document.getElementById('cancelMoveBtn').addEventListener('click', exitMoveMode);
+
+function handleMoveTargetClick(sectionsStr) {
+  if (!moveModeActive || !movePendingGroup) return;
+  const targetSections = sectionsStr.split(',');
+  const group = movePendingGroup;
+
+  const oldSeatIds = Object.keys(state.seats).filter(id => state.seats[id]?.groupId === group.id);
+
+  pushUndo();
+  oldSeatIds.forEach(id => delete state.seats[id]);
+
+  // Use row-across allocation for DC and Gallery
+  const isDC  = targetSections.length > 0 && targetSections.every(s => s.startsWith('DC'));
+  const isGal = targetSections.length > 0 && targetSections.every(s => s === 'GL' || s === 'GC' || s === 'GR');
+  const result = isDC  ? tryAllocRows(DC_ROWS,  DC_SECTIONS,  group.size, group)
+               : isGal ? tryAllocRows(GAL_ROWS, GAL_SECTIONS, group.size, group)
+               : tryAlloc(targetSections, group.size, group);
+
+  if (!result) {
+    oldSeatIds.forEach(id => { state.seats[id] = { groupId: group.id, groupName: group.name }; });
+    undoStack.pop();
+    if (undoStack.length === 0) document.getElementById('undoBtn').disabled = true;
+    showError(`Not enough room in that section for ${group.size} seats.`);
+    return;
+  }
+
+  group.allocation = result;
+
+  if (!state.groups.find(g => g.id === group.id)) {
+    state.groups.push(group);
+    state.nextGroupId = Math.max(state.nextGroupId, group.id + 1);
+  }
+
+  commitState();
+  exitMoveMode();
+  clearError();
+}
+
+// Wire up section target overlays via delegation so listeners survive re-renders
+document.querySelector('.theater-container').addEventListener('click', e => {
+  const target = e.target.closest('.move-overlay');
+  if (!target) return;
+  e.stopPropagation();
+  handleMoveTargetClick(target.dataset.moveSections);
+});
+
+document.getElementById('placeManuallyBtn').addEventListener('click', () => {
+  clearError();
+  const name = document.getElementById('groupName').value.trim();
+  const size = parseInt(document.getElementById('groupSize').value, 10);
+  if (!name)         { showError('Please enter a group name.');        return; }
+  if (!size || size < 1 || size > 250) { showError('Please enter a valid group size (1–250).'); return; }
+  const preferParterre = document.getElementById('preferParterre').checked;
+
+  const group = {
+    id:    state.nextGroupId,
+    name,  size,
+    door:  state.selectedDoor,
+    preferParterre: preferParterre && size < 39,
+    color: GROUP_COLORS[state.groups.length % GROUP_COLORS.length],
+    allocation: null,
+  };
+
+  document.getElementById('groupName').value = '';
+  document.getElementById('groupSize').value = '';
+  enterMoveMode(group);
+});
+
 // ── BLOCK MODE TOGGLE ─────────────────────────────────────────────────────────
 const blockModeBtn  = document.getElementById('blockModeBtn');
 const blockModeHint = document.getElementById('blockModeHint');
 
 blockModeBtn.addEventListener('click', () => {
+  if (moveModeActive) exitMoveMode();
   blockModeActive = !blockModeActive;
-  blockModeBtn.classList.toggle('active', blockModeActive);
-  blockModeHint.classList.toggle('visible', blockModeActive);
   document.body.classList.toggle('block-mode', blockModeActive);
-  blockModeBtn.textContent = blockModeActive ? '⊘ Exit Block Mode' : '⊘ Block Seats';
-  hideTip(); // clear any open tooltip when switching modes
+  hideTip();
+  if (window._syncBlockModeUI) window._syncBlockModeUI();
+});
+
+// ── ADA HIGHLIGHT TOGGLE ─────────────────────────────────────────────────────
+// Purely visual — does not block or otherwise affect seat allocation. Just
+// rings every seat in ADA_SEATS with a blue outline so staff can spot them.
+let adaHighlightActive = false;
+const adaHighlightBtn = document.getElementById('adaHighlightBtn');
+adaHighlightBtn.addEventListener('click', () => {
+  adaHighlightActive = !adaHighlightActive;
+  document.body.classList.toggle('ada-highlight-mode', adaHighlightActive);
+  ['adaHighlightBtn','adaHighlightBtn2'].forEach(id => {
+    const btn = document.getElementById(id);
+    if (!btn) return;
+    btn.classList.toggle('active', adaHighlightActive);
+    btn.textContent = adaHighlightActive ? '♿ Hide ADA Highlight' : '♿ Highlight ADA Seats';
+  });
 });
 
 // ── DRAG-TO-BLOCK ─────────────────────────────────────────────────────────────
@@ -2262,28 +2689,174 @@ document.addEventListener('selectstart', e => {
   if (blockModeActive && isDraggingBlock) e.preventDefault();
 });
 
-// IMPROVEMENT 1 — Sidebar toggle (mobile)
-const sidebarToggleBtn = document.getElementById('sidebarToggle');
-const sidebar          = document.querySelector('.sidebar');
-sidebarToggleBtn.addEventListener('click', () => {
-  const isOpen = sidebar.classList.toggle('open');
-  sidebarToggleBtn.classList.toggle('open', isOpen);
-});
+// ── TABLET TAB SYSTEM ────────────────────────────────────────────────────────
 
-// IMPROVEMENT 7 — Summary drawer (mobile)
-const summaryDrawerBtn    = document.getElementById('summaryDrawerBtn');
-const summaryOverlay      = document.getElementById('summaryOverlay');
-const summaryOverlayClose = document.getElementById('summaryOverlayClose');
+(function() {
+  // Tab open/close
+  let activeTab = null;
+  const panelContainer = document.getElementById('panelContainer');
 
-summaryDrawerBtn.addEventListener('click', () => {
-  summaryOverlay.style.display = summaryOverlay.style.display === 'block' ? 'none' : 'block';
-});
-summaryOverlayClose.addEventListener('click', () => {
-  summaryOverlay.style.display = 'none';
-});
-summaryOverlay.addEventListener('click', (e) => {
-  if (e.target === summaryOverlay) summaryOverlay.style.display = 'none';
-});
+  document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const tab = btn.dataset.tab;
+      if (activeTab === tab) {
+        activeTab = null;
+        panelContainer.classList.remove('open');
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+      } else {
+        activeTab = tab;
+        panelContainer.classList.add('open');
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
+        document.querySelectorAll('.tab-panel').forEach(p => p.classList.toggle('active', p.id === 'panel-' + tab));
+      }
+    });
+  });
+
+  // Read values from whichever form is active (tablet or desktop)
+  function getFormValues() {
+    // On tablet the *2 fields are visible; prefer them if non-empty
+    const isTablet = window.innerWidth <= 900;
+    const name  = isTablet ? document.getElementById('groupName2').value.trim()
+                           : document.getElementById('groupName').value.trim();
+    const size  = isTablet ? document.getElementById('groupSize2').value
+                           : document.getElementById('groupSize').value;
+    const pref  = isTablet ? document.getElementById('sectionPref2').value
+                           : document.getElementById('sectionPref').value;
+    const sub   = isTablet ? document.getElementById('orchSubPref2').value
+                           : document.getElementById('orchSubPref').value;
+    const part  = isTablet ? document.getElementById('preferParterre2').checked
+                           : document.getElementById('preferParterre').checked;
+    // Always write back to desktop fields so the allocation engine reads them
+    document.getElementById('groupName').value      = name;
+    document.getElementById('groupSize').value      = size;
+    document.getElementById('sectionPref').value    = pref;
+    document.getElementById('orchSubPref').value    = sub;
+    document.getElementById('preferParterre').checked = part;
+  }
+
+  // Tablet door buttons
+  document.getElementById('doorLeft2').addEventListener('click', () => {
+    state.selectedDoor = 'Left';
+    document.getElementById('doorLeft2').classList.add('active');
+    document.getElementById('doorRight2').classList.remove('active');
+    document.getElementById('doorLeft').classList.add('active');
+    document.getElementById('doorRight').classList.remove('active');
+  });
+  document.getElementById('doorRight2').addEventListener('click', () => {
+    state.selectedDoor = 'Right';
+    document.getElementById('doorRight2').classList.add('active');
+    document.getElementById('doorLeft2').classList.remove('active');
+    document.getElementById('doorRight').classList.add('active');
+    document.getElementById('doorLeft').classList.remove('active');
+  });
+
+  // Tablet sectionPref shows/hides orchSubRow2
+  document.getElementById('sectionPref2').addEventListener('change', function() {
+    document.getElementById('orchSubRow2').style.display = this.value === 'orch' ? 'block' : 'none';
+  });
+
+  // Tablet Prefer Parterre
+  document.getElementById('preferParterre2').addEventListener('change', function() {
+    document.getElementById('parterreToggleRow2').classList.toggle('active', this.checked);
+  });
+
+  // Tablet action buttons — sync form then delegate to desktop buttons
+  document.getElementById('seatGroupBtn2').addEventListener('click', () => {
+    getFormValues(); document.getElementById('seatGroupBtn').click();
+  });
+  document.getElementById('placeManuallyBtn2').addEventListener('click', () => {
+    getFormValues(); document.getElementById('placeManuallyBtn').click();
+  });
+  document.getElementById('blockModeBtn2').addEventListener('click', () => {
+    document.getElementById('blockModeBtn').click();
+  });
+  document.getElementById('adaHighlightBtn2').addEventListener('click', () => {
+    document.getElementById('adaHighlightBtn').click();
+  });
+  document.getElementById('undoBtn2').addEventListener('click', () => {
+    document.getElementById('undoBtn').click();
+  });
+  document.getElementById('configFirstRowBtn2').addEventListener('click', () => {
+    document.getElementById('configFirstRowBtn').click();
+  });
+  document.getElementById('savePdfBtn2').addEventListener('click', () => {
+    document.getElementById('savePdfBtn').click();
+  });
+  document.getElementById('resetBtn2').addEventListener('click', () => {
+    document.getElementById('resetBtn').click();
+  });
+  document.getElementById('cancelMoveBtn2').addEventListener('click', () => {
+    document.getElementById('cancelMoveBtn').click();
+  });
+
+  // Clear tablet form fields
+  function clearTabletForm() {
+    document.getElementById('groupName2').value    = '';
+    document.getElementById('groupSize2').value    = '';
+    document.getElementById('sectionPref2').value  = 'auto';
+    document.getElementById('orchSubPref2').value  = 'orch_auto';
+    document.getElementById('orchSubRow2').style.display = 'none';
+  }
+  window._clearTabletForm = clearTabletForm;
+
+  // Sync block mode UI to tablet buttons
+  function syncBlockModeUI() {
+    const isActive = blockModeActive;
+    ['blockModeBtn','blockModeBtn2'].forEach(id => {
+      const btn = document.getElementById(id);
+      if (!btn) return;
+      btn.classList.toggle('active', isActive);
+      btn.textContent = isActive ? '⊘ Exit Block Mode' : '⊘ Block Seats';
+    });
+    ['blockModeHint','blockModeHint2'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.classList.toggle('visible', isActive);
+    });
+  }
+  window._syncBlockModeUI = syncBlockModeUI;
+
+  // Mirror group list and summary to tablet panels after every render
+  function syncTabletPanels() {
+    // Group list
+    const src  = document.getElementById('groupList');
+    const dest = document.getElementById('groupList2');
+    if (src && dest) {
+      dest.innerHTML = src.innerHTML;
+      dest.querySelectorAll('.btn-move').forEach((btn, i) => {
+        const s = src.querySelectorAll('.btn-move')[i];
+        if (s) btn.addEventListener('click', () => s.click());
+      });
+      dest.querySelectorAll('.btn-danger').forEach((btn, i) => {
+        const s = src.querySelectorAll('.btn-danger')[i];
+        if (s) btn.addEventListener('click', () => s.click());
+      });
+      const hint2 = document.getElementById('moveModeHint2');
+      const hint1 = document.getElementById('moveModeHint');
+      if (hint2 && hint1) hint2.style.display = hint1.style.display;
+    }
+    // Summary
+    const ss = document.getElementById('summaryGrid');
+    const sd = document.getElementById('summaryGridMobile');
+    if (ss && sd) sd.innerHTML = ss.innerHTML;
+    // Undo button
+    const u1 = document.getElementById('undoBtn');
+    const u2 = document.getElementById('undoBtn2');
+    if (u1 && u2) u2.disabled = u1.disabled;
+    // Block mode
+    syncBlockModeUI();
+  }
+  window._syncTabletPanels = syncTabletPanels;
+
+})();
+
+// Hook renderAll to sync tablet panels — done outside the IIFE so it
+// can access the let-declared renderAll variable
+const _baseRenderAll = renderAll;
+renderAll = function() {
+  _baseRenderAll();
+  if (window._syncTabletPanels) try { window._syncTabletPanels(); } catch(e) {}
+};
 
 // ── FIRST-ROW BLOCK MODAL ─────────────────────────────────────────────────────
 // Shows on page load. User selects which first rows to block as reserved.
@@ -2363,14 +2936,14 @@ function applyFirstRowSelections() {
   });
 }
 
-document.getElementById('frmBtnConfirm').addEventListener('click', () => {
+document.getElementById('frmBtnConfirm').addEventListener('click', async () => {
   applyFirstRowSelections();
   document.getElementById('firstRowModal').classList.add('hidden');
-  commitState();
+  try { await commitState(); } catch(e) { console.error('commitState error:', e); }
   renderAll();
 });
 
-document.getElementById('frmBtnNone').addEventListener('click', () => {
+document.getElementById('frmBtnNone').addEventListener('click', async () => {
   document.querySelectorAll('.frm-checkbox').forEach(cb => {
     cb.checked = false;
     cb.closest('.frm-check-row').classList.remove('checked');
@@ -2378,7 +2951,7 @@ document.getElementById('frmBtnNone').addEventListener('click', () => {
   // Clear any previously applied first-row blocks and persist the change
   applyFirstRowSelections();
   document.getElementById('firstRowModal').classList.add('hidden');
-  commitState();
+  try { await commitState(); } catch(e) { console.error('commitState error:', e); }
   renderAll();
 });
 
