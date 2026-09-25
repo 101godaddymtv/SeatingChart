@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- Reynolds Hall Seating Allocator v21 — patched 2026-07-10 -->
+<!-- Reynolds Hall Seating Allocator v21 — patched 2026-08-09 -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -437,6 +437,70 @@
   }
   .balcony-section { display: flex; flex-direction: column; gap: 2px; align-items: center; }
   .balcony-a-row { display: flex; align-items: center; justify-content: center; gap: calc(var(--seat-size) * 1.1); }
+
+  /* The four level plans follow the printed house charts: rear at the top,
+     stage at the bottom, and house Right to the viewer's left. These styles
+     affect presentation only; each seat retains its existing section and ID. */
+  .venue-plan {
+    --bank-gap: calc(var(--seat-size) * 2.4);
+    background: radial-gradient(ellipse at 50% 2%, rgba(201,162,39,.075), transparent 65%), var(--bg-mid);
+    border: 1px solid var(--border); border-radius: 48% 48% 8px 8px / 34px 34px 8px 8px;
+    padding: 24px 25px 14px; min-width: max-content; position: relative;
+    box-shadow: inset 0 2px 0 rgba(201,162,39,.12);
+  }
+  .venue-plan .stage-bar {
+    margin: 16px auto 0; max-width: 62%; border-radius: 45% 45% 5px 5px / 13px 13px 5px 5px;
+    box-shadow: 0 -4px 20px rgba(201,162,39,.14);
+  }
+  .plan-aisle { width: var(--bank-gap); min-width: var(--bank-gap); }
+  .plan-bank { position: relative; min-width: max-content; }
+  .plan-bank .section-header { margin-bottom: 10px; white-space: nowrap; }
+  .plan-bank .seat-row, .plan-bank .seat-row-left, .plan-bank .seat-row-right {
+    min-height: calc(var(--seat-size) + 7px);
+  }
+  .orch-plan .plan-bank .seat-row, .orch-plan .plan-bank .seat-row-left,
+  .orch-plan .plan-bank .seat-row-right { min-height: calc(var(--seat-size) + 9px); }
+  .upper-plan .plan-bank .arc-row { min-height: calc(var(--seat-size) + 14px); }
+  .balcony-plan .arc-row { min-height: calc(var(--seat-size) + 22px); }
+  .balcony-plan .balcony-a-row .arc-row { min-height: calc(var(--seat-size) + 18px); }
+  .balcony-plan .balcony-a-row > :first-child,
+  .balcony-plan .balcony-a-row > :last-child { margin-top: 12px; }
+  .arc-row .seat { top: var(--arc-drop, 0px); }
+  .venue-plan .seat-row-right { justify-content: flex-end; }
+  .venue-plan .seat { border-radius: 40% 40% 2px 2px; }
+  .orch-plan { display: grid; grid-template-columns: auto auto auto auto auto; align-items: start; gap: var(--bank-gap); }
+  .orch-plan .orch-section, .orch-plan .orch-center { gap: 2px; }
+  .orch-plan .parterre-bank {
+    margin-top: calc((var(--seat-size) + 9px) * 10);
+    border: 1px solid rgba(201,162,39,.38); border-radius: 50% 50% 8px 8px / 22px 22px 8px 8px;
+    padding: 16px 8px 12px; background: rgba(201,162,39,.025);
+  }
+  .orch-plan .parterre-bank .section-header { max-width: 120px; margin-left: auto; margin-right: auto; }
+  .upper-plan { display: grid; grid-template-columns: auto auto auto auto auto; align-items: start; gap: var(--bank-gap); }
+  .upper-plan .side-boxes {
+    border: 1px solid rgba(201,162,39,.34); border-top: 0;
+    border-radius: 0 0 18px 18px; width: calc(var(--seat-size) * 6);
+    height: calc(var(--seat-size) * 13); margin-top: calc((var(--seat-size) + 9px) * 5 + 19px);
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Cinzel', serif; font-size: 8px; letter-spacing: 1px;
+    line-height: 1.5; text-align: center; color: var(--text-dim);
+    background: repeating-linear-gradient(to bottom, transparent 0 38px, rgba(201,162,39,.15) 38px 39px);
+    pointer-events: none;
+  }
+  .upper-plan .side-boxes:last-child { border-radius: 0 0 18px 18px; }
+  .upper-plan .plan-bank { min-height: calc((var(--seat-size) + 9px) * 5 + 145px); }
+  .upper-plan .plan-bank::after {
+    content: 'OPEN TO ORCHESTRA'; display: block; text-align: center;
+    margin-top: 65px; color: var(--text-dim); font: 8px 'Cinzel', serif;
+    letter-spacing: 2px; pointer-events: none;
+  }
+  .upper-plan .plan-bank:not(.center-bank)::after { content: ''; }
+  .plan-note { text-align: center; color: var(--text-dim); font-size: 10px; margin-top: 10px; }
+  .balcony-plan { padding-left: 40px; padding-right: 40px; }
+  .balcony-plan .balcony-section { gap: 2px; }
+  .balcony-plan .balcony-a-row { gap: calc(var(--seat-size) * 3); margin-top: 8px; }
+  .balcony-front-rail { height: 12px; margin: 9px auto 0; width: 85%; border-top: 1px solid rgba(201,162,39,.42); border-radius: 50% 50% 0 0; pointer-events: none; }
+  .balcony-ada-labels { display: flex; justify-content: space-between; font-size: 9px; letter-spacing: 1px; color: #7cc0ff; margin: 6px 0 0; }
 
   /* ── BLOCKED SEATS ──────────────────────────────────────────────────────── */
   .seat.blocked { background: var(--crimson) !important; border-color: #e05070 !important; cursor: crosshair; position: relative; }
@@ -955,86 +1019,82 @@
           <div id="legendGroups"></div>
         </div>
 
-        <div class="section-wrap" style="position:relative;">
-          <div class="stage-bar">✦ STAGE ✦</div>
+        <div class="section-wrap">
           <div class="section-header">ORCHESTRA &amp; PARTERRE</div>
-          <div class="orch-grid" style="position:relative;">
-            <div style="position:relative;">
-              <div class="move-overlay" data-move-sections="OL">Orch Left</div>
-              <div class="section-header" style="font-size:9px;text-align:center;">ORCH LEFT</div>
-              <div class="orch-section" id="orchLeft"></div>
+          <div class="venue-plan">
+            <div class="orch-plan">
+              <div class="plan-bank parterre-bank">
+                <div class="move-overlay" data-move-sections="PR">Parterre Right</div>
+                <div class="section-header">PARTERRE RIGHT</div>
+                <div class="parterre-col" id="parterreRight"></div>
+              </div>
+              <div class="plan-bank">
+                <div class="move-overlay" data-move-sections="OR">Orch Right</div>
+                <div class="section-header">ORCH RIGHT</div>
+                <div class="orch-section" id="orchRight"></div>
+              </div>
+              <div class="plan-bank center-bank">
+                <div class="move-overlay" data-move-sections="OC">Orch Center</div>
+                <div class="section-header">ORCH CENTER</div>
+                <div class="orch-center" id="orchCenter"></div>
+              </div>
+              <div class="plan-bank">
+                <div class="move-overlay" data-move-sections="OL">Orch Left</div>
+                <div class="section-header">ORCH LEFT</div>
+                <div class="orch-section" id="orchLeft"></div>
+              </div>
+              <div class="plan-bank parterre-bank">
+                <div class="move-overlay" data-move-sections="PL">Parterre Left</div>
+                <div class="section-header">PARTERRE LEFT</div>
+                <div class="parterre-col" id="parterreLeft"></div>
+              </div>
             </div>
-            <div style="position:relative;">
-              <div class="move-overlay" data-move-sections="OC">Orch Center</div>
-              <div class="orch-center" id="orchCenter"></div>
-            </div>
-            <div style="position:relative;">
-              <div class="move-overlay" data-move-sections="OR">Orch Right</div>
-              <div class="section-header" style="font-size:9px;text-align:center;">ORCH RIGHT</div>
-              <div class="orch-section" id="orchRight"></div>
-            </div>
-          </div>
-          <div class="parterre-wrap" style="margin-top:12px;">
-            <div style="position:relative;">
-              <div class="move-overlay" data-move-sections="PL">Parterre Left</div>
-              <div class="section-header" style="font-size:9px;">PARTERRE LEFT</div>
-              <div class="parterre-col" id="parterreLeft"></div>
-            </div>
-            <div class="parterre-center-label">PARTERRE BOXES</div>
-            <div style="position:relative;">
-              <div class="move-overlay" data-move-sections="PR">Parterre Right</div>
-              <div class="section-header" style="font-size:9px;">PARTERRE RIGHT</div>
-              <div class="parterre-col" id="parterreRight"></div>
-            </div>
+            <div class="stage-bar">✦ STAGE ✦</div>
           </div>
         </div>
 
-        <div class="section-wrap" style="position:relative;">
+        <div class="section-wrap">
           <div class="move-overlay" data-move-sections="DCL,DCC,DCR">Dress Circle</div>
           <div class="section-header">DRESS CIRCLE — LEVEL 2</div>
-          <div style="display:grid;grid-template-columns:1fr auto 1fr auto 1fr;gap:6px;">
-            <div>
-              <div class="section-header" style="font-size:9px;">DRESS CIRCLE LEFT</div>
-              <div id="dcLeft"></div>
+          <div class="venue-plan">
+            <div class="upper-plan">
+              <div class="side-boxes" aria-hidden="true">RIGHT<br>BOXES</div>
+              <div class="plan-bank"><div class="section-header">DRESS CIRCLE RIGHT</div><div id="dcRight"></div></div>
+              <div class="plan-bank center-bank"><div class="section-header">DRESS CIRCLE CENTER</div><div id="dcCenter"></div></div>
+              <div class="plan-bank"><div class="section-header">DRESS CIRCLE LEFT</div><div id="dcLeft"></div></div>
+              <div class="side-boxes" aria-hidden="true">LEFT<br>BOXES</div>
             </div>
-            <div style="width:20px;"></div>
-            <div>
-              <div class="section-header" style="font-size:9px;">DRESS CIRCLE CENTER</div>
-              <div id="dcCenter"></div>
-            </div>
-            <div style="width:20px;"></div>
-            <div>
-              <div class="section-header" style="font-size:9px;">DRESS CIRCLE RIGHT</div>
-              <div id="dcRight"></div>
-            </div>
+            <div class="stage-bar">✦ STAGE ✦</div>
           </div>
+          <div class="plan-note">Side boxes are shown for orientation; they are not in the allocator's seat inventory.</div>
         </div>
 
-        <div class="section-wrap" style="position:relative;">
+        <div class="section-wrap">
           <div class="move-overlay" data-move-sections="GL,GC,GR">Gallery</div>
           <div class="section-header">GALLERY — LEVEL 3</div>
-          <div style="display:grid;grid-template-columns:1fr auto 1fr auto 1fr;gap:6px;">
-            <div>
-              <div class="section-header" style="font-size:9px;">GALLERY LEFT</div>
-              <div id="galLeft"></div>
+          <div class="venue-plan">
+            <div class="upper-plan">
+              <div class="side-boxes" aria-hidden="true">RIGHT<br>BOXES</div>
+              <div class="plan-bank"><div class="section-header">GALLERY RIGHT</div><div id="galRight"></div></div>
+              <div class="plan-bank center-bank"><div class="section-header">GALLERY CENTER</div><div id="galCenter"></div></div>
+              <div class="plan-bank"><div class="section-header">GALLERY LEFT</div><div id="galLeft"></div></div>
+              <div class="side-boxes" aria-hidden="true">LEFT<br>BOXES</div>
             </div>
-            <div style="width:20px;"></div>
-            <div>
-              <div class="section-header" style="font-size:9px;">GALLERY CENTER</div>
-              <div id="galCenter"></div>
-            </div>
-            <div style="width:20px;"></div>
-            <div>
-              <div class="section-header" style="font-size:9px;">GALLERY RIGHT</div>
-              <div id="galRight"></div>
-            </div>
+            <div class="stage-bar">✦ STAGE ✦</div>
           </div>
+          <div class="plan-note">Side boxes are shown for orientation; they are not in the allocator's seat inventory.</div>
         </div>
 
-        <div class="section-wrap" style="position:relative;">
+        <div class="section-wrap">
           <div class="move-overlay" data-move-sections="BC,BL,BR">Balcony</div>
           <div class="section-header">BALCONY — LEVEL 4</div>
-          <div class="balcony-section" id="balconyCenter"></div>
+          <div class="venue-plan balcony-plan">
+            <div class="section-header">BALCONY RIGHT &nbsp; · &nbsp; CENTER &nbsp; · &nbsp; BALCONY LEFT</div>
+            <div class="balcony-section" id="balconyCenter"></div>
+            <div class="balcony-ada-labels" aria-hidden="true"><span>♿ RIGHT · 4 ADA SEATS</span><span>LEFT · 4 ADA SEATS ♿</span></div>
+            <div class="balcony-front-rail" aria-hidden="true"></div>
+            <div class="stage-bar">✦ STAGE ✦</div>
+          </div>
         </div>
 
       </div><!-- /theater-container -->
@@ -1420,6 +1480,18 @@ function getAvailable(sec) {
   return out;
 }
 
+// The Parterre rows in the inventory run from the stage toward the rear:
+// Left A→E and Right Z→V. Only Orchestra overflow uses the opposite order.
+// Keep seat numbers ascending within each row so adjacent seats remain a run.
+function getParterreRearFirst(sec) {
+  const rows = sec === 'PL' ? PARTERRE_LEFT_ROWS : PARTERRE_RIGHT_ROWS;
+  const availableByRow = new Map(rows.map(row => [row.label, []]));
+  for (const id of getAvailable(sec)) {
+    availableByRow.get(id.split('_')[1]).push(id);
+  }
+  return [...rows].reverse().flatMap(row => availableByRow.get(row.label));
+}
+
 
 // ── ROW-ACROSS ALLOCATION FOR DRESS CIRCLE & GALLERY ─────────────────────────
 // Returns available seats interleaved row-by-row across Left, Center, Right so
@@ -1470,7 +1542,7 @@ function tryOrchSideWithOverflow(side, partSide, size, group) {
   if (sideAv >= size) return tryAlloc([side], size, group);
   const overflow = size - sideAv;
   if (sideAv > 0 && overflow <= PARTERRE_OVERFLOW_MAX && calcAllocAvail(partSide) >= overflow) {
-    return tryAlloc([side, partSide], size, group);
+    return tryAllocOrchOverflow(side, partSide, size, group);
   }
   return null;
 }
@@ -1502,9 +1574,14 @@ function chooseContiguousFirst(pool, size) {
   const exactRun = runs.find(run => run.length >= size);
   if (exactRun) return exactRun.slice(0, size);
 
-  // Larger groups must span rows/sections. Preserve the allocator's original
-  // front-to-back pool order, but consume contiguous runs as units before
-  // moving on, minimizing fragmentation without changing routing/fallbacks.
+  // Larger groups must span rows/sections. Preserve the pool order and
+  // consume contiguous runs as units before moving on.
+  return chooseRunsInOrder(pool, size);
+}
+
+function chooseRunsInOrder(pool, size) {
+  if (pool.length < size) return null;
+  const runs = splitIntoConsecutiveRuns(pool);
   const chosen = [];
   for (const run of runs) {
     const needed = size - chosen.length;
@@ -1514,9 +1591,8 @@ function chooseContiguousFirst(pool, size) {
   return chosen.length === size ? chosen : null;
 }
 
-function tryAlloc(secs, size, group) {
-  const pool = secs.flatMap(s => getAvailable(s));
-  const chosen = chooseContiguousFirst(pool, size);
+function tryAllocFromPool(pool, size, group, strictOrder = false) {
+  const chosen = strictOrder ? chooseRunsInOrder(pool, size) : chooseContiguousFirst(pool, size);
   if (!chosen) return null;
   const pending = {};
   for (const id of chosen) {
@@ -1526,6 +1602,18 @@ function tryAlloc(secs, size, group) {
   Object.assign(state.seats, pending);
   const used = [...new Set(chosen.map(id => id.split('_')[0]))];
   return {seats: chosen, location: used.map(u => SEC_NAMES[u]).join(' + '), sections: used};
+}
+
+function tryAlloc(secs, size, group) {
+  return tryAllocFromPool(secs.flatMap(s => getAvailable(s)), size, group);
+}
+
+function tryAllocOrchOverflow(side, partSide, size, group) {
+  // Fill the Orchestra side first, then the paired Parterre's rear boxes.
+  // Strict order prevents the usual whole-row preference from skipping a
+  // partly available rear box in favor of a fuller box nearer the stage.
+  const pool = [...getAvailable(side), ...getParterreRearFirst(partSide)];
+  return tryAllocFromPool(pool, size, group, true);
 }
 
 function allocateGroup(group) {
@@ -1592,7 +1680,7 @@ function allocateGroup(group) {
       if (bestPart) return tryAlloc([bestPart], size, group);
     }
     if (sideAv >= size)                                                                return tryAlloc([side], size, group);
-    if (sideAv > 0 && overflow <= PARTERRE_OVERFLOW_MAX && partAv >= overflow)         return tryAlloc([side, partSide], size, group);
+    if (sideAv > 0 && overflow <= PARTERRE_OVERFLOW_MAX && partAv >= overflow)         return tryAllocOrchOverflow(side, partSide, size, group);
     if (sideAv < 10 && size <= PARTERRE_MAX_SIZE && partAv >= size)                    return tryAlloc([partSide], size, group);
     if (!(ocAv < OC_LARGE_GROUP_MIN && size > OC_LARGE_GROUP_MIN - 1) && ocAv >= size) return tryAlloc(['OC'], size, group);
     const olAv = calcAvail('OL'); const orAv = calcAvail('OR');
@@ -1623,7 +1711,7 @@ function allocateGroup(group) {
   }
 
   if (sideAv >= size)                                                                return tryAlloc([side], size, group);
-  if (sideAv > 0 && overflow <= PARTERRE_OVERFLOW_MAX && partAv >= overflow)         return tryAlloc([side, partSide], size, group);
+  if (sideAv > 0 && overflow <= PARTERRE_OVERFLOW_MAX && partAv >= overflow)         return tryAllocOrchOverflow(side, partSide, size, group);
   if (sideAv < 10 && size <= PARTERRE_MAX_SIZE && partAv >= size)                    return tryAlloc([partSide], size, group);
   if (!(ocAv < OC_LARGE_GROUP_MIN && size > OC_LARGE_GROUP_MIN - 1) && ocAv >= size) return tryAlloc(['OC'], size, group);
 
@@ -2244,7 +2332,7 @@ function makeSeat(seatId) {
   return div;
 }
 
-function makeRow(pfx, label, count, align = 'center') {
+function makeRow(pfx, label, count, align = 'center', curve = 0) {
   const row = document.createElement('div');
   // 'left' → seats push toward center (right edge of left column)
   // 'right' → seats push toward center (left edge of right column), label on right
@@ -2252,6 +2340,7 @@ function makeRow(pfx, label, count, align = 'center') {
   row.className = align === 'left'  ? 'seat-row-left'
                 : align === 'right' ? 'seat-row-right'
                 :                     'seat-row';
+  if (curve) row.classList.add('arc-row');
 
   const lbl = document.createElement('div');
   lbl.className = 'row-label';
@@ -2290,7 +2379,17 @@ function makeRow(pfx, label, count, align = 'center') {
   });
 
   row.appendChild(lbl);
-  for (let i = 1; i <= count; i++) row.appendChild(makeSeat(`${pfx}_${label}_${i}`));
+  for (let i = 1; i <= count; i++) {
+    const seat = makeSeat(`${pfx}_${label}_${i}`);
+    // A shallow parabola follows the printed rows while preserving each seat's
+    // original identifier, event listeners, and allocation position.
+    if (curve && count > 1) {
+      const x = (i - 1) / (count - 1);
+      const drop = align === 'center' ? curve * (2 * x - 1) ** 2 : curve * (1 - x);
+      seat.style.setProperty('--arc-drop', `${Math.round(drop)}px`);
+    }
+    row.appendChild(seat);
+  }
   return row;
 }
 
@@ -2396,28 +2495,30 @@ function renderOrchestra() {
   const C = document.getElementById('orchCenter');
   const R = document.getElementById('orchRight');
   L.innerHTML = C.innerHTML = R.innerHTML = '';
-  for (const row of ORCH_ROWS) {
-    if (row.left  > 0) L.appendChild(makeRow('OL', row.label, row.left,   'left'));
-    C.appendChild(makeRow('OC', row.label, row.center, 'center'));
-    if (row.right > 0) R.appendChild(makeRow('OR', row.label, row.right,  'right'));
+  for (const row of [...ORCH_ROWS].reverse()) {
+    // Blank slots keep the aisle banks aligned with their center row labels.
+    const blank = () => { const el = document.createElement('div'); el.className = 'seat-row empty-row'; return el; };
+    L.appendChild(row.left > 0 ? makeRow('OL', row.label, row.left, 'right', 4) : blank());
+    C.appendChild(makeRow('OC', row.label, row.center, 'center', 5));
+    R.appendChild(row.right > 0 ? makeRow('OR', row.label, row.right, 'left', 4) : blank());
   }
 }
 function renderParterre() {
   const L = document.getElementById('parterreLeft');
   const R = document.getElementById('parterreRight');
   L.innerHTML = R.innerHTML = '';
-  PARTERRE_LEFT_ROWS.forEach(r  => L.appendChild(makeRow('PL', r.label, r.seats)));
-  PARTERRE_RIGHT_ROWS.forEach(r => R.appendChild(makeRow('PR', r.label, r.seats)));
+  [...PARTERRE_LEFT_ROWS].reverse().forEach(r  => L.appendChild(makeRow('PL', r.label, r.seats, 'center', 3)));
+  [...PARTERRE_RIGHT_ROWS].reverse().forEach(r => R.appendChild(makeRow('PR', r.label, r.seats, 'center', 3)));
 }
 function renderDressCircle() {
   const L = document.getElementById('dcLeft');
   const C = document.getElementById('dcCenter');
   const R = document.getElementById('dcRight');
   L.innerHTML = C.innerHTML = R.innerHTML = '';
-  for (const row of DC_ROWS) {
-    if (row.left   > 0) L.appendChild(makeRow('DCL', row.label, row.left));
-    if (row.center > 0) C.appendChild(makeRow('DCC', row.label, row.center));
-    if (row.right  > 0) R.appendChild(makeRow('DCR', row.label, row.right));
+  for (const row of [...DC_ROWS].reverse()) {
+    if (row.left   > 0) L.appendChild(makeRow('DCL', row.label, row.left, 'right', 7));
+    if (row.center > 0) C.appendChild(makeRow('DCC', row.label, row.center, 'center', 8));
+    if (row.right  > 0) R.appendChild(makeRow('DCR', row.label, row.right, 'left', 7));
   }
 }
 function renderGallery() {
@@ -2425,25 +2526,25 @@ function renderGallery() {
   const C = document.getElementById('galCenter');
   const R = document.getElementById('galRight');
   L.innerHTML = C.innerHTML = R.innerHTML = '';
-  for (const row of GAL_ROWS) {
-    if (row.left   > 0) L.appendChild(makeRow('GL', row.label, row.left));
-    if (row.center > 0) C.appendChild(makeRow('GC', row.label, row.center));
-    if (row.right  > 0) R.appendChild(makeRow('GR', row.label, row.right));
+  for (const row of [...GAL_ROWS].reverse()) {
+    if (row.left   > 0) L.appendChild(makeRow('GL', row.label, row.left, 'right', 7));
+    if (row.center > 0) C.appendChild(makeRow('GC', row.label, row.center, 'center', 8));
+    if (row.right  > 0) R.appendChild(makeRow('GR', row.label, row.right, 'left', 7));
   }
 }
 function renderBalcony() {
   const el = document.getElementById('balconyCenter');
   el.innerHTML = '';
-  for (const row of BAL_ROWS) {
+  for (const row of [...BAL_ROWS].reverse()) {
     if (row.label === 'A') {
       const split = document.createElement('div');
       split.className = 'balcony-a-row';
-      split.appendChild(makeRow('BL', 'A', row.left, 'left'));
-      split.appendChild(makeRow('BC', 'A', row.center));
-      split.appendChild(makeRow('BR', 'A', row.right, 'right'));
+      split.appendChild(makeRow('BR', 'A', row.right, 'left', 3));
+      split.appendChild(makeRow('BC', 'A', row.center, 'center', 16));
+      split.appendChild(makeRow('BL', 'A', row.left, 'right', 3));
       el.appendChild(split);
     } else {
-      el.appendChild(makeRow('BC', row.label, row.seats));
+      el.appendChild(makeRow('BC', row.label, row.seats, 'center', 16));
     }
   }
 }
