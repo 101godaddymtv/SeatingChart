@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+<!-- Reynolds Hall Seating Allocator v21 — patched 2026-08-09 -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -42,8 +43,11 @@
     background: var(--bg-deep);
     color: var(--text-primary);
     min-height: 100vh;
-    /* Prevent horizontal overflow at body level */
-    overflow-x: hidden;
+    height: 100vh;
+    height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
     background-image:
       radial-gradient(ellipse at 50% 0%, rgba(123,63,160,0.12) 0%, transparent 60%),
       repeating-linear-gradient(0deg, transparent, transparent 60px, rgba(201,162,39,0.02) 60px, rgba(201,162,39,0.02) 61px),
@@ -112,6 +116,7 @@
 
   /* ── HEADER ─────────────────────────────────────────────────────────────── */
   header {
+    flex-shrink: 0;
     background: linear-gradient(180deg, rgba(17,14,26,0.98) 0%, rgba(10,8,16,0.95) 100%);
     border-bottom: 1px solid var(--border);
     padding: 14px 24px;
@@ -142,6 +147,7 @@
 
   /* ── STATS BAR ──────────────────────────────────────────────────────────── */
   .stats-bar {
+    flex-shrink: 0;
     background: var(--bg-mid); border-bottom: 1px solid var(--border);
     display: grid;
     grid-template-columns: repeat(9, 1fr);
@@ -168,7 +174,8 @@
   .app-shell {
     display: flex;
     flex-direction: row;
-    height: calc(100vh - 88px); /* 88 = header + stats bar */
+    flex: 1;
+    min-height: 0;
     overflow: hidden;
   }
 
@@ -429,6 +436,7 @@
     writing-mode: vertical-rl; text-align: center;
   }
   .balcony-section { display: flex; flex-direction: column; gap: 2px; align-items: center; }
+  .balcony-a-row { display: flex; align-items: center; justify-content: center; gap: calc(var(--seat-size) * 1.1); }
 
   /* ── BLOCKED SEATS ──────────────────────────────────────────────────────── */
   .seat.blocked { background: var(--crimson) !important; border-color: #e05070 !important; cursor: crosshair; position: relative; }
@@ -550,6 +558,7 @@
   /* ── PDF PRINT ──────────────────────────────────────────────────────────── */
   #pdfReportFrame { display: none; }
   @media print {
+    body { display: block; height: auto; overflow: visible; }
     body > *:not(#pdfReportFrame) { display: none !important; }
     #pdfReportFrame { display: block !important; position: fixed; inset: 0; background: #fff; color: #111; font-family: Georgia, serif; padding: 0; margin: 0; }
   }
@@ -607,7 +616,8 @@
     /* ── ROOT LAYOUT: stack theater + panel vertically ── */
     .app-shell {
       flex-direction: column;
-      height: calc(100vh - 56px); /* slimmer header on tablet */
+      flex: 1;
+      min-height: 0;
     }
 
     /* Hide the desktop sidebar */
@@ -731,7 +741,7 @@
 <div id="syncBanner">⟳ SYNCING…</div>
 
 <!-- ── FIRST-ROW BLOCK SELECTION MODAL ─────────────────────────────────── -->
-<div id="firstRowModal">
+<div id="firstRowModal" class="hidden">
   <div class="frm-box">
     <div class="frm-title">⊘ First Row Configuration</div>
     <div class="frm-subtitle">Select which first rows should be blocked as reserved.<br>These seats will be unavailable for group allocation.</div>
@@ -783,14 +793,15 @@
         <label class="frm-check-row checked" id="frLabel_BAL_A">
           <input type="checkbox" class="frm-checkbox" id="frCheck_BAL_A" data-section="BAL" data-row="A" checked>
           <div class="frm-check-info">
-            <div class="frm-check-name">Balcony — Row A</div>
-            <div class="frm-check-desc">Front row of Balcony (Level 4)</div>
+            <div class="frm-check-name">Balcony Center — Row A</div>
+            <div class="frm-check-desc">42 center seats · ADA side seats remain available</div>
           </div>
         </label>
       </div>
     </div>
 
     <div class="frm-actions">
+      <button class="frm-btn-none" id="frmBtnCancel">Cancel</button>
       <button class="frm-btn-none" id="frmBtnNone">Block None</button>
       <button class="frm-btn-confirm" id="frmBtnConfirm">Confirm &amp; Apply</button>
     </div>
@@ -852,7 +863,7 @@
             <input type="checkbox" class="toggle-checkbox" id="preferParterre">
             <span class="toggle-label">Prefer Parterre</span>
           </label>
-          <div class="toggle-hint" id="parterreHint">Only applies to groups under 38</div>
+          <div class="toggle-hint" id="parterreHint">Only applies to groups of 38 or fewer</div>
         </div>
         <div class="form-group">
           <label class="form-label">Section Preference</label>
@@ -877,6 +888,7 @@
           </div>
           <div class="toggle-hint" id="sectionPrefHint">Falls back to Auto if preferred level is full</div>
         </div>
+        <div class="toggle-hint">Groups sharing a section row have four empty seats between them.</div>
         <div class="error-msg" id="errorMsg"></div>
         <button class="btn-primary" id="seatGroupBtn">SEAT GROUP</button>
         <button class="btn-primary" id="placeManuallyBtn">✦ PLACE MANUALLY</button>
@@ -1020,7 +1032,7 @@
         </div>
 
         <div class="section-wrap" style="position:relative;">
-          <div class="move-overlay" data-move-sections="BC">Balcony</div>
+          <div class="move-overlay" data-move-sections="BC,BL,BR">Balcony</div>
           <div class="section-header">BALCONY — LEVEL 4</div>
           <div class="balcony-section" id="balconyCenter"></div>
         </div>
@@ -1067,8 +1079,8 @@
     <div class="form-group">
       <label class="form-label">Entry Door</label>
       <div class="door-select">
-        <button class="door-btn active" id="doorLeft2">⬅ LEFT</button>
-        <button class="door-btn"        id="doorRight2">RIGHT ➡</button>
+        <button class="door-btn active" id="doorLeft2">⬅ EAST</button>
+        <button class="door-btn"        id="doorRight2">WEST ➡</button>
       </div>
     </div>
     <div class="form-group">
@@ -1076,7 +1088,7 @@
         <input type="checkbox" class="toggle-checkbox" id="preferParterre2">
         <span class="toggle-label">Prefer Parterre</span>
       </label>
-      <div class="toggle-hint">Only applies to groups under 38</div>
+      <div class="toggle-hint">Only applies to groups of 38 or fewer</div>
     </div>
     <div class="form-group">
       <label class="form-label">Section Preference</label>
@@ -1101,6 +1113,7 @@
       </div>
       <div class="toggle-hint">Falls back to Auto if preferred level is full</div>
     </div>
+    <div class="toggle-hint">Groups sharing a section row have four empty seats between them.</div>
     <div class="error-msg" id="errorMsg2"></div>
     <button class="btn-primary" id="seatGroupBtn2">SEAT GROUP</button>
     <button class="btn-primary" id="placeManuallyBtn2" style="margin-top:8px;">✦ PLACE MANUALLY</button>
@@ -1247,7 +1260,8 @@ const GAL_ROWS = [
   {label:'E', left:9, center:21, right:9,  first:false},
 ];
 const BAL_ROWS = [
-  {label:'A', left:4, center:42,  right:4,  first:false},
+  // Keep BC_A_1..42 as the center seats so existing Firebase assignments survive.
+  {label:'A', left:4, center:42, right:4, first:false},
   {label:'B', seats:42}, {label:'C', seats:43}, {label:'D', seats:44},
   {label:'E', seats:45}, {label:'F', seats:46}, {label:'G', seats:45},
   {label:'H', seats:46}, {label:'J', seats:45}, {label:'K', seats:44},
@@ -1263,9 +1277,11 @@ const OC_LARGE_GROUP_MIN    = 80;
 // Minimum available seats required before routing a group to DC or Gallery
 // (prevents sending large groups to nearly-full upper levels)
 const UPPER_LEVEL_MIN_AV    = 40;
+// Empty seats required between different groups within one row and section.
+const GROUP_ROW_BUFFER      = 4;
 
 // ── CAPACITY TOTALS (computed from data) ──────────────────────────────────────
-function sumSection(rows, fn) { return rows.reduce((t,r) => t + (r.first ? 0 : fn(r)), 0); }
+function sumSection(rows, fn) { return rows.reduce((t,r) => t + fn(r), 0); }
 const TOT = {
   OL:  sumSection(ORCH_ROWS, r => r.left),
   OC:  sumSection(ORCH_ROWS, r => r.center),
@@ -1278,35 +1294,62 @@ const TOT = {
   GL:  sumSection(GAL_ROWS, r => r.left),
   GC:  sumSection(GAL_ROWS, r => r.center),
   GR:  sumSection(GAL_ROWS, r => r.right),
-  BC:  sumSection(BAL_ROWS, r => r.seats),
+  BL:  sumSection(BAL_ROWS, r => r.left ?? 0),
+  BC:  sumSection(BAL_ROWS, r => r.center ?? r.seats),
+  BR:  sumSection(BAL_ROWS, r => r.right ?? 0),
 };
 const TOTAL_ORCH_PART = TOT.OL + TOT.OC + TOT.OR + TOT.PL + TOT.PR;
 const TOTAL_DC        = TOT.DCL + TOT.DCC + TOT.DCR;
 const TOTAL_GAL       = TOT.GL  + TOT.GC  + TOT.GR;
-const TOTAL_BAL       = TOT.BC;
+const TOTAL_BAL       = TOT.BL + TOT.BC + TOT.BR;
 const TOTAL_CAPACITY  = TOTAL_ORCH_PART + TOTAL_DC + TOTAL_GAL + TOTAL_BAL;
 
 const GROUP_COLORS = [
-  '#c9a227','#7b3fa0','#1a6b7a','#8b4520','#2a6b40','#6b1a2a','#1a4a8b','#5a6b20',
-  '#8b6020','#1a408b','#6b3a1a','#20608b','#5a1a6b','#1a6b40','#8b201a','#406b1a',
+  '#c9a227','#7b3fa0','#d33d22','#8b4520','#2a6b40','#22d3af','#1a4a8b','#5a6b20',
+  '#8b6020','#b5451a','#6b3a1a','#d36922','#5a1a6b','#1a6b40','#22cad3','#6b1a45',
+  '#1a8b3a','#8b1a6b','#2248d3','#3a2a6b',
 ];
 const SEC_NAMES = {
   OL:'Orch Left', OC:'Orch Center', OR:'Orch Right',
   PL:'Parterre Left', PR:'Parterre Right',
   DCL:'DC Left', DCC:'DC Center', DCR:'DC Right',
   GL:'Gallery Left', GC:'Gallery Center', GR:'Gallery Right',
-  BC:'Balcony',
+  BL:'Balcony Left', BC:'Balcony Center', BR:'Balcony Right',
 };
 
 // ── LOCAL STATE ───────────────────────────────────────────────────────────────
 // This mirrors what is in Firebase. onValue() keeps it in sync.
 let state = {
-  groups:       [],
-  seats:        {},
-  blockedSeats: {},   // seatId → true  (synced to Firebase)
+  groups:        [],
+  seats:         {},
+  blockedSeats:  {},   // union of manualBlockedSeats + reservedSeats (synced)
+  manualBlockedSeats: {}, // seatId → true for staff-created blocks only
+  // seatId → true (synced to Firebase). Seats reserved via the First-Row
+  // Modal. Always kept as a subset of blockedSeats (so every existing
+  // availability/capacity calculation keeps working unchanged) — this is a
+  // protection/labeling overlay on top of blockedSeats, not a replacement:
+  // it's what makes a reserved seat render with the "reserved" styling and
+  // refuse ordinary block-mode clicks/drags, instead of being just another
+  // seat any user can freely unblock.
+  reservedSeats: {},
   nextGroupId:  1,
   selectedDoor: 'Left',
 };
+
+// v21 stores manual block provenance separately while keeping blockedSeats as
+// the backward-compatible union consumed by all availability/rendering code.
+// Old v20 data has no manualBlockedSeats field, so infer manual blocks as the
+// currently-blocked seats that are not currently marked reserved.
+function inferManualBlocked(blocked = {}, reserved = {}) {
+  const manual = {};
+  for (const id of Object.keys(blocked || {})) {
+    if (!reserved?.[id]) manual[id] = true;
+  }
+  return manual;
+}
+function unionBlocked(manual = {}, reserved = {}) {
+  return Object.assign({}, manual || {}, reserved || {});
+}
 
 // Block mode flag — local only, not synced (each user toggles independently)
 let blockModeActive = false;
@@ -1314,28 +1357,47 @@ let blockModeActive = false;
 // ── AVAILABILITY HELPERS ──────────────────────────────────────────────────────
 function calcAvail(sec) {
   const prefix = sec + '_';
-  let used = 0;
+  // FIX: count DISTINCT unavailable seat ids, not "occupied count + blocked
+  // count" — a seat can be both (applyFirstRowSelections() can mark an
+  // already-occupied seat reserved/blocked if the First-Row modal is
+  // reopened after seating starts), and summing the two independently
+  // subtracts that one seat twice, undercounting availability.
+  const unavailable = new Set();
   for (const [sid, v] of Object.entries(state.seats)) {
-    if (v && sid.startsWith(prefix)) used++;
+    if (v && sid.startsWith(prefix)) unavailable.add(sid);
   }
-  // Also count blocked seats in this section as unavailable
   for (const sid of Object.keys(state.blockedSeats)) {
-    if (sid.startsWith(prefix)) used++;
+    if (sid.startsWith(prefix)) unavailable.add(sid);
   }
-  return TOT[sec] - used;
+  return TOT[sec] - unavailable.size;
 }
 function sumAvail(secs) { return secs.reduce((t, s) => t + calcAvail(s), 0); }
+const BAL_SECTIONS = ['BC', 'BL', 'BR']; // center first; side seats are ADA-designated
+
+// A candidate needs four physically empty seats between it and an existing
+// group in the same row/section. Blocked and reserved seats remain empty and
+// can form part of that gap; the aisle separates different sections.
+function hasGroupWithinBuffer(id) {
+  const parts = id.split('_');
+  const index = Number(parts[2]);
+  for (let offset = -GROUP_ROW_BUFFER; offset <= GROUP_ROW_BUFFER; offset++) {
+    if (!offset) continue;
+    if (state.seats[`${parts[0]}_${parts[1]}_${index + offset}`]) return true;
+  }
+  return false;
+}
+function calcAllocAvail(sec) { return getAvailable(sec).length; }
+function sumAllocAvail(secs) { return secs.reduce((n, sec) => n + calcAllocAvail(sec), 0); }
 
 // ── ALLOCATION ALGORITHM ──────────────────────────────────────────────────────
 function getAvailable(sec) {
   const out = [];
   function add(rows, pfx, fn) {
     for (const row of rows) {
-      if (row.first) continue;
       const n = fn(row);
       for (let i = 1; i <= n; i++) {
         const id = `${pfx}_${row.label}_${i}`;
-        if (!state.seats[id] && !state.blockedSeats[id]) out.push(id);
+        if (!state.seats[id] && !state.blockedSeats[id] && !hasGroupWithinBuffer(id)) out.push(id);
       }
     }
   }
@@ -1351,7 +1413,9 @@ function getAvailable(sec) {
     case 'GL':  add(GAL_ROWS,            'GL',  r => r.left);   break;
     case 'GC':  add(GAL_ROWS,            'GC',  r => r.center); break;
     case 'GR':  add(GAL_ROWS,            'GR',  r => r.right);  break;
-    case 'BC':  add(BAL_ROWS,            'BC',  r => r.seats);  break;
+    case 'BL':  add(BAL_ROWS,            'BL',  r => r.left ?? 0); break;
+    case 'BC':  add(BAL_ROWS,            'BC',  r => r.center ?? r.seats); break;
+    case 'BR':  add(BAL_ROWS,            'BR',  r => r.right ?? 0); break;
   }
   return out;
 }
@@ -1364,12 +1428,11 @@ function getAvailableByRow(rows, sections) {
   // sections = [{pfx:'DCL', fn: r=>r.left}, {pfx:'DCC', fn:r=>r.center}, ...]
   const out = [];
   for (const row of rows) {
-    if (row.first) continue;
     for (const {pfx, fn} of sections) {
       const n = fn(row);
       for (let i = 1; i <= n; i++) {
         const id = `${pfx}_${row.label}_${i}`;
-        if (!state.seats[id] && !state.blockedSeats[id]) out.push(id);
+        if (!state.seats[id] && !state.blockedSeats[id] && !hasGroupWithinBuffer(id)) out.push(id);
       }
     }
   }
@@ -1378,8 +1441,8 @@ function getAvailableByRow(rows, sections) {
 
 function tryAllocRows(rows, sections, size, group) {
   const pool = getAvailableByRow(rows, sections);
-  if (pool.length < size) return null;
-  const chosen = pool.slice(0, size);
+  const chosen = chooseContiguousFirst(pool, size);
+  if (!chosen) return null;
   const pending = {};
   for (const id of chosen) {
     if (state.seats[id] || state.blockedSeats[id]) return null;
@@ -1393,16 +1456,71 @@ function tryAllocRows(rows, sections, size, group) {
 const DC_SECTIONS  = [{pfx:'DCL', fn:r=>r.left}, {pfx:'DCC', fn:r=>r.center}, {pfx:'DCR', fn:r=>r.right}];
 const GAL_SECTIONS = [{pfx:'GL',  fn:r=>r.left}, {pfx:'GC',  fn:r=>r.center}, {pfx:'GR',  fn:r=>r.right}];
 
+// Mirrors the "overflow into the paired Parterre section" rule that
+// allocateGroup() uses for automatic seating: if the orchestra side alone
+// doesn't have enough room, but topping it up with a modest overflow from
+// the paired Parterre side would cover the shortfall, allow that combo too.
+// Used by Move Mode so that manually moving a group to Orch Left/Right gets
+// the same overflow behavior the automatic allocator already has — a
+// section overlay for "OR" alone had no way to express "OR, and spill into
+// PR if short," so a move that the auto-allocator would have accepted (say,
+// short by 2 seats with plenty of room in Parterre) used to just fail.
+function tryOrchSideWithOverflow(side, partSide, size, group) {
+  const sideAv = calcAllocAvail(side);
+  if (sideAv >= size) return tryAlloc([side], size, group);
+  const overflow = size - sideAv;
+  if (sideAv > 0 && overflow <= PARTERRE_OVERFLOW_MAX && calcAllocAvail(partSide) >= overflow) {
+    return tryAlloc([side, partSide], size, group);
+  }
+  return null;
+}
+
+function splitIntoConsecutiveRuns(ids) {
+  const runs = [];
+  let run = [];
+  let prev = null;
+  for (const id of ids) {
+    const parts = id.split('_');
+    const key = parts.slice(0, -1).join('_');
+    const num = Number(parts.at(-1));
+    if (!run.length || (prev && prev.key === key && num === prev.num + 1)) {
+      run.push(id);
+    } else {
+      runs.push(run);
+      run = [id];
+    }
+    prev = {key, num};
+  }
+  if (run.length) runs.push(run);
+  return runs;
+}
+
+function chooseContiguousFirst(pool, size) {
+  if (pool.length < size) return null;
+  const runs = splitIntoConsecutiveRuns(pool);
+  // Best case: one uninterrupted row segment can hold the whole group.
+  const exactRun = runs.find(run => run.length >= size);
+  if (exactRun) return exactRun.slice(0, size);
+
+  // Larger groups must span rows/sections. Preserve the allocator's original
+  // front-to-back pool order, but consume contiguous runs as units before
+  // moving on, minimizing fragmentation without changing routing/fallbacks.
+  const chosen = [];
+  for (const run of runs) {
+    const needed = size - chosen.length;
+    if (needed <= 0) break;
+    chosen.push(...run.slice(0, needed));
+  }
+  return chosen.length === size ? chosen : null;
+}
+
 function tryAlloc(secs, size, group) {
   const pool = secs.flatMap(s => getAvailable(s));
-  if (pool.length < size) return null;
-  const chosen = pool.slice(0, size);
-  // Build the assignment in a temporary map first; only merge into state once
-  // we're certain all seats are available — prevents partial-state corruption
-  // if a seat somehow appears twice in the pool.
+  const chosen = chooseContiguousFirst(pool, size);
+  if (!chosen) return null;
   const pending = {};
   for (const id of chosen) {
-    if (state.seats[id] || state.blockedSeats[id]) return null; // double-check
+    if (state.seats[id] || state.blockedSeats[id]) return null;
     pending[id] = {groupId: group.id, groupName: group.name};
   }
   Object.assign(state.seats, pending);
@@ -1411,13 +1529,17 @@ function tryAlloc(secs, size, group) {
 }
 
 function allocateGroup(group) {
+  // Routing must count seats that meet the buffer rule. The raw availability
+  // counts remain unchanged for the capacity displays and PDF report.
+  const calcAvail = calcAllocAvail;
+  const sumAvail = sumAllocAvail;
   const {size, door, preferParterre, sectionPref = 'auto'} = group;
   const side     = door === 'Left' ? 'OL' : 'OR';
   const partSide = door === 'Left' ? 'PL' : 'PR';
   const ocAv     = calcAvail('OC');
   const dcAv     = sumAvail(['DCL','DCC','DCR']);
   const galAv    = sumAvail(['GL','GC','GR']);
-  const balAv    = calcAvail('BC');
+  const balAv    = sumAvail(BAL_SECTIONS);
 
   // ── SECTION PREFERENCE: try the chosen level first, fall back to auto ────
   if (sectionPref === 'dc') {
@@ -1432,7 +1554,7 @@ function allocateGroup(group) {
     }
   } else if (sectionPref === 'balcony') {
     if (balAv >= size) {
-      const r = tryAlloc(['BC'], size, group);
+      const r = tryAlloc(BAL_SECTIONS, size, group);
       if (r) return r;
     }
   } else if (sectionPref === 'orch') {
@@ -1482,7 +1604,8 @@ function allocateGroup(group) {
     }
     const orchPartAv = sumAvail(['OL','OC','OR','PL','PR']);
     if (orchPartAv >= size) return tryAlloc(['OL','OC','OR','PL','PR'], size, group);
-    return null;
+    // Preferred Orchestra/Parterre is full: intentionally continue into the
+    // normal Auto routing below, matching the UI's documented fallback rule.
   }
 
   // ── AUTO ROUTING (default, and fallback for preferred-but-full levels) ────
@@ -1520,10 +1643,10 @@ function allocateGroup(group) {
   if (galAv >= UPPER_LEVEL_MIN_AV && galAv >= size) {
     const r = tryAllocRows(GAL_ROWS, GAL_SECTIONS, size, group); if (r) return r;
   }
-  if (balAv >= size) return tryAlloc(['BC'], size, group);
+  if (balAv >= size) return tryAlloc(BAL_SECTIONS, size, group);
 
   {
-    const allSecs = ['OL','OC','OR','PL','PR','DCL','DCC','DCR','GL','GC','GR','BC'];
+    const allSecs = ['OL','OC','OR','PL','PR','DCL','DCC','DCR','GL','GC','GR',...BAL_SECTIONS];
     const totalAv = allSecs.reduce((t, s) => t + calcAvail(s), 0);
     if (totalAv >= size) {
       const r = tryAlloc(allSecs, size, group);
@@ -1535,61 +1658,122 @@ function allocateGroup(group) {
 }
 
 // ── FIREBASE SYNC ─────────────────────────────────────────────────────────────
-// commitState() is the ONLY place we write to Firebase.
-// onValue() is the ONLY place we read from Firebase.
-// This guarantees both users always see the same data.
+// v21 does not suppress onValue callbacks. Firebase listeners may fire for a
+// local write before its Promise resolves, and suppressing the next arbitrary
+// callback can accidentally hide a real remote user's update. Re-applying the
+// authoritative snapshot is idempotent and safer than guessing which callback
+// is an "echo".
 
-// pendingWrites tracks how many of our own writes are in-flight so we can
-// suppress the echoed onValue callbacks without a fragile single boolean.
-let pendingWrites = 0;
-
-async function commitState(retries = 3) {
+async function commitState(retries = 3, undoEntry = null) {
   const payload = {
-    groups:       state.groups,
-    seats:        state.seats,
-    blockedSeats: state.blockedSeats,
-    nextGroupId:  state.nextGroupId,
+    groups:        state.groups,
+    seats:         state.seats,
+    blockedSeats:  state.blockedSeats,
+    manualBlockedSeats: state.manualBlockedSeats,
+    reservedSeats: state.reservedSeats,
+    nextGroupId:   state.nextGroupId,
   };
-  pendingWrites++;
   for (let attempt = 1; attempt <= retries; attempt++) {
     try {
       await set(stateRef, payload);
-      return; // success — pendingWrites will be decremented in onValue
+      captureBaseline(undoEntry);
+      return payload;
     } catch(err) {
       console.error(`Firebase write error (attempt ${attempt}/${retries}):`, err);
       if (attempt === retries) {
-        pendingWrites--; // give up — release the counter so onValue isn't permanently suppressed
         showError('Could not save — check your connection.');
-      } else {
-        // Exponential back-off: 500ms, 1000ms, …
-        await new Promise(res => setTimeout(res, 500 * attempt));
+        return null;
       }
+      await new Promise(res => setTimeout(res, 500 * attempt));
     }
   }
 }
 
-// Subscribe: fires immediately with current data, then on every remote change
+// Transactional mutations are built from Firebase's current server value so
+// concurrent users cannot overwrite one another or mint duplicate group IDs.
+async function commitViaTransaction(mutator, undoEntry = null) {
+  let committedDraft = null;
+  let txResult;
+  try {
+    txResult = await runTransaction(stateRef, (current) => {
+      const currentBlocked  = current?.blockedSeats ?? {};
+      const currentReserved = current?.reservedSeats ?? {};
+      const currentManual   = current?.manualBlockedSeats ?? inferManualBlocked(currentBlocked, currentReserved);
+
+      if (undoEntry) {
+        undoEntry.groups             = JSON.parse(JSON.stringify(current?.groups ?? []));
+        undoEntry.seats              = Object.assign({}, current?.seats ?? {});
+        undoEntry.blockedSeats       = Object.assign({}, currentBlocked);
+        undoEntry.manualBlockedSeats = Object.assign({}, currentManual);
+        undoEntry.reservedSeats      = Object.assign({}, currentReserved);
+        undoEntry.nextGroupId        = current?.nextGroupId ?? 1;
+      }
+
+      const draft = {
+        groups:             current?.groups ?? [],
+        seats:              current?.seats ?? {},
+        blockedSeats:       currentBlocked,
+        manualBlockedSeats: currentManual,
+        reservedSeats:      currentReserved,
+        nextGroupId:        current?.nextGroupId ?? 1,
+      };
+      const proceed = mutator(draft);
+      if (!proceed) return undefined;
+
+      // Keep the legacy blockedSeats field as the exact union so existing
+      // availability, rendering, reports, and older clients remain compatible.
+      draft.blockedSeats = unionBlocked(draft.manualBlockedSeats, draft.reservedSeats);
+      committedDraft = draft;
+      return draft;
+    });
+  } catch (err) {
+    console.error('Transaction error:', err);
+    showError('Could not save — check your connection.');
+    return null;
+  }
+  if (!txResult.committed) return null;
+
+  state.groups             = committedDraft.groups;
+  state.seats              = committedDraft.seats;
+  state.blockedSeats       = committedDraft.blockedSeats;
+  state.manualBlockedSeats = committedDraft.manualBlockedSeats;
+  state.reservedSeats      = committedDraft.reservedSeats;
+  state.nextGroupId        = committedDraft.nextGroupId;
+  captureBaseline(undoEntry);
+  return committedDraft;
+}
+
+// Subscribe: fires immediately with current data, then on every local/remote change.
 let firstLoad = true;
 onValue(stateRef, (snapshot) => {
-  if (pendingWrites > 0) { pendingWrites--; return; }  // skip echoes of our own writes
-
   const data = snapshot.val();
-  if (!data) { renderAll(); } else {
-    state.groups       = data.groups       ?? [];
-    state.seats        = data.seats        ?? {};
-    state.blockedSeats = data.blockedSeats ?? {};
-    state.nextGroupId  = data.nextGroupId  ?? 1;
+  if (!data) {
+    document.getElementById('firstRowModal').classList.remove('hidden');
+    state.groups             = [];
+    state.seats              = {};
+    state.blockedSeats       = {};
+    state.manualBlockedSeats = {};
+    state.reservedSeats      = {};
+    state.nextGroupId        = 1;
+    renderAll();
+  } else {
+    state.groups        = data.groups ?? [];
+    state.seats         = data.seats ?? {};
+    state.reservedSeats = data.reservedSeats ?? {};
+    state.manualBlockedSeats = data.manualBlockedSeats ?? inferManualBlocked(data.blockedSeats ?? {}, state.reservedSeats);
+    state.blockedSeats  = unionBlocked(state.manualBlockedSeats, state.reservedSeats);
+    state.nextGroupId   = data.nextGroupId ?? 1;
     if (!firstLoad) flashSyncBanner();
     renderAll();
   }
 
-  // FIX 3 — Dismiss the loading overlay after the first response
   if (firstLoad) {
     firstLoad = false;
     const overlay = document.getElementById('theaterLoading');
-    overlay.classList.add('hidden');
-    // Remove from DOM after fade so it can't block clicks
-    setTimeout(() => overlay.remove(), 450);
+    if (overlay) {
+      overlay.classList.add('hidden');
+      setTimeout(() => overlay.remove(), 450);
+    }
   }
 });
 
@@ -1601,8 +1785,18 @@ onValue(stateRef, (snapshot) => {
 // two can never conflict.
 {
   const myPresenceRef = ref(database, `presence/${SESSION_ID}`);
-  set(myPresenceRef, true);
-  onDisconnect(myPresenceRef).remove();
+  const connectedRef  = ref(database, '.info/connected');
+
+  onValue(connectedRef, async (snap) => {
+    if (snap.val() !== true) return;
+    try {
+      // Register server-side cleanup first; only then advertise this session.
+      await onDisconnect(myPresenceRef).remove();
+      await set(myPresenceRef, true);
+    } catch (err) {
+      console.error('Presence setup error:', err);
+    }
+  });
 
   onValue(ref(database, 'presence'), (snap) => {
     const count = snap.exists() ? Object.keys(snap.val()).length : 1;
@@ -1644,10 +1838,17 @@ function flashSyncBanner() {
 // which means none of these need to be on window and the module-scope timing
 // issue that caused "X is not defined" errors is completely eliminated.
 
+// Keep stored Left/Right values compatible with existing Firebase seating data.
+function displayDoor(door) {
+  return door === 'Left' ? 'EAST' : door === 'Right' ? 'WEST' : String(door ?? '').toUpperCase();
+}
+
 function selectDoor(door) {
   state.selectedDoor = door;
   document.getElementById('doorLeft').classList.toggle('active',  door === 'Left');
   document.getElementById('doorRight').classList.toggle('active', door === 'Right');
+  document.getElementById('doorLeft2').classList.toggle('active',  door === 'Left');
+  document.getElementById('doorRight2').classList.toggle('active', door === 'Right');
 }
 
 async function addGroup() {
@@ -1661,8 +1862,8 @@ async function addGroup() {
     showError('Please enter a valid group name and size (1–250).');
     return;
   }
-  if (preferParterre && size >= 38) {
-    showError('Prefer Parterre only applies to groups under 38. Seating normally.');
+  if (preferParterre && size > PARTERRE_MAX_SIZE) {
+    showError('Prefer Parterre only applies to groups of 38 or fewer. Seating normally.');
   } else {
     clearError();
   }
@@ -1670,82 +1871,57 @@ async function addGroup() {
   // Lock the Seat Group button while the transaction is in flight
   const btn = document.getElementById('seatGroupBtn');
   btn.disabled = true;
-  pushUndo(); // snapshot before mutation so the action can be undone
+  const undoEntry = pushUndo(); // snapshot before mutation so the action can be undone
 
   try {
-    // runTransaction guarantees atomicity: if two users submit simultaneously,
-    // Firebase serialises the writes so neither silently overwrites the other.
+    // commitViaTransaction guarantees atomicity: if two users submit
+    // simultaneously, Firebase serialises the writes so neither silently
+    // overwrites the other, and `draft.nextGroupId` is always the
+    // server-authoritative id, so two concurrent submissions can never be
+    // handed the same group id.
     let allocationResult = null;
-    let committedPayload = null;
-    await runTransaction(stateRef, (current) => {
-      if (!current) return current; // nothing in DB yet — abort and retry
 
-      // Work against the authoritative server snapshot, not local state
-      const txGroups       = current.groups       ?? [];
-      const txSeats        = current.seats        ?? {};
-      const txBlocked      = current.blockedSeats ?? {};
-      const txNextId       = current.nextGroupId  ?? 1;
-
+    const committed = await commitViaTransaction((draft) => {
       const group = {
-        id:    txNextId,
+        id:    draft.nextGroupId,
         name, size,
         door:           state.selectedDoor,
-        preferParterre: preferParterre && size < 39,
+        preferParterre: preferParterre && size <= PARTERRE_MAX_SIZE,
         sectionPref,
         orchSubPref,
-        color: GROUP_COLORS[txGroups.length % GROUP_COLORS.length],
+        color: GROUP_COLORS[draft.groups.length % GROUP_COLORS.length],
         allocation: null,
       };
 
-      // Run allocation against the server snapshot
+      // Run allocation against the draft (== authoritative server snapshot)
       const savedSeats   = state.seats;
       const savedBlocked = state.blockedSeats;
-      state.seats        = txSeats;
-      state.blockedSeats = txBlocked;
+      state.seats        = draft.seats;
+      state.blockedSeats = draft.blockedSeats;
 
       const result = allocateGroup(group);
 
-      if (!result) {
-        // Restore local state and abort transaction
-        state.seats        = savedSeats;
-        state.blockedSeats = savedBlocked;
-        allocationResult   = null;
-        return; // returning undefined aborts the transaction
-      }
-
-      group.allocation = result;
-      allocationResult = result;
-
-      // Build the committed state to write back
-      const newSeats = Object.assign({}, txSeats, state.seats);
       state.seats        = savedSeats;
       state.blockedSeats = savedBlocked;
 
-      // Capture the full committed payload so we can apply it locally after
-      // the transaction resolves, without waiting for the onValue echo.
-      committedPayload = {
-        groups:       [...txGroups, group],
-        seats:        newSeats,
-        blockedSeats: txBlocked,
-        nextGroupId:  txNextId + 1,
-      };
+      if (!result) {
+        allocationResult = null;
+        return false; // abort — no write happens
+      }
 
-      return committedPayload;
-    });
+      group.allocation  = result;
+      allocationResult  = result;
+      draft.groups      = [...draft.groups, group];
+      draft.nextGroupId = draft.nextGroupId + 1;
+      return true;
+    }, undoEntry);
 
-    if (!allocationResult) {
-      undoStack.pop(); // discard the snapshot — no mutation occurred
+    if (!committed || !allocationResult) {
+      discardUndoEntry(undoEntry); // discard the snapshot — no mutation occurred
       if (undoStack.length === 0) document.getElementById('undoBtn').disabled = true;
-      showError(`Could not seat ${size} — not enough contiguous seats available.`);
+      showError(`Could not seat ${size} with four empty seats between groups sharing a row.`);
     } else {
-      // Apply the committed state to local state immediately so the UI updates
-      // without waiting for Firebase's onValue echo (which caused the refresh bug).
-      state.groups       = committedPayload.groups;
-      state.seats        = committedPayload.seats;
-      state.blockedSeats = committedPayload.blockedSeats;
-      state.nextGroupId  = committedPayload.nextGroupId;
-      // Suppress the upcoming onValue echo from this transaction write
-      pendingWrites++;
+      // state has already been updated by commitViaTransaction — just render.
       renderAll();
       document.getElementById('groupName').value = '';
       document.getElementById('groupSize').value = '';
@@ -1755,9 +1931,9 @@ async function addGroup() {
       if (window._clearTabletForm) window._clearTabletForm();
     }
   } catch(err) {
-    undoStack.pop(); // discard snapshot on error too
+    discardUndoEntry(undoEntry); // discard snapshot on error too
     if (undoStack.length === 0) document.getElementById('undoBtn').disabled = true;
-    console.error('Transaction error:', err);
+    console.error('Add group error:', err);
     showError('Could not save — check your connection.');
   } finally {
     btn.disabled = false;
@@ -1770,27 +1946,42 @@ async function addGroup() {
   }
 }
 
-function removeGroup(id) {
-  const group = state.groups.find(g => g.id === id);
-  if (!group) return;
-  pushUndo();
-  for (const sid of Object.keys(state.seats)) {
-    if (state.seats[sid]?.groupId === id) delete state.seats[sid];
+async function removeGroup(id) {
+  if (!state.groups.find(g => g.id === id)) return;
+  const undoEntry = pushUndo();
+  const committed = await commitViaTransaction((draft) => {
+    if (!draft.groups.find(g => g.id === id)) return false; // already gone server-side
+    const seats = {...draft.seats};
+    for (const sid of Object.keys(seats)) {
+      if (seats[sid]?.groupId === id) delete seats[sid];
+    }
+    draft.seats  = seats;
+    draft.groups = draft.groups.filter(g => g.id !== id);
+    return true;
+  }, undoEntry);
+  if (!committed) {
+    discardUndoEntry(undoEntry);
+    if (undoStack.length === 0) document.getElementById('undoBtn').disabled = true;
   }
-  state.groups = state.groups.filter(g => g.id !== id);
-  commitState();
   renderAll();
 }
 
-function resetAll() {
+async function resetAll() {
   if (!confirm('Reset all seating for ALL users? This cannot be undone.')) return;
   state.groups       = [];
   state.seats        = {};
   state.blockedSeats = {};
+  state.manualBlockedSeats = {};
+  state.reservedSeats = {};
   state.nextGroupId  = 1;
   undoStack.length   = 0; // prior history is irrelevant after a full reset
   document.getElementById('undoBtn').disabled = true;
-  commitState();
+  // Awaited (previously fire-and-forget): resetAll() passes no undo entry to
+  // commitState(), so captureBaseline() is a no-op for this call regardless —
+  // but awaiting it still keeps this action from straddling other actions
+  // that run after it returns, which is good practice now that other actions
+  // rely on holding their own undo-entry reference across an await boundary.
+  await commitState(3, null);
   renderAll();
   // Re-open the first-row modal so users reconfigure reserved rows after reset
   document.querySelectorAll('.frm-checkbox').forEach(cb => {
@@ -1802,12 +1993,20 @@ function resetAll() {
 
 // ── ERROR HELPERS ─────────────────────────────────────────────────────────────
 function showError(msg) {
-  const el = document.getElementById('errorMsg');
-  el.textContent = msg; el.style.display = 'block';
+  ['errorMsg','errorMsg2'].forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.textContent = msg;
+    el.style.display = 'block';
+  });
 }
 function clearError() {
-  const el = document.getElementById('errorMsg');
-  el.textContent = ''; el.style.display = 'none';
+  ['errorMsg','errorMsg2'].forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.textContent = '';
+    el.style.display = 'none';
+  });
 }
 
 // ── RENDERING ─────────────────────────────────────────────────────────────────
@@ -1843,6 +2042,8 @@ function getSeatRowCount(seatId) {
     case 'DCR':{ const r = DC_ROWS.find(x  => x.label === row);    return r ? r.right  : 0; }
     case 'GL': { const r = GAL_ROWS.find(x => x.label === row);    return r ? r.left   : 0; }
     case 'GR': { const r = GAL_ROWS.find(x => x.label === row);    return r ? r.right  : 0; }
+    case 'BL': { const r = BAL_ROWS.find(x => x.label === row);    return r ? (r.left ?? 0) : 0; }
+    case 'BR': { const r = BAL_ROWS.find(x => x.label === row);    return r ? (r.right ?? 0) : 0; }
     default:   return 0;
   }
 }
@@ -1855,7 +2056,7 @@ function displayNum(seatId) {
   // All four need reversal so aisle seat displays as 1.
   // DCR and GR: rendered as plain centered rows left-to-right; seat 1 is already at the
   // LEFT (aisle side for these sections), so NO reversal needed — they match OR's convention naturally.
-  if (sec === 'OL' || sec === 'DCL' || sec === 'GL' || sec === 'OR') {
+  if (sec === 'OL' || sec === 'DCL' || sec === 'GL' || sec === 'OR' || sec === 'BL' || sec === 'BR') {
     const total = getSeatRowCount(seatId);
     return total - idx + 1;
   }
@@ -1869,8 +2070,8 @@ function formatSeatId(seatId) {
 }
 
 // ── ADA / ACCESSIBLE SEATING ───────────────────────────────────────────────────
-// PLACEHOLDER LIST — swap these for Reynolds Hall's real accessible seating
-// plan once you have it.
+// ADA configuration from the supplied venue code. Verify against the current
+// official seating plan before relying on these designations operationally.
 //
 // IMPORTANT: keys here use the DISPLAYED seat label — the exact text you see
 // in the on-screen tooltip, e.g. "OL-B-1" — NOT the internal seat ID (which
@@ -1890,85 +2091,86 @@ function formatSeatId(seatId) {
 // adds a tooltip note and lets staff toggle a highlight via the sidebar
 // "Highlight ADA Seats" button.
 const ADA_SEATS = new Set([
-  'OL-B-1',   'OL-B-2',     // Orchestra Left, row B
-  'OL-B-3',   'OL-B-4',     // Orchestra Left, row B
-  'OL-B-5',   'OL-B-6',     // Orchestra Left, row B
-  'OL-B-7',                 // Orchestra Left, row B
-  'OR-B-1',   'OR-B-2',     // Orchestra Right, row B
-  'OR-B-3',   'OR-B-4',     // Orchestra Right, row B
-  'OR-B-5',   'OR-B-6',     // Orchestra Right, row B
-  'OR-B-7',                 // Orchestra Right, row B
-  'OL-ZZ-1',  'OL-ZZ-2',    // Orchestra Left, back row (ZZ)
-  'OL-ZZ-3',  'OL-ZZ-4',    // Orchestra Left, back row (ZZ)
-  'OR-ZZ-1',  'OR-ZZ-2',    // Orchestra Right, back row (ZZ)
-  'OR-ZZ-3',  'OR-ZZ-4',    // Orchestra Right, back row (ZZ)
-  'OC-ZZ-1',  'OC-ZZ-2',    // Orchestra Center, back row (ZZ) 
-  'OC-ZZ-3',  'OC-ZZ-4',    // Orchestra Center, back row (ZZ) 
-  'OC-ZZ-18',  'OC-ZZ-19',    // Orchestra Center, back row (ZZ) 
-  'OC-ZZ-20',  'OC-ZZ-21',    // Orchestra Center, back row (ZZ)
-  'DCL-E-1',  'DCL-E-2',    // Dress Circle Left, last row (E)
-  'DCL-E-3',  'DCL-E-4',    // Dress Circle Left, last row (E)
-  'DCR-E-1',  'DCR-E-2',    // Dress Circle Right, last row (E)
-  'DCR-E-3',  'DCR-E-4',    // Dress Circle Right, last row (E)
-  'DCC-E-1',  'DCC-E-2',    // Dress Circle Center, last row (E)
-  'DCC-E-3',  'DCC-E-4',    // Dress Circle Center, last row (E)
-  'DCC-E-18', 'DCC-E-19',   // Dress Circle Center, last row (E)
-  'DCC-E-20', 'DCC-E-21',   // Dress Circle Center, last row (E)
-  'GL-E-1',   'GL-E-2',    // Gallery Left, last row (E)
-  'GL-E-3',   'GL-E-4',    // Gallery Left, last row (E)
-  'GR-E-1',   'GR-E-2',    // Gallery Right, last row (E)
-  'GR-E-3',   'GR-E-4',    //Gallery Right, last row (E)
-  'GC-E-1',   'GC-E-2',    // Gallery Center, last row (E)
-  'GC-E-3',   'GC-E-4',    // Gallery Center, last row (E)
-  'GC-E-18',  'GC-E-19',   // Gallery Center, last row (E)
-  'GC-E-20',  'GC-E-21',   // Gallery Center, last row (E)
-  'GC-E-18',  'GC-E-19',   // Gallery Center, last row (E)
-  'GC-E-20',  'GC-E-21',   // Gallery Center, last row (E)
-  ]);
+  // Balcony Row A: both four-seat sides are ADA-designated.
+  'BL-A-1', 'BL-A-2', 'BL-A-3', 'BL-A-4',
+  'BR-A-1', 'BR-A-2', 'BR-A-3', 'BR-A-4',
+  'OL-B-1', 'OL-B-2', 'OL-B-3', 'OL-B-4',
+  'OL-B-5', 'OL-B-6', 'OL-B-7',
+  'OR-B-1', 'OR-B-2', 'OR-B-3', 'OR-B-4',
+  'OR-B-5', 'OR-B-6', 'OR-B-7',
+  'OL-ZZ-1', 'OL-ZZ-2', 'OL-ZZ-3', 'OL-ZZ-4',
+  'OR-ZZ-1', 'OR-ZZ-2', 'OR-ZZ-3', 'OR-ZZ-4',
+  'OC-ZZ-1', 'OC-ZZ-2', 'OC-ZZ-3', 'OC-ZZ-4',
+  'OC-ZZ-18', 'OC-ZZ-19', 'OC-ZZ-20', 'OC-ZZ-21',
+  'DCL-E-1', 'DCL-E-2', 'DCL-E-3', 'DCL-E-4',
+  'DCR-E-1', 'DCR-E-2', 'DCR-E-3', 'DCR-E-4',
+  'DCC-E-1', 'DCC-E-2', 'DCC-E-3', 'DCC-E-4',
+  'DCC-E-18', 'DCC-E-19',
+  'GL-E-1', 'GL-E-2', 'GL-E-3', 'GL-E-4',
+  'GR-E-1', 'GR-E-2', 'GR-E-3', 'GR-E-4',
+  'GC-E-1', 'GC-E-2', 'GC-E-3', 'GC-E-4',
+  'GC-E-18', 'GC-E-19', 'GC-E-20', 'GC-E-21',
+]);
 
 const ADA_SEAT_LABELS = {
-  'OL-B-1':   'Wheelchair Space',   'OL-B-2':   'Companion Seat',
-  'OL-B-3':   'Wheelchair Space',   'OL-B-4':   'Companion Seat',
-  'OL-B-5':   'Wheelchair Space',   'OL-B-6':   'Companion Seat',
-  'OL-B-7':   'Companion Seat',
-  'OR-B-1':   'Wheelchair Space',   'OR-B-2':   'Companion Seat',
-  'OR-B-3':   'Wheelchair Space',   'OR-B-4':   'Companion Seat',
-  'OR-B-5':   'Wheelchair Space',   'OR-B-6':   'Companion Seat',
-  'OR-B-7':   'Companion Seat',
-  'OL-ZZ-1':  'Wheelchair Space',   'OL-ZZ-2':  'Companion Seat',
-  'OL-ZZ-3':  'Wheelchair Space',   'OL-ZZ-4':  'Companion Seat',
-  'OL-ZZ-5':  'Wheelchair Space',   'OL-ZZ-6':  'Companion Seat',
-  'OL-ZZ-7':  'Companion Seat',
-  'OR-ZZ-1':  'Wheelchair Space',   'OR-ZZ-2':  'Companion Seat',
-  'OR-ZZ-3':  'Wheelchair Space',   'OR-ZZ-4':  'Companion Seat',
-  'OR-ZZ-5':  'Wheelchair Space',   'OR-ZZ-6':  'Companion Seat',
-  'OR-ZZ-7':  'Companion Seat',
-  'DCL-E-1':  'Wheelchair Space',   'DCL-E-2':  'Companion Seat',
-  'DCL-E-3':  'Wheelchair Space',   'DCL-E-4':  'Companion Seat',
-  'DCL-E-5':  'Wheelchair Space',   'DCL-E-6':  'Companion Seat',
-  'DCL-E-7':  'Companion Seat',
-  'DCR-E-1':  'Wheelchair Space',   'DCR-E-2':  'Companion Seat',
-  'DCR-E-3':  'Wheelchair Space',   'DCR-E-4':  'Companion Seat',
-  'DCR-E-5':  'Wheelchair Space',   'DCR-E-6':  'Companion Seat',
-  'DCR-E-7':  'Companion Seat',
-  'DCC-E-1':  'Wheelchair Space',   'DCC-E-2':  'Companion Seat',
-  'DCC-E-3':  'Wheelchair Space',   'DCC-E-4':  'Companion Seat',
-  'DCC-E-16': 'Wheelchair Space',   'DCC-E-17': 'Companion Seat',
-  'DCC-E-18': 'Wheelchair Space',   'DCC-E-19': 'Companion Seat',
-  'GL-E-1':   'Wheelchair Space',   'GL-E-2':  'Companion Seat',
-  'GL-E-3':  'Wheelchair Space',   'GL-E-4':  'Companion Seat',
-  'GL-E-5':  'Wheelchair Space',   'GL-E-6':  'Companion Seat',
-  'GL-E-7':  'Companion Seat',
-  'GR-E-1':  'Wheelchair Space',   'GR-E-2':  'Companion Seat',
-  'GR-E-3':  'Wheelchair Space',   'GR-E-4':  'Companion Seat',
-  'GR-E-5':  'Wheelchair Space',   'GR-E-6':  'Companion Seat',
-  'GR-E-7':  'Companion Seat',
-  'GC-E-1':  'Wheelchair Space',   'GC-E-2':  'Companion Seat',
-  'GC-E-3':  'Wheelchair Space',   'GC-E-4':  'Companion Seat',
-  'GC-E-16': 'Wheelchair Space',   'GC-E-17': 'Companion Seat',
-  'GC-E-18': 'Wheelchair Space',   'GC-E-19': 'Companion Seat',
-  // Any seat in ADA_SEATS but not listed here falls back to the generic
-  // label below — handy for venues that don't distinguish the two.
+  'BL-A-1': 'ADA Seat',
+  'BL-A-2': 'ADA Seat',
+  'BL-A-3': 'ADA Seat',
+  'BL-A-4': 'ADA Seat',
+  'BR-A-1': 'ADA Seat',
+  'BR-A-2': 'ADA Seat',
+  'BR-A-3': 'ADA Seat',
+  'BR-A-4': 'ADA Seat',
+  'OL-B-1': 'Wheelchair Space',
+  'OL-B-2': 'Companion Seat',
+  'OL-B-3': 'Wheelchair Space',
+  'OL-B-4': 'Companion Seat',
+  'OL-B-5': 'Wheelchair Space',
+  'OL-B-6': 'Companion Seat',
+  'OL-B-7': 'Companion Seat',
+  'OR-B-1': 'Wheelchair Space',
+  'OR-B-2': 'Companion Seat',
+  'OR-B-3': 'Wheelchair Space',
+  'OR-B-4': 'Companion Seat',
+  'OR-B-5': 'Wheelchair Space',
+  'OR-B-6': 'Companion Seat',
+  'OR-B-7': 'Companion Seat',
+  'OL-ZZ-1': 'Wheelchair Space',
+  'OL-ZZ-2': 'Companion Seat',
+  'OL-ZZ-3': 'Wheelchair Space',
+  'OL-ZZ-4': 'Companion Seat',
+  'OR-ZZ-1': 'Wheelchair Space',
+  'OR-ZZ-2': 'Companion Seat',
+  'OR-ZZ-3': 'Wheelchair Space',
+  'OR-ZZ-4': 'Companion Seat',
+  'DCL-E-1': 'Wheelchair Space',
+  'DCL-E-2': 'Companion Seat',
+  'DCL-E-3': 'Wheelchair Space',
+  'DCL-E-4': 'Companion Seat',
+  'DCR-E-1': 'Wheelchair Space',
+  'DCR-E-2': 'Companion Seat',
+  'DCR-E-3': 'Wheelchair Space',
+  'DCR-E-4': 'Companion Seat',
+  'DCC-E-1': 'Wheelchair Space',
+  'DCC-E-2': 'Companion Seat',
+  'DCC-E-3': 'Wheelchair Space',
+  'DCC-E-4': 'Companion Seat',
+  'DCC-E-18': 'Wheelchair Space',
+  'DCC-E-19': 'Companion Seat',
+  'GL-E-1': 'Wheelchair Space',
+  'GL-E-2': 'Companion Seat',
+  'GL-E-3': 'Wheelchair Space',
+  'GL-E-4': 'Companion Seat',
+  'GR-E-1': 'Wheelchair Space',
+  'GR-E-2': 'Companion Seat',
+  'GR-E-3': 'Wheelchair Space',
+  'GR-E-4': 'Companion Seat',
+  'GC-E-1': 'Wheelchair Space',
+  'GC-E-2': 'Companion Seat',
+  'GC-E-3': 'Wheelchair Space',
+  'GC-E-4': 'Companion Seat',
+  'GC-E-18': 'Wheelchair Space',
+  'GC-E-19': 'Companion Seat',
 };
 const ADA_DEFAULT_LABEL = 'Wheelchair Accessible';
 function isAdaSeat(seatId) { return ADA_SEATS.has(formatSeatId(seatId)); }
@@ -1976,9 +2178,21 @@ function getAdaLabel(seatId) {
   return ADA_SEAT_LABELS[formatSeatId(seatId)] || ADA_DEFAULT_LABEL;
 }
 
-function makeSeat(seatId, isFirst) {
+// PRIOR BUG: this used to take a static `isFirst` parameter threaded all the
+// way down from each row's data-literal `first` flag. Every row in every
+// section hardcoded `first: false` (`first: true` never appeared anywhere),
+// so `isFirst` was always false and the entire "reserved seat" protection
+// below (blocked class, disabled click/drag, tooltip wording) was dead code.
+// The actually-active reservation mechanism is the First-Row Modal, which
+// just writes into blockedSeats — indistinguishable from any other manually
+// blocked seat, so anyone in Block Mode could click/drag-unblock a
+// "reserved" row same as any other seat. Deriving reserved status here, live,
+// from state.reservedSeats (populated by applyFirstRowSelections()) makes
+// the protection actually take effect.
+function makeSeat(seatId) {
   const div = document.createElement('div');
-  div.className = 'seat' + (isFirst ? ' first-row' : '') + (isAdaSeat(seatId) ? ' ada-seat' : '');
+  const isReserved = !!state.reservedSeats[seatId];
+  div.className = 'seat' + (isReserved ? ' first-row' : '') + (isAdaSeat(seatId) ? ' ada-seat' : '');
   div.dataset.seatId = seatId;
 
   const isBlocked = !!state.blockedSeats[seatId];
@@ -1991,7 +2205,7 @@ function makeSeat(seatId, isFirst) {
 
   // Mouse tooltip (desktop) — suppressed in block mode
   div.addEventListener('mouseover', e => {
-    if (!blockModeActive) showTip(e, seatId, isFirst);
+    if (!blockModeActive) showTip(e, seatId, isReserved);
   });
   div.addEventListener('mousemove', e => {
     if (!blockModeActive) moveTooltip(e);
@@ -2002,31 +2216,35 @@ function makeSeat(seatId, isFirst) {
 
   // Click — block mode only (move mode is handled at section level)
   div.addEventListener('click', () => {
-    if (!blockModeActive || isFirst) return;
+    if (!blockModeActive || isReserved) return;
+    if (suppressBlockClickSeatId === seatId) {
+      suppressBlockClickSeatId = null;
+      return;
+    }
     toggleBlock(seatId);
   });
 
   // Drag-to-block: mouseenter while mouse button held
   div.addEventListener('mouseenter', () => {
-    if (!blockModeActive || !isDraggingBlock || isFirst) return;
+    if (!blockModeActive || !isDraggingBlock || isReserved) return;
     applyBlockDrag(seatId);
   });
 
   // Touch tooltip (mobile)
   div.addEventListener('touchstart', e => {
-    if (blockModeActive && !isFirst) {
+    if (blockModeActive && !isReserved) {
       e.preventDefault();
       toggleBlock(seatId);
     } else {
       e.preventDefault();
-      showSeatToast(seatId, isFirst);
+      showSeatToast(seatId, isReserved);
     }
   }, { passive: false });
 
   return div;
 }
 
-function makeRow(pfx, label, count, isFirst, align = 'center') {
+function makeRow(pfx, label, count, align = 'center') {
   const row = document.createElement('div');
   // 'left' → seats push toward center (right edge of left column)
   // 'right' → seats push toward center (left edge of right column), label on right
@@ -2039,36 +2257,50 @@ function makeRow(pfx, label, count, isFirst, align = 'center') {
   lbl.className = 'row-label';
   lbl.textContent = label;
 
-  // Click row label in block mode to toggle all seats in the row
+  // Click row label in block mode to toggle all seats in the row. Whether
+  // any of this row's seats are reserved is now checked per-seat inside the
+  // transaction below (blockableIds filters out draft.reservedSeats), not
+  // here, since reservation no longer applies uniformly to a whole row.
   lbl.style.cursor = 'default';
-  lbl.addEventListener('click', () => {
-    if (!blockModeActive || isFirst || count === 0) return;
+  lbl.addEventListener('click', async () => {
+    if (!blockModeActive || count === 0) return;
     const rowSeatIds = [];
     for (let i = 1; i <= count; i++) rowSeatIds.push(`${pfx}_${label}_${i}`);
-    // Only toggle seats that are not occupied
-    const blockableIds = rowSeatIds.filter(id => !state.seats[id]);
-    const allBlocked   = blockableIds.every(id => state.blockedSeats[id]);
-    pushUndo();
-    blockableIds.forEach(id => {
-      if (allBlocked) { delete state.blockedSeats[id]; }
-      else            { state.blockedSeats[id] = true; }
-    });
-    commitState();
+    const undoEntry = pushUndo();
+    const committed = await commitViaTransaction((draft) => {
+      // Only toggle seats that are not occupied and not reserved via the
+      // first-row modal, evaluated against the authoritative server
+      // snapshot rather than possibly-stale local state.
+      const blockableIds = rowSeatIds.filter(id => !draft.seats[id] && !draft.reservedSeats[id]);
+      if (!blockableIds.length) return false;
+      const allBlocked = blockableIds.every(id => draft.manualBlockedSeats[id]);
+      const manual = {...draft.manualBlockedSeats};
+      blockableIds.forEach(id => {
+        if (allBlocked) { delete manual[id]; }
+        else            { manual[id] = true; }
+      });
+      draft.manualBlockedSeats = manual;
+      return true;
+    }, undoEntry);
+    if (!committed) {
+      discardUndoEntry(undoEntry);
+      if (undoStack.length === 0) document.getElementById('undoBtn').disabled = true;
+    }
     renderAll();
   });
 
   row.appendChild(lbl);
-  for (let i = 1; i <= count; i++) row.appendChild(makeSeat(`${pfx}_${label}_${i}`, isFirst));
+  for (let i = 1; i <= count; i++) row.appendChild(makeSeat(`${pfx}_${label}_${i}`));
   return row;
 }
 
-function showTip(e, seatId, isFirst) {
+function showTip(e, seatId, isReserved) {
   const tip = document.getElementById('tooltip');
   const d   = state.seats[seatId];
   let text = `Seat: ${formatSeatId(seatId)}`;
-  if (isFirst)   text += ' [First Row — Reserved]';
-  else if (d)    text += ` — ${d.groupName}`;
-  else           text += ' — Available';
+  if (isReserved) text += ' [First Row — Reserved]';
+  else if (d)      text += ` — ${d.groupName}`;
+  else             text += ' — Available';
   if (isAdaSeat(seatId)) text += ` ♿ [${getAdaLabel(seatId)}]`;
   tip.textContent = text; tip.style.display = 'block';
   moveTooltip(e);
@@ -2084,28 +2316,60 @@ function hideTip() { document.getElementById('tooltip').style.display = 'none'; 
 let isDraggingBlock  = false;   // true while mouse button is held in block mode
 let dragBlockAction  = null;    // 'block' | 'unblock' — set on mousedown
 
-function toggleBlock(seatId) {
-  if (state.seats[seatId]) return; // occupied seats cannot be blocked
-  pushUndo();
-  if (state.blockedSeats[seatId]) {
-    delete state.blockedSeats[seatId];
-  } else {
-    state.blockedSeats[seatId] = true;
+async function toggleBlock(seatId) {
+  if (state.seats[seatId] || state.reservedSeats[seatId]) return; // occupied/reserved seats cannot be toggled here
+  const undoEntry = pushUndo();
+  const committed = await commitViaTransaction((draft) => {
+    if (draft.seats[seatId] || draft.reservedSeats[seatId]) return false; // became occupied/reserved server-side — abort
+    const manual = {...draft.manualBlockedSeats};
+    if (manual[seatId]) delete manual[seatId]; else manual[seatId] = true;
+    draft.manualBlockedSeats = manual;
+    return true;
+  }, undoEntry);
+  if (!committed) {
+    discardUndoEntry(undoEntry);
+    if (undoStack.length === 0) document.getElementById('undoBtn').disabled = true;
   }
-  commitState();
   renderAll();
 }
 
+// dragChanges tracks the seats toggled during the CURRENT drag-to-block
+// gesture (seatId → true means "block", false means "unblock"). We keep the
+// per-seat updates during the drag purely local/optimistic (no network calls
+// on every mouseenter — that would flood Firebase with a transaction per
+// seat and feel laggy); only the *final* result is flushed to the server
+// once, on mouseup, and it's reapplied as a delta onto the current server
+// state via commitViaTransaction rather than overwriting the whole document.
+let dragChanges    = null;
+let dragUndoEntry  = null; // the specific undo entry for the CURRENT drag gesture, if any mutation has happened yet
+let dragPreBlocked = null;
+let dragPreManual  = null;
+let suppressBlockClickSeatId = null;
+let dragStartSeatId = null;
+
 function applyBlockDrag(seatId) {
-  if (state.seats[seatId]) return; // never drag-block an occupied seat
-  if (dragBlockAction === 'block' && !state.blockedSeats[seatId]) {
+  if (state.seats[seatId] || state.reservedSeats[seatId]) return; // never drag-block an occupied or reserved seat
+  const willBlock   = dragBlockAction === 'block'   && !state.manualBlockedSeats[seatId];
+  const willUnblock = dragBlockAction === 'unblock' &&  state.manualBlockedSeats[seatId];
+  if (!willBlock && !willUnblock) return;
+  // Snapshot once, lazily, on the first seat actually touched by this drag —
+  // avoids a redundant duplicate snapshot when the gesture turns out to be a
+  // plain click (which is already snapshotted by toggleBlock() itself).
+  // Hold on to the returned entry (not just a boolean) so mouseup can pass
+  // the SAME entry through to commitViaTransaction() and discardUndoEntry(),
+  // regardless of what else gets pushed onto the stack during the drag.
+  if (!dragUndoEntry) { dragUndoEntry = pushUndo(); }
+  if (willBlock) {
+    state.manualBlockedSeats[seatId] = true;
     state.blockedSeats[seatId] = true;
+    dragChanges[seatId] = true;
     // Optimistic targeted DOM update — avoids full re-render on every mouseenter
     const el = document.querySelector(`.seat[data-seat-id="${seatId}"]`);
     if (el) { el.classList.add('blocked'); el.classList.remove('occupied'); el.style.background = el.style.borderColor = ''; }
-    // commitState fires on mouseup; renderAll will do a clean reconcile then
-  } else if (dragBlockAction === 'unblock' && state.blockedSeats[seatId]) {
-    delete state.blockedSeats[seatId];
+  } else {
+    delete state.manualBlockedSeats[seatId];
+    if (!state.reservedSeats[seatId]) delete state.blockedSeats[seatId];
+    dragChanges[seatId] = false;
     const el = document.querySelector(`.seat[data-seat-id="${seatId}"]`);
     if (el) { el.classList.remove('blocked'); el.style.background = el.style.borderColor = ''; }
   }
@@ -2113,13 +2377,13 @@ function applyBlockDrag(seatId) {
 
 // FIX 4 — Mobile toast: briefly shows seat info at the bottom of the screen
 let _toastTimer = null;
-function showSeatToast(seatId, isFirst) {
+function showSeatToast(seatId, isReserved) {
   const toast = document.getElementById('seatToast');
   const d     = state.seats[seatId];
   let text = `Seat ${formatSeatId(seatId)}`;
-  if (isFirst)   text += ' — Reserved';
-  else if (d)    text += ` — ${d.groupName}`;
-  else           text += ' — Available';
+  if (isReserved) text += ' — Reserved';
+  else if (d)     text += ` — ${d.groupName}`;
+  else            text += ' — Available';
   if (isAdaSeat(seatId)) text += ` ♿ [${getAdaLabel(seatId)}]`;
   toast.textContent = text;
   toast.classList.add('visible');
@@ -2133,17 +2397,17 @@ function renderOrchestra() {
   const R = document.getElementById('orchRight');
   L.innerHTML = C.innerHTML = R.innerHTML = '';
   for (const row of ORCH_ROWS) {
-    if (row.left  > 0) L.appendChild(makeRow('OL', row.label, row.left,   row.first, 'left'));
-    C.appendChild(makeRow('OC', row.label, row.center, row.first, 'center'));
-    if (row.right > 0) R.appendChild(makeRow('OR', row.label, row.right,  row.first, 'right'));
+    if (row.left  > 0) L.appendChild(makeRow('OL', row.label, row.left,   'left'));
+    C.appendChild(makeRow('OC', row.label, row.center, 'center'));
+    if (row.right > 0) R.appendChild(makeRow('OR', row.label, row.right,  'right'));
   }
 }
 function renderParterre() {
   const L = document.getElementById('parterreLeft');
   const R = document.getElementById('parterreRight');
   L.innerHTML = R.innerHTML = '';
-  PARTERRE_LEFT_ROWS.forEach(r  => L.appendChild(makeRow('PL', r.label, r.seats, false)));
-  PARTERRE_RIGHT_ROWS.forEach(r => R.appendChild(makeRow('PR', r.label, r.seats, false)));
+  PARTERRE_LEFT_ROWS.forEach(r  => L.appendChild(makeRow('PL', r.label, r.seats)));
+  PARTERRE_RIGHT_ROWS.forEach(r => R.appendChild(makeRow('PR', r.label, r.seats)));
 }
 function renderDressCircle() {
   const L = document.getElementById('dcLeft');
@@ -2151,9 +2415,9 @@ function renderDressCircle() {
   const R = document.getElementById('dcRight');
   L.innerHTML = C.innerHTML = R.innerHTML = '';
   for (const row of DC_ROWS) {
-    if (row.left   > 0 || row.first) L.appendChild(makeRow('DCL', row.label, row.left,   row.first));
-    if (row.center > 0 || row.first) C.appendChild(makeRow('DCC', row.label, row.center, row.first));
-    if (row.right  > 0 || row.first) R.appendChild(makeRow('DCR', row.label, row.right,  row.first));
+    if (row.left   > 0) L.appendChild(makeRow('DCL', row.label, row.left));
+    if (row.center > 0) C.appendChild(makeRow('DCC', row.label, row.center));
+    if (row.right  > 0) R.appendChild(makeRow('DCR', row.label, row.right));
   }
 }
 function renderGallery() {
@@ -2162,15 +2426,26 @@ function renderGallery() {
   const R = document.getElementById('galRight');
   L.innerHTML = C.innerHTML = R.innerHTML = '';
   for (const row of GAL_ROWS) {
-    if (row.left   > 0 || row.first) L.appendChild(makeRow('GL', row.label, row.left,   row.first));
-    if (row.center > 0 || row.first) C.appendChild(makeRow('GC', row.label, row.center, row.first));
-    if (row.right  > 0 || row.first) R.appendChild(makeRow('GR', row.label, row.right,  row.first));
+    if (row.left   > 0) L.appendChild(makeRow('GL', row.label, row.left));
+    if (row.center > 0) C.appendChild(makeRow('GC', row.label, row.center));
+    if (row.right  > 0) R.appendChild(makeRow('GR', row.label, row.right));
   }
 }
 function renderBalcony() {
   const el = document.getElementById('balconyCenter');
   el.innerHTML = '';
-  for (const row of BAL_ROWS) el.appendChild(makeRow('BC', row.label, row.seats, !!row.first));
+  for (const row of BAL_ROWS) {
+    if (row.label === 'A') {
+      const split = document.createElement('div');
+      split.className = 'balcony-a-row';
+      split.appendChild(makeRow('BL', 'A', row.left, 'left'));
+      split.appendChild(makeRow('BC', 'A', row.center));
+      split.appendChild(makeRow('BR', 'A', row.right, 'right'));
+      el.appendChild(split);
+    } else {
+      el.appendChild(makeRow('BC', row.label, row.seats));
+    }
+  }
 }
 
 function getSectionClass(secs) {
@@ -2180,7 +2455,7 @@ function getSectionClass(secs) {
   if (['PL','PR'].includes(s))      return 'parterre';
   if (s.startsWith('DC'))           return 'dress-circle';
   if (s.startsWith('G'))            return 'gallery';
-  if (s === 'BC')                   return 'balcony';
+  if (BAL_SECTIONS.includes(s))     return 'balcony';
   return 'unallocated';
 }
 
@@ -2235,7 +2510,7 @@ let renderGroupList = function() {
     sizeEl.textContent = `${g.size} seats`;
     const doorEl = document.createElement('div');
     doorEl.className = 'group-door';
-    doorEl.textContent = `${g.door.toUpperCase()} DOOR`;
+    doorEl.textContent = `${displayDoor(g.door)} DOOR`;
     meta.appendChild(sizeEl);
     meta.appendChild(doorEl);
 
@@ -2320,16 +2595,22 @@ function renderLegend() {
 function renderStats() {
   const occupied = Object.values(state.seats).filter(Boolean).length;
   const blocked  = Object.keys(state.blockedSeats).length;
+  // FIX: occupied and blocked can overlap (see calcAvail() above), so
+  // TOTAL_CAPACITY - occupied - blocked would double-subtract any seat in
+  // both sets. `occupied` and `blocked` above are still shown as their own
+  // honest raw counts — only the available figure needs the dedup.
+  const unavailable = new Set(Object.keys(state.blockedSeats));
+  for (const [sid, v] of Object.entries(state.seats)) if (v) unavailable.add(sid);
   document.getElementById('statTotal').textContent     = TOTAL_CAPACITY;
   document.getElementById('statOccupied').textContent  = occupied;
   document.getElementById('statBlocked').textContent   = blocked;
-  document.getElementById('statAvailable').textContent = TOTAL_CAPACITY - occupied - blocked;
+  document.getElementById('statAvailable').textContent = TOTAL_CAPACITY - unavailable.size;
   document.getElementById('statGroups').textContent    = state.groups.length;
 
   document.getElementById('statOrch').textContent = `${TOTAL_ORCH_PART - sumAvail(['OL','OC','OR','PL','PR'])} / ${TOTAL_ORCH_PART}`;
   document.getElementById('statDC').textContent   = `${TOTAL_DC  - sumAvail(['DCL','DCC','DCR'])} / ${TOTAL_DC}`;
   document.getElementById('statGal').textContent  = `${TOTAL_GAL - sumAvail(['GL','GC','GR'])} / ${TOTAL_GAL}`;
-  document.getElementById('statBal').textContent  = `${TOTAL_BAL - calcAvail('BC')} / ${TOTAL_BAL}`;
+  document.getElementById('statBal').textContent  = `${TOTAL_BAL - sumAvail(BAL_SECTIONS)} / ${TOTAL_BAL}`;
 }
 
 let renderAll = function() {
@@ -2353,7 +2634,11 @@ function buildPdfReport() {
   const timeStr   = now.toLocaleTimeString('en-US', {hour:'2-digit', minute:'2-digit'});
   const occupied  = Object.values(state.seats).filter(Boolean).length;
   const blocked   = Object.keys(state.blockedSeats).length;
-  const available = TOTAL_CAPACITY - occupied - blocked;
+  const unavailableIds = new Set([
+    ...Object.entries(state.seats).filter(([,v]) => !!v).map(([id]) => id),
+    ...Object.keys(state.blockedSeats),
+  ]);
+  const available = TOTAL_CAPACITY - unavailableIds.size;
 
   // ── Stats block ──
   const statsHtml = `
@@ -2392,7 +2677,7 @@ function buildPdfReport() {
       </div>
       <div class="rpt-stat">
         <div class="rpt-stat-label">Balcony</div>
-        <div class="rpt-stat-value">${TOTAL_BAL - calcAvail('BC')} / ${TOTAL_BAL}</div>
+        <div class="rpt-stat-value">${TOTAL_BAL - sumAvail(BAL_SECTIONS)} / ${TOTAL_BAL}</div>
       </div>
     </div>
   `;
@@ -2413,7 +2698,7 @@ function buildPdfReport() {
             ${escHtml(g.name)}
           </td>
           <td>${g.size}</td>
-          <td>${g.door} Door</td>
+          <td>${displayDoor(g.door)} Door</td>
           <td>${location}${parterre}</td>
         </tr>`;
     });
@@ -2476,38 +2761,171 @@ function buildPdfReport() {
 }
 
 // ── UNDO STACK ────────────────────────────────────────────────────────────────
-// Each entry is a deep snapshot of {groups, seats, blockedSeats, nextGroupId}.
-// We save a snapshot before every user-initiated mutation. Undo restores the
-// previous snapshot and pushes it to Firebase so all users see the rollback.
-// Max depth is capped at 20 to keep memory use bounded.
+// Each entry is a deep snapshot of {groups, seats, blockedSeats, manualBlockedSeats,
+// reservedSeats, nextGroupId} taken before a user-initiated mutation ("restore"), plus a
+// second snapshot of the same shape stamped on right after that mutation
+// commits ("baselineAfter", see captureBaseline() below). Undo compares
+// baselineAfter against live server state before restoring, so it can detect
+// — and refuse — a rollback that would silently discard a change another
+// user made in the meantime. Max depth is capped at 20 to keep memory use
+// bounded.
+//
+// pushUndo() below seeds the "restore" snapshot from local `state` purely as
+// a placeholder — it's immediately overwritten inside commitViaTransaction()
+// with the authoritative pre-mutation value Firebase itself hands back (see
+// the FIX comment there). Local `state` at click time isn't trustworthy for
+// this: if a second action is pushed before an earlier one has finished
+// mirroring into local `state`, the placeholder can predate that earlier
+// commit, which used to make undo roll back both actions at once instead of
+// just the one being undone.
 const UNDO_MAX = 20;
 const undoStack = [];
 
 function snapshotState() {
   return {
-    groups:       JSON.parse(JSON.stringify(state.groups)),
-    seats:        Object.assign({}, state.seats),
-    blockedSeats: Object.assign({}, state.blockedSeats),
-    nextGroupId:  state.nextGroupId,
+    groups:        JSON.parse(JSON.stringify(state.groups)),
+    seats:         Object.assign({}, state.seats),
+    blockedSeats:       Object.assign({}, state.blockedSeats),
+    manualBlockedSeats: Object.assign({}, state.manualBlockedSeats),
+    reservedSeats:      Object.assign({}, state.reservedSeats),
+    nextGroupId:   state.nextGroupId,
   };
 }
 
+// pushUndo() returns the exact entry object it pushed. Callers MUST hold on
+// to this reference and pass it through to commitState()/commitViaTransaction()
+// (so the right entry gets its baseline stamped) and to discardUndoEntry()
+// (so the right entry gets removed on failure). Relying on "top of stack" for
+// either of those, as earlier versions did, breaks as soon as two actions are
+// in flight at once — see the FIX comment above captureBaseline() below.
 function pushUndo() {
-  undoStack.push(snapshotState());
+  const entry = snapshotState();
+  undoStack.push(entry);
   if (undoStack.length > UNDO_MAX) undoStack.shift();
   document.getElementById('undoBtn').disabled = false;
+  return entry;
 }
 
+// Removes a specific entry from the undo stack by reference rather than by
+// position. Safe to call even if `entry` is no longer at the top (or is no
+// longer in the stack at all, e.g. it was already discarded by a conflict).
+function discardUndoEntry(entry) {
+  if (!entry) return;
+  const idx = undoStack.indexOf(entry);
+  if (idx !== -1) undoStack.splice(idx, 1);
+}
+
+// Order-independent deep equality for plain JSON-ish data (objects/arrays of
+// primitives). Used instead of JSON.stringify comparison because two
+// structurally-identical `seats`/`blockedSeats` objects can have their keys
+// in different insertion order (ours built locally, the server's rebuilt
+// fresh from Firebase), which would make a stringify comparison report a
+// false mismatch.
+function deepEqual(a, b) {
+  if (a === b) return true;
+  if (typeof a !== 'object' || typeof b !== 'object' || a === null || b === null) return false;
+  const aKeys = Object.keys(a), bKeys = Object.keys(b);
+  if (aKeys.length !== bKeys.length) return false;
+  for (const k of aKeys) {
+    if (!Object.prototype.hasOwnProperty.call(b, k)) return false;
+    if (!deepEqual(a[k], b[k])) return false;
+  }
+  return true;
+}
+
+function seatingStatesEqual(a, b) {
+  return deepEqual(a.groups, b.groups)
+      && deepEqual(a.seats, b.seats)
+      && deepEqual(a.blockedSeats, b.blockedSeats)
+      && deepEqual(a.manualBlockedSeats ?? inferManualBlocked(a.blockedSeats, a.reservedSeats),
+                   b.manualBlockedSeats ?? inferManualBlocked(b.blockedSeats, b.reservedSeats))
+      && deepEqual(a.reservedSeats, b.reservedSeats)
+      && a.nextGroupId === b.nextGroupId;
+}
+
+// FIX: MULTI-USER-SAFE UNDO ───────────────────────────────────────────────
+// Called right after every successful write to shared state (from both
+// commitState() and commitViaTransaction()). It stamps the SPECIFIC undo
+// entry passed in — the one pushUndo() returned to that action — with a
+// snapshot of what shared state looks like immediately afterward, a
+// "baselineAfter". performUndo() later compares this against the live
+// server content to tell whether anyone else has written since, instead of
+// trusting this browser's possibly-stale copy.
+//
+// PRIOR BUG: this used to be captureBaselineForLatestAction(), which stamped
+// whatever entry happened to be on TOP of undoStack at the moment a commit
+// resolved. That's only correct if actions are strictly serialized — but
+// nothing enforced that. Two overlapping actions (e.g. clicking "Remove
+// Group" then immediately toggling a seat block before the removal's
+// transaction resolved), or resetAll()'s un-awaited commitState() call,
+// could result in action A's baseline being stamped onto action B's stack
+// entry, corrupting B's conflict detection. Taking the entry as an explicit
+// parameter — a direct object reference handed back by pushUndo() — makes
+// the stamp correct regardless of what else is pushed onto or popped off
+// the stack in the meantime.
+function captureBaseline(entry) {
+  if (entry) entry.baselineAfter = snapshotState();
+}
+
+// performUndo() now goes through commitViaTransaction() rather than
+// commitState()'s blind overwrite. The mutator first checks the entry's
+// baselineAfter against the live server draft: if they match, nothing has
+// changed since this browser's own last action and it's safe to restore the
+// pre-action snapshot. If they don't match, some other user has written to
+// shared state since then, and forcing this browser's old snapshot back
+// would silently discard that change — so we abort instead.
+//
+// A mismatch also invalidates every OLDER entry still in the stack: they
+// were all captured on the assumption that nothing outside this browser's
+// own actions had touched shared state, and that assumption is now false.
+// Restoring any of them would discard the same external change just as
+// surely, so the whole history is cleared rather than left to fail one
+// silent click at a time.
+//
+// This does not attempt to merge — if another user's edit and this
+// browser's undo don't touch the same data, undo still gets blocked. A
+// finer-grained fix (per-action delta undo, replaying just this browser's
+// own change on top of whatever else happened) is a real follow-up, not
+// something papered over here.
 function performUndo() {
   if (!undoStack.length) return;
-  const snap = undoStack.pop();
-  state.groups       = snap.groups;
-  state.seats        = snap.seats;
-  state.blockedSeats = snap.blockedSeats;
-  state.nextGroupId  = snap.nextGroupId;
-  document.getElementById('undoBtn').disabled = undoStack.length === 0;
-  commitState();
-  renderAll();
+  const snap = undoStack[undoStack.length - 1]; // peek — only discard on success
+  const undoBtn = document.getElementById('undoBtn');
+  undoBtn.disabled = true; // prevent double-clicks while this is in flight
+
+  // commitViaTransaction() returns null both when the mutator rejects the
+  // change AND when a real connection/transaction error occurs — and in the
+  // latter case it has already shown its own "check your connection"
+  // message. This flag lets us tell the two apart so we don't stomp that
+  // message with a misleading "someone else changed it" one.
+  let conflict = false;
+
+  commitViaTransaction((draft) => {
+    if (!snap.baselineAfter || !seatingStatesEqual(draft, snap.baselineAfter)) {
+      conflict = true;
+      return false; // abort — shared state has moved since this snapshot
+    }
+    conflict = false;
+    draft.groups        = snap.groups;
+    draft.seats         = snap.seats;
+    draft.manualBlockedSeats = snap.manualBlockedSeats ?? inferManualBlocked(snap.blockedSeats, snap.reservedSeats);
+    draft.reservedSeats      = snap.reservedSeats;
+    draft.nextGroupId   = snap.nextGroupId;
+    return true;
+  }).then((committed) => {
+    if (committed) {
+      // Remove by reference, not by popping "the top" — another action may
+      // have pushed a newer entry onto the stack while this undo was in
+      // flight, in which case `snap` (the entry we actually just undid) is
+      // no longer on top.
+      discardUndoEntry(snap);
+    } else if (conflict) {
+      undoStack.length = 0; // rest of the history is no longer safe to replay
+      showError("Can't undo — someone else made changes since your last edit.");
+    } // else: a real error occurred and commitViaTransaction already reported it
+    undoBtn.disabled = undoStack.length === 0;
+    renderAll();
+  });
 }
 
 document.getElementById('undoBtn').addEventListener('click', performUndo);
@@ -2518,7 +2936,11 @@ document.getElementById('doorRight').addEventListener('click', () => selectDoor(
 document.getElementById('seatGroupBtn').addEventListener('click', addGroup);
 document.getElementById('resetBtn').addEventListener('click', resetAll);
 document.getElementById('configFirstRowBtn').addEventListener('click', () => {
-  // Re-open the first-row modal so reserved rows can be reconfigured at any time
+  // Re-open the first-row modal so reserved rows can be reconfigured at any
+  // time. FIX: show what's actually reserved right now, not the hardcoded
+  // "all checked" HTML defaults or whatever was left over from a previous
+  // open of this modal in this browser.
+  syncFirstRowCheckboxesFromState();
   document.getElementById('firstRowModal').classList.remove('hidden');
 });
 document.getElementById('savePdfBtn').addEventListener('click', () => {
@@ -2537,11 +2959,23 @@ document.getElementById('sectionPref').addEventListener('change', function() {
 // ── MOVE MODE ─────────────────────────────────────────────────────────────────
 let moveModeActive   = false;
 let movePendingGroup = null;
+// Explicit flag for "is this a brand-new Place-Manually placement, or a move
+// of an existing seated group" — set once, here, at the moment the user
+// chooses which flow they're in. handleMoveTargetClick() trusts this flag
+// directly instead of re-deriving it later by checking whether
+// movePendingGroup.id collides with an id already present in server state,
+// which is unsafe: a Place-Manually placeholder's id is just this browser's
+// possibly-stale state.nextGroupId, and if another user concurrently created
+// a real group that ends up with that same id, an id-collision check would
+// wrongly conclude "this is an existing group" and let the placement
+// overwrite/hijack that unrelated group's identity and seats.
+let movePendingIsNew = false;
 
-function enterMoveMode(group) {
+function enterMoveMode(group, isNewPlacement = false) {
   if (blockModeActive) blockModeBtn.click();
-  moveModeActive   = true;
-  movePendingGroup = group;
+  moveModeActive     = true;
+  movePendingGroup   = group;
+  movePendingIsNew   = isNewPlacement;
   document.body.classList.add('move-mode');
   document.getElementById('moveModeHint').style.display = 'block';
   clearError();
@@ -2549,8 +2983,9 @@ function enterMoveMode(group) {
 }
 
 function exitMoveMode() {
-  moveModeActive   = false;
-  movePendingGroup = null;
+  moveModeActive     = false;
+  movePendingGroup   = null;
+  movePendingIsNew   = false;
   document.body.classList.remove('move-mode');
   document.getElementById('moveModeHint').style.display = 'none';
   renderAll();
@@ -2558,41 +2993,113 @@ function exitMoveMode() {
 
 document.getElementById('cancelMoveBtn').addEventListener('click', exitMoveMode);
 
-function handleMoveTargetClick(sectionsStr) {
+async function handleMoveTargetClick(sectionsStr) {
   if (!moveModeActive || !movePendingGroup) return;
   const targetSections = sectionsStr.split(',');
-  const group = movePendingGroup;
+  const groupTemplate  = movePendingGroup;
+  const isNewPlacement = movePendingIsNew; // set explicitly by enterMoveMode(), not inferred from id collision
 
-  const oldSeatIds = Object.keys(state.seats).filter(id => state.seats[id]?.groupId === group.id);
+  const undoEntry = pushUndo();
 
-  pushUndo();
-  oldSeatIds.forEach(id => delete state.seats[id]);
+  let allocationResult = null;
+  let groupMissing      = false; // existing group no longer exists server-side
+  let groupChanged       = false; // existing group is still there, but was changed (e.g. moved) by someone else since we entered move mode
 
-  // Use row-across allocation for DC and Gallery
-  const isDC  = targetSections.length > 0 && targetSections.every(s => s.startsWith('DC'));
-  const isGal = targetSections.length > 0 && targetSections.every(s => s === 'GL' || s === 'GC' || s === 'GR');
-  const result = isDC  ? tryAllocRows(DC_ROWS,  DC_SECTIONS,  group.size, group)
-               : isGal ? tryAllocRows(GAL_ROWS, GAL_SECTIONS, group.size, group)
-               : tryAlloc(targetSections, group.size, group);
+  const committed = await commitViaTransaction((draft) => {
+    let liveGroup = null;
+    if (!isNewPlacement) {
+      // This is supposed to be moving a real, currently-seated group. If it
+      // no longer exists server-side (removed, or otherwise changed by
+      // another user since we entered move mode), that's a conflict — abort
+      // rather than falling back to creating a brand-new group under
+      // whatever id groupTemplate happened to be holding.
+      liveGroup = draft.groups.find(g => g.id === groupTemplate.id);
+      if (!liveGroup) {
+        groupMissing = true;
+        return false;
+      }
+      // FIX: existence alone isn't "unchanged". The group can still be
+      // there under the same id but have a different .allocation because
+      // someone else already moved it since we entered Move Mode — e.g. two
+      // people both open Move on the same group and confirm different
+      // targets. The .find() above only catches outright removal; comparing
+      // the live copy against what we started from catches this too,
+      // instead of silently overwriting whatever the other move committed.
+      if (!deepEqual(liveGroup, groupTemplate)) {
+        groupChanged = true;
+        return false;
+      }
+    }
 
-  if (!result) {
-    oldSeatIds.forEach(id => { state.seats[id] = { groupId: group.id, groupName: group.name }; });
-    undoStack.pop();
+    // Brand-new manual placements are minted a fresh, server-authoritative id
+    // right here — NEVER the id the client happened to be holding locally
+    // (state.nextGroupId can be stale). That's what makes it impossible for
+    // two users doing "Place Manually" at the same moment to end up with two
+    // groups sharing the same id.
+    const group = isNewPlacement
+      ? { ...groupTemplate, id: draft.nextGroupId, color: GROUP_COLORS[draft.groups.length % GROUP_COLORS.length] }
+      : { ...liveGroup }; // verified fresh above — build from the live copy, not the stale template
+
+    const seats = {...draft.seats};
+    if (!isNewPlacement) {
+      // Moving an existing group — free its previously-held seats (computed
+      // against the authoritative draft, not possibly-stale local state)
+      // before reallocating.
+      for (const sid of Object.keys(seats)) {
+        if (seats[sid]?.groupId === group.id) delete seats[sid];
+      }
+    }
+    draft.seats = seats;
+
+    // Run allocation against the draft (== authoritative server snapshot)
+    const savedSeats   = state.seats;
+    const savedBlocked = state.blockedSeats;
+    state.seats        = draft.seats;
+    state.blockedSeats = draft.blockedSeats;
+
+    // Use row-across allocation for DC and Gallery. For a plain Orch
+    // Left/Right target, allow overflow into the paired Parterre side (same
+    // rule the automatic allocator uses) instead of requiring the whole
+    // group to fit in that one section alone.
+    const isDC  = targetSections.length > 0 && targetSections.every(s => s.startsWith('DC'));
+    const isGal = targetSections.length > 0 && targetSections.every(s => s === 'GL' || s === 'GC' || s === 'GR');
+    const isOL  = targetSections.length === 1 && targetSections[0] === 'OL';
+    const isOR  = targetSections.length === 1 && targetSections[0] === 'OR';
+    const result = isDC  ? tryAllocRows(DC_ROWS,  DC_SECTIONS,  group.size, group)
+                 : isGal ? tryAllocRows(GAL_ROWS, GAL_SECTIONS, group.size, group)
+                 : isOL  ? tryOrchSideWithOverflow('OL', 'PL', group.size, group)
+                 : isOR  ? tryOrchSideWithOverflow('OR', 'PR', group.size, group)
+                 : tryAlloc(targetSections, group.size, group);
+
+    state.seats        = savedSeats;
+    state.blockedSeats = savedBlocked;
+
+    if (!result) { allocationResult = null; return false; }
+
+    group.allocation = result;
+    allocationResult = result;
+
+    if (isNewPlacement) {
+      draft.groups      = [...draft.groups, group];
+      draft.nextGroupId = draft.nextGroupId + 1;
+    } else {
+      draft.groups = draft.groups.map(g => g.id === group.id ? group : g);
+    }
+    return true;
+  }, undoEntry);
+
+  if (!committed || !allocationResult) {
+    discardUndoEntry(undoEntry);
     if (undoStack.length === 0) document.getElementById('undoBtn').disabled = true;
-    showError(`Not enough room in that section for ${group.size} seats.`);
+    showError(groupMissing || groupChanged
+      ? 'Could not move — that group was changed or removed by another user.'
+      : `Could not fit ${groupTemplate.size} seats there with four empty seats between groups.`);
     return;
   }
 
-  group.allocation = result;
-
-  if (!state.groups.find(g => g.id === group.id)) {
-    state.groups.push(group);
-    state.nextGroupId = Math.max(state.nextGroupId, group.id + 1);
-  }
-
-  commitState();
   exitMoveMode();
   clearError();
+  renderAll();
 }
 
 // Wire up section target overlays via delegation so listeners survive re-renders
@@ -2611,18 +3118,26 @@ document.getElementById('placeManuallyBtn').addEventListener('click', () => {
   if (!size || size < 1 || size > 250) { showError('Please enter a valid group size (1–250).'); return; }
   const preferParterre = document.getElementById('preferParterre').checked;
 
+  // id/color here are just local placeholders for the pending-move UI —
+  // handleMoveTargetClick() mints the real, server-authoritative id and
+  // color inside its transaction once the group is actually placed, so
+  // these values are never what ends up persisted. Whether this is treated
+  // as a new group is now controlled by the explicit `isNewPlacement` flag
+  // passed to enterMoveMode() below, NOT by this placeholder id — this id
+  // can be stale and coincidentally collide with a real group's id created
+  // by another user in the meantime.
   const group = {
     id:    state.nextGroupId,
     name,  size,
     door:  state.selectedDoor,
-    preferParterre: preferParterre && size < 39,
+    preferParterre: preferParterre && size <= PARTERRE_MAX_SIZE,
     color: GROUP_COLORS[state.groups.length % GROUP_COLORS.length],
     allocation: null,
   };
 
   document.getElementById('groupName').value = '';
   document.getElementById('groupSize').value = '';
-  enterMoveMode(group);
+  enterMoveMode(group, /* isNewPlacement */ true);
 });
 
 // ── BLOCK MODE TOGGLE ─────────────────────────────────────────────────────────
@@ -2661,21 +3176,58 @@ document.addEventListener('mousedown', e => {
   const seat = e.target.closest('.seat');
   if (!seat || seat.classList.contains('first-row')) return;
   const seatId = seat.dataset.seatId;
-  if (!seatId || state.seats[seatId]) return; // ignore occupied seats
-  isDraggingBlock = true;
-  // Snapshot once at the start of the drag gesture so the whole drag is one undo step
-  pushUndo();
-  // Drag action is the opposite of the seat's current state
-  dragBlockAction = state.blockedSeats[seatId] ? 'unblock' : 'block';
+  if (!seatId || state.seats[seatId] || state.reservedSeats[seatId]) return; // ignore occupied/reserved seats
+  isDraggingBlock  = true;
+  dragChanges      = {};
+  dragUndoEntry    = null; // pushUndo() happens lazily, in applyBlockDrag, on first real mutation
+  dragPreBlocked   = Object.assign({}, state.blockedSeats);
+  dragPreManual    = Object.assign({}, state.manualBlockedSeats);
+  dragStartSeatId  = seatId;
+  // Drag action is the opposite of the starting seat's MANUAL block state.
+  dragBlockAction = state.manualBlockedSeats[seatId] ? 'unblock' : 'block';
+  // Include the starting seat immediately; previously only mouseenter seats
+  // were changed, so the first seat of a drag could be skipped.
+  applyBlockDrag(seatId);
 });
 
-document.addEventListener('mouseup', () => {
-  if (isDraggingBlock) {
-    isDraggingBlock = false;
-    dragBlockAction = null;
-    // Commit the full accumulated drag changes to Firebase in one write
-    commitState();
+document.addEventListener('mouseup', async () => {
+  if (!isDraggingBlock) return;
+  isDraggingBlock = false;
+  dragBlockAction = null;
+  const changes = dragChanges || {};
+  dragChanges = null;
+  const undoEntry = dragUndoEntry;
+  dragUndoEntry = null;
+  const preBlocked = dragPreBlocked;
+  const preManual  = dragPreManual;
+  const startSeatId = dragStartSeatId;
+  dragPreBlocked = null;
+  dragPreManual  = null;
+  dragStartSeatId = null;
+  if (Object.keys(changes).length === 0) return;
+
+  // The browser dispatches a click after mouseup. The gesture was already
+  // applied/committed here, so consume that click instead of toggling twice.
+  suppressBlockClickSeatId = startSeatId;
+  setTimeout(() => { suppressBlockClickSeatId = null; }, 350);
+
+  const committed = await commitViaTransaction((draft) => {
+    const manual = {...draft.manualBlockedSeats};
+    for (const [seatId, shouldBlock] of Object.entries(changes)) {
+      if (draft.seats[seatId] || draft.reservedSeats[seatId]) continue;
+      if (shouldBlock) manual[seatId] = true; else delete manual[seatId];
+    }
+    draft.manualBlockedSeats = manual;
+    return true;
+  }, undoEntry);
+  if (!committed) {
+    // Restore the optimistic local gesture if Firebase rejected/failed it.
+    state.blockedSeats       = preBlocked || {};
+    state.manualBlockedSeats = preManual || {};
+    discardUndoEntry(undoEntry);
+    if (undoStack.length === 0) document.getElementById('undoBtn').disabled = true;
   }
+  renderAll();
 });
 
 // Prevent text selection while dragging over seats
@@ -2730,20 +3282,8 @@ document.addEventListener('selectstart', e => {
   }
 
   // Tablet door buttons
-  document.getElementById('doorLeft2').addEventListener('click', () => {
-    state.selectedDoor = 'Left';
-    document.getElementById('doorLeft2').classList.add('active');
-    document.getElementById('doorRight2').classList.remove('active');
-    document.getElementById('doorLeft').classList.add('active');
-    document.getElementById('doorRight').classList.remove('active');
-  });
-  document.getElementById('doorRight2').addEventListener('click', () => {
-    state.selectedDoor = 'Right';
-    document.getElementById('doorRight2').classList.add('active');
-    document.getElementById('doorLeft2').classList.remove('active');
-    document.getElementById('doorRight').classList.add('active');
-    document.getElementById('doorLeft').classList.remove('active');
-  });
+  document.getElementById('doorLeft2').addEventListener('click',  () => selectDoor('Left'));
+  document.getElementById('doorRight2').addEventListener('click', () => selectDoor('Right'));
 
   // Tablet sectionPref shows/hides orchSubRow2
   document.getElementById('sectionPref2').addEventListener('change', function() {
@@ -2896,11 +3436,28 @@ function getFirstRowSeatIds(section, row) {
     }
     case 'BAL_A': {
       const r = BAL_ROWS.find(x => x.label === 'A');
-      if (r) for (let i = 1; i <= r.seats; i++) ids.push(`BC_A_${i}`);
+      // Existing BAL_A reservations covered the center only. Keep that
+      // behavior so the eight dedicated ADA side seats remain usable.
+      if (r) for (let i = 1; i <= r.center; i++) ids.push(`BC_A_${i}`);
       break;
     }
   }
   return ids;
+}
+
+// FIX: sets each checkbox to match what's CURRENTLY reserved in shared
+// state, rather than the hardcoded HTML defaults (all checked) or whatever
+// was left over in the DOM from an earlier open of this modal in this
+// browser. Used when reopening the modal to reconfigure an already-live
+// setup — NOT on the very-first-time-ever show, where the hardcoded
+// defaults are the intended suggestion for a still-empty database.
+function syncFirstRowCheckboxesFromState() {
+  document.querySelectorAll('.frm-checkbox').forEach(cb => {
+    const ids = getFirstRowSeatIds(cb.dataset.section, cb.dataset.row);
+    const isReserved = ids.length > 0 && ids.every(id => state.reservedSeats[id]);
+    cb.checked = isReserved;
+    cb.closest('.frm-check-row').classList.toggle('checked', isReserved);
+  });
 }
 
 // Wire checkbox labels to toggle .checked class
@@ -2911,30 +3468,45 @@ document.querySelectorAll('.frm-check-row').forEach(label => {
   cb.addEventListener('change', () => {
     label.classList.toggle('checked', cb.checked);
   });
-  // Clicking anywhere on the row toggles the checkbox
-  label.addEventListener('click', (e) => {
-    if (e.target !== cb) { cb.checked = !cb.checked; cb.dispatchEvent(new Event('change')); }
-  });
+  // Native <label> activation already toggles the checkbox anywhere on
+  // the row; no manual click inversion is needed (or wanted).
 });
 
-function applyFirstRowSelections() {
-  pushUndo();
-  const checkboxes = document.querySelectorAll('.frm-checkbox');
-  checkboxes.forEach(cb => {
-    const ids = getFirstRowSeatIds(cb.dataset.section, cb.dataset.row);
-    if (cb.checked) {
-      ids.forEach(id => { state.blockedSeats[id] = true; });
-    } else {
-      ids.forEach(id => { delete state.blockedSeats[id]; });
-    }
-  });
+async function applyFirstRowSelections() {
+  const undoEntry = pushUndo();
+  const checkboxes = [...document.querySelectorAll('.frm-checkbox')];
+  const committed = await commitViaTransaction((draft) => {
+    const reserved = {...draft.reservedSeats};
+    checkboxes.forEach(cb => {
+      const ids = getFirstRowSeatIds(cb.dataset.section, cb.dataset.row);
+      if (cb.checked) {
+        // Skip occupied seats. Manual blocks are left in manualBlockedSeats,
+        // so removing a reservation later cannot erase a staff-created block.
+        ids.forEach(id => { if (!draft.seats[id]) reserved[id] = true; });
+      } else {
+        ids.forEach(id => { delete reserved[id]; });
+      }
+    });
+    draft.reservedSeats = reserved;
+    return true;
+  }, undoEntry);
+  if (!committed) {
+    discardUndoEntry(undoEntry);
+    if (undoStack.length === 0) document.getElementById('undoBtn').disabled = true;
+  }
+  renderAll();
 }
 
-document.getElementById('frmBtnConfirm').addEventListener('click', async () => {
-  applyFirstRowSelections();
+document.getElementById('frmBtnCancel').addEventListener('click', () => {
+  // FIX: closes without calling applyFirstRowSelections() — this is the
+  // only path through the modal that doesn't write to shared state, for
+  // someone who just wants to see the chart without changing anything.
   document.getElementById('firstRowModal').classList.add('hidden');
-  try { await commitState(); } catch(e) { console.error('commitState error:', e); }
-  renderAll();
+});
+
+document.getElementById('frmBtnConfirm').addEventListener('click', async () => {
+  document.getElementById('firstRowModal').classList.add('hidden');
+  await applyFirstRowSelections();
 });
 
 document.getElementById('frmBtnNone').addEventListener('click', async () => {
@@ -2942,11 +3514,9 @@ document.getElementById('frmBtnNone').addEventListener('click', async () => {
     cb.checked = false;
     cb.closest('.frm-check-row').classList.remove('checked');
   });
-  // Clear any previously applied first-row blocks and persist the change
-  applyFirstRowSelections();
   document.getElementById('firstRowModal').classList.add('hidden');
-  try { await commitState(); } catch(e) { console.error('commitState error:', e); }
-  renderAll();
+  // Clear any previously applied first-row blocks and persist the change
+  await applyFirstRowSelections();
 });
 
 // Initial render while waiting for Firebase first response
