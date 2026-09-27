@@ -2195,7 +2195,7 @@ const ADA_SEATS = new Set([
   'DCL-E-1', 'DCL-E-2', 'DCL-E-3', 'DCL-E-4',
   'DCR-E-1', 'DCR-E-2', 'DCR-E-3', 'DCR-E-4',
   'DCC-E-19', 'DCC-E-18', 'DCC-E-17', 'DCC-E-16',
-  'DCC-E-2', 'DCC-E-1',
+  'DCC-E-4', 'DCC-E-3', 'DCC-E-2', 'DCC-E-1',
   'GL-E-1', 'GL-E-2', 'GL-E-3', 'GL-E-4',
   'GR-E-1', 'GR-E-2', 'GR-E-3', 'GR-E-4',
   'GC-E-21', 'GC-E-20', 'GC-E-19', 'GC-E-18',
@@ -2245,6 +2245,8 @@ const ADA_SEAT_LABELS = {
   'DCC-E-18': 'Companion Seat',
   'DCC-E-17': 'Wheelchair Space',
   'DCC-E-16': 'Companion Seat',
+  'DCC-E-4': 'Wheelchair Space',
+  'DCC-E-3': 'Companion Seat',
   'DCC-E-2': 'Wheelchair Space',
   'DCC-E-1': 'Companion Seat',
   'GL-E-1': 'Wheelchair Space',
@@ -2261,6 +2263,8 @@ const ADA_SEAT_LABELS = {
   'GC-E-18': 'Companion Seat',
   'GC-E-4': 'Wheelchair Space',
   'GC-E-3': 'Companion Seat',
+  'GC-E-2': 'Wheelchair Space',
+  'GC-E-1': 'Companion Seat',
 };
 const ADA_DEFAULT_LABEL = 'Wheelchair Accessible';
 function isAdaSeat(seatId) { return ADA_SEATS.has(formatSeatId(seatId)); }
