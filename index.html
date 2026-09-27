@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- Reynolds Hall Seating Allocator v25 — created 2026-09-24 -->
+<!-- Reynolds Hall Seating Allocator v25 — uodated 2026-09-24 -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -1365,9 +1365,10 @@ const TOTAL_BAL       = TOT.BL + TOT.BC + TOT.BR;
 const TOTAL_CAPACITY  = TOTAL_ORCH_PART + TOTAL_DC + TOTAL_GAL + TOTAL_BAL;
 
 const GROUP_COLORS = [
-  '#c9a227','#7b3fa0','#d33d22','#8b4520','#2a6b40','#22d3af','#1a4a8b','#5a6b20',
-  '#8b6020','#b5451a','#6b3a1a','#d36922','#5a1a6b','#1a6b40','#22cad3','#6b1a45',
-  '#1a8b3a','#8b1a6b','#2248d3','#3a2a6b',
+  '#dd322c','#2cddda','#dd5e2c','#2ca5dd','#dd882c','#2c6ddd','#cedd2c','#2c32dd',
+  '#96dd2c','#5e2cdd','#5edd2c','#cb2cdd','#2cdd6a','#dd2cb9','#2cdda2','#dd2c85',
+  '#7e2825','#257e7d','#7e3e25','#25627e','#7e5325','#25467e','#777e25','#25287e',
+  '#5b7e25','#3e257e','#3e7e25','#76257e','#257e44','#7e256d','#257e61','#7e2552',
 ];
 const SEC_NAMES = {
   OL:'Orch Left', OC:'Orch Center', OR:'Orch Right',
@@ -2115,20 +2116,23 @@ function getSeatColor(seatId) {
 
 // ── SEAT DISPLAY NUMBERING ────────────────────────────────────────────────────
 // Internal seat IDs remain stable for assignments and Firebase. Only the
-// displayed seat number changes here to match the orientation of the map.
-// The right Dress Circle and Gallery banks and Balcony Center must be reversed
-// along with the banks already listed below; the Balcony side banks already
-// use their own reversed numbering and are left unchanged.
+// displayed number changes: each Orchestra, Dress Circle, and Gallery side
+// bank starts at seat 1 next to its center aisle. Each center bank starts at
+// seat 1 on house Left (the viewer's right) and increases toward house Right.
+// The four-seat Balcony side banks keep their aisle numbering.
 function getSeatRowCount(seatId) {
   const parts = seatId.split('_');
   const sec   = parts[0];          // e.g. OL, OR, DCL, DCR, GL, GR, OC, BC …
   const row   = parts[1];          // row label e.g. BB, A, B …
   switch(sec) {
     case 'OL': { const r = ORCH_ROWS.find(x => x.label === row);   return r ? r.left   : 0; }
+    case 'OC': { const r = ORCH_ROWS.find(x => x.label === row);   return r ? r.center : 0; }
     case 'OR': { const r = ORCH_ROWS.find(x => x.label === row);   return r ? r.right  : 0; }
     case 'DCL':{ const r = DC_ROWS.find(x  => x.label === row);    return r ? r.left   : 0; }
+    case 'DCC':{ const r = DC_ROWS.find(x  => x.label === row);    return r ? r.center : 0; }
     case 'DCR':{ const r = DC_ROWS.find(x  => x.label === row);    return r ? r.right  : 0; }
     case 'GL': { const r = GAL_ROWS.find(x => x.label === row);    return r ? r.left   : 0; }
+    case 'GC': { const r = GAL_ROWS.find(x => x.label === row);    return r ? r.center : 0; }
     case 'GR': { const r = GAL_ROWS.find(x => x.label === row);    return r ? r.right  : 0; }
     case 'BL': { const r = BAL_ROWS.find(x => x.label === row);    return r ? (r.left ?? 0) : 0; }
     case 'BC': { const r = BAL_ROWS.find(x => x.label === row);    return r ? (r.center ?? r.seats) : 0; }
@@ -2142,11 +2146,11 @@ function displayNum(seatId) {
   const idx   = parseInt(parts[2], 10);
   // Reverse the displayed numbering for these sections only. This does not
   // renumber the underlying seat IDs, occupied seats, or ADA side-seat labels.
-  if (['OL', 'OR', 'DCL', 'DCR', 'GL', 'GR', 'BL', 'BC', 'BR'].includes(sec)) {
+  if (['OL', 'OC', 'OR', 'DCL', 'DCC', 'DCR', 'GL', 'GC', 'GR', 'BL', 'BC', 'BR'].includes(sec)) {
     const total = getSeatRowCount(seatId);
     return total - idx + 1;
   }
-  // Orchestra and upper-level center sections retain their existing numbering.
+  // Parterre retains its existing numbering.
   return idx;
 }
 function formatSeatId(seatId) {
@@ -2160,9 +2164,9 @@ function formatSeatId(seatId) {
 // official seating plan before relying on these designations operationally.
 //
 // IMPORTANT: keys here use the DISPLAYED seat label — the exact text you see
-// in the on-screen tooltip, e.g. "OL-B-1" — NOT the internal seat ID (which
-// for OL/OR/DCL/GL sections is deliberately reversed under the hood so the
-// aisle seat always shows as seat 1). Just hover/tap the seat you want, copy
+// in the on-screen tooltip, e.g. "OL-B-1" — NOT the internal seat ID. Displayed
+// numbering is reversed for some sections to match the theater orientation.
+// Just hover/tap the seat you want, copy
 // what the tooltip shows after "Seat: ", and use that string as the key.
 // This means you can never accidentally designate the wrong physical seat.
 //
@@ -2191,12 +2195,13 @@ const ADA_SEATS = new Set([
   'DCL-E-1', 'DCL-E-2', 'DCL-E-3', 'DCL-E-4',
   // Right-bank displayed numbers changed; keep ADA on the same internal E-row seats.
   'DCR-E-9', 'DCR-E-8', 'DCR-E-7', 'DCR-E-6',
-  'DCC-E-1', 'DCC-E-2', 'DCC-E-3', 'DCC-E-4',
-  'DCC-E-18', 'DCC-E-19',
+  // Preserve the same physical ADA seats after reversing the center-bank labels.
+  'DCC-E-19', 'DCC-E-18', 'DCC-E-17', 'DCC-E-16',
+  'DCC-E-2', 'DCC-E-1',
   'GL-E-1', 'GL-E-2', 'GL-E-3', 'GL-E-4',
   'GR-E-9', 'GR-E-8', 'GR-E-7', 'GR-E-6',
-  'GC-E-1', 'GC-E-2', 'GC-E-3', 'GC-E-4',
-  'GC-E-18', 'GC-E-19', 'GC-E-20', 'GC-E-21',
+  'GC-E-21', 'GC-E-20', 'GC-E-19', 'GC-E-18',
+  'GC-E-4', 'GC-E-3', 'GC-E-2', 'GC-E-1',
 ]);
 
 const ADA_SEAT_LABELS = {
@@ -2238,12 +2243,12 @@ const ADA_SEAT_LABELS = {
   'DCR-E-8': 'Companion Seat',
   'DCR-E-7': 'Wheelchair Space',
   'DCR-E-6': 'Companion Seat',
-  'DCC-E-1': 'Wheelchair Space',
-  'DCC-E-2': 'Companion Seat',
-  'DCC-E-3': 'Wheelchair Space',
-  'DCC-E-4': 'Companion Seat',
-  'DCC-E-18': 'Wheelchair Space',
-  'DCC-E-19': 'Companion Seat',
+  'DCC-E-19': 'Wheelchair Space',
+  'DCC-E-18': 'Companion Seat',
+  'DCC-E-17': 'Wheelchair Space',
+  'DCC-E-16': 'Companion Seat',
+  'DCC-E-2': 'Wheelchair Space',
+  'DCC-E-1': 'Companion Seat',
   'GL-E-1': 'Wheelchair Space',
   'GL-E-2': 'Companion Seat',
   'GL-E-3': 'Wheelchair Space',
@@ -2252,12 +2257,12 @@ const ADA_SEAT_LABELS = {
   'GR-E-8': 'Companion Seat',
   'GR-E-7': 'Wheelchair Space',
   'GR-E-6': 'Companion Seat',
-  'GC-E-1': 'Wheelchair Space',
-  'GC-E-2': 'Companion Seat',
-  'GC-E-3': 'Wheelchair Space',
-  'GC-E-4': 'Companion Seat',
-  'GC-E-18': 'Wheelchair Space',
-  'GC-E-19': 'Companion Seat',
+  'GC-E-21': 'Wheelchair Space',
+  'GC-E-20': 'Companion Seat',
+  'GC-E-19': 'Wheelchair Space',
+  'GC-E-18': 'Companion Seat',
+  'GC-E-4': 'Wheelchair Space',
+  'GC-E-3': 'Companion Seat',
 };
 const ADA_DEFAULT_LABEL = 'Wheelchair Accessible';
 function isAdaSeat(seatId) { return ADA_SEATS.has(formatSeatId(seatId)); }
