@@ -1,10 +1,10 @@
 <!DOCTYPE html>
-<!-- Reynolds Hall Seating Allocator v25 — created 2026-09-24 -->
+<!-- Reynolds Hall Seating Allocator v38 — normalized snapshots, transactional reset, safe draft allocation -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Reynolds Hall — Seating Allocator</title>
+<title>Reynolds Hall — Seating Allocator (Date-based Schools)</title>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Cinzel:wght@400;600&family=Raleway:wght@300;400;500&display=swap');
 
@@ -53,6 +53,61 @@
       repeating-linear-gradient(0deg, transparent, transparent 60px, rgba(201,162,39,0.02) 60px, rgba(201,162,39,0.02) 61px),
       repeating-linear-gradient(90deg, transparent, transparent 60px, rgba(201,162,39,0.02) 60px, rgba(201,162,39,0.02) 61px);
   }
+
+  /* ── PERFORMANCE / SCHOOL REGISTRATION ───────────────────────────────── */
+  .performance-tools { flex-shrink:0; background:var(--bg-mid); border-bottom:1px solid var(--border); padding:9px 18px; display:flex; flex-wrap:wrap; gap:10px; align-items:end; }
+  .performance-tools label { font-size:10px; color:var(--text-secondary); letter-spacing:0.5px; display:flex; flex-direction:column; gap:4px; }
+  .performance-tools input, .performance-tools select { min-height:38px; background:var(--bg-surface); border:1px solid var(--border); color:var(--text-primary); padding:7px; border-radius:4px; font:13px 'Raleway',sans-serif; }
+  .performance-tools button, .school-queue button { cursor:pointer; min-height:38px; background:var(--purple-mid); border:1px solid var(--gold-dim); color:var(--gold-light); border-radius:4px; padding:7px 12px; }
+  .performance-tools button:disabled, .school-queue button:disabled { opacity:.5; cursor:not-allowed; }
+  .performance-load-status { margin: 6px 16px; color: var(--gold-light); }
+  .performance-summary { font-size:11px; color:var(--gold-light); flex:1; min-width:170px; }
+  .school-queue { background:var(--bg-mid); border-bottom:1px solid var(--border); padding:10px 18px; flex-shrink:0; max-height:180px; overflow-y:auto; }
+  .school-queue-head { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:8px; margin-bottom:8px; }
+  .school-queue-items { display:flex; flex-wrap:wrap; gap:8px; }
+  .school-entry { border:1px solid var(--border); border-radius:5px; background:var(--bg-surface); padding:8px 10px; display:flex; align-items:center; gap:9px; flex-wrap:wrap; font-size:12px; }
+  .school-entry small { color:var(--text-secondary); }
+  .school-entry.seated { opacity:.65; }
+  .school-queue .school-empty { color:var(--text-secondary); font-size:12px; font-style:italic; }
+  @media(max-width:600px){ .performance-tools{padding:7px;gap:6px;} .school-queue{padding:8px;max-height:130px;} }
+
+
+/* v33 — touch-friendly school arrival, queue search, seating receipt */
+.school-queue-controls { display:flex; flex-wrap:wrap; align-items:center; gap:9px; margin:9px 0; }
+.school-queue-controls input, .school-queue-controls select { min-height:44px; background:var(--bg-surface); border:1px solid var(--gold-dim); border-radius:5px; padding:9px 12px; color:var(--text-primary); font:14px 'Raleway',sans-serif; }
+.school-queue-controls .school-dropdown-label { font-size:12px; color:var(--text-secondary); }
+.school-queue-controls #schoolSelect { flex:2 1 240px; min-width:0; max-width:100%; }
+/* Seated schools appear muted in the native school selector. Fully arrived
+   groups are disabled; preassigned groups remain actionable for arrival. */
+#schoolSelect option:disabled { color:#999 !important; background:#333 !important; }
+#schoolSelect option[data-preassigned="true"] { color:#999; }
+.school-dropdown-hint { font-size:11px; color:var(--text-secondary); }
+.school-queue-controls select { flex:1 1 155px; }
+.school-entry { flex:1 1 270px; }
+.school-entry > span { flex:1 1 170px; }
+.school-entry button { min-height:44px; }
+.school-entry.seated { opacity:1; }
+.school-entry.seated small { color:var(--text-secondary); }
+.school-queue { max-height:240px; }
+.v33-overlay[hidden] { display:none !important; }
+.v33-overlay { position:fixed; inset:0; z-index:12000; background:rgba(4,3,10,.83); display:flex; align-items:center; justify-content:center; padding:12px; }
+.v33-modal { background:var(--bg-card); border:1px solid var(--gold-dim); box-shadow:0 16px 65px #000c; border-radius:12px; padding:22px; width:min(530px,100%); max-height:92dvh; overflow:auto; color:var(--text-primary); }
+.v33-modal h2 { font:600 19px 'Cinzel',serif; color:var(--gold-light); margin-bottom:12px; }
+.v33-modal p { margin:7px 0 13px; font-size:13px; color:var(--text-secondary); line-height:1.55; }
+.v33-modal label.v33-field { display:block; font-size:12px; margin:16px 0 8px; color:var(--text-secondary); }
+.v33-modal input[type=number] { width:100%; font-size:22px; border:1px solid var(--gold-dim); background:var(--bg-surface); color:var(--text-primary); border-radius:7px; padding:12px; min-height:52px; }
+.v33-doors { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+.v33-doors button { border:2px solid var(--border); background:var(--bg-surface); color:var(--text-primary); border-radius:8px; font:600 17px 'Raleway',sans-serif; min-height:64px; cursor:pointer; }
+.v33-doors button[aria-pressed=true] { border-color:var(--gold-light); background:var(--purple-mid); color:white; }
+.v33-actions { display:flex; flex-wrap:wrap; justify-content:flex-end; gap:10px; margin-top:22px; }
+.v33-actions button { min-height:50px; border:1px solid var(--gold-dim); border-radius:7px; cursor:pointer; padding:10px 16px; background:var(--bg-surface); color:var(--text-primary); font-weight:600; }
+.v33-actions .v33-primary { background:var(--purple-vivid); color:white; }
+.v33-actions .v33-primary:disabled { opacity:.45; cursor:not-allowed; }
+.v33-error { color:#ff9090 !important; min-height:18px; margin:7px 0 0 !important; }
+.v33-receipt { background:var(--bg-surface); border:1px solid var(--border); border-radius:8px; padding:12px; line-height:1.7; font-size:14px; overflow-wrap:anywhere; }
+.v33-receipt strong { color:var(--gold-light); }
+.seat.v33-spotlight { outline:2px solid #fff; outline-offset:2px; box-shadow:0 0 12px 4px #e8c44a !important; z-index:15; transform:scale(1.3); }
+@media(max-width:600px) { .school-queue{max-height:210px;} .v33-modal{padding:16px;} .v33-actions button{flex:1;} }
 
   /* ── SYNC BANNER ────────────────────────────────────────────────────────── */
   #syncBanner {
@@ -797,6 +852,16 @@
     #panelContainer.open { max-height: 55vh; }
     .tab-panel { max-height: 55vh; }
   }
+
+/* v35: school dropdown controls a single compact action panel; no school-card list. */
+.school-selected-actions { display:flex; align-items:center; gap:12px; flex-wrap:wrap; }
+.school-selected-summary { display:flex; flex-direction:column; gap:3px; flex:1 1 250px; font-size:13px; }
+.school-selected-summary strong { color:var(--gold-light); }
+.school-selected-summary span { font-size:11px; color:var(--text-secondary); }
+.school-selected-buttons { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+.school-selected-buttons button { min-height:44px; }
+.school-selected-actions .school-empty { color:var(--text-secondary); font-size:12px; }
+
 </style>
 </head>
 <body>
@@ -886,6 +951,67 @@
   </div>
 </header>
 
+<!-- Date and show-time identity (the legacy option retains all pre-upgrade seating data). -->
+<div class="performance-tools" id="performanceTools">
+  <label>Performance date <input type="date" id="performanceDate" aria-label="Performance date"></label>
+  <label>Show time <input type="time" id="performanceTime" value="10:00" aria-label="Performance time"></label>
+  <button type="button" id="loadPerformanceBtn">Load Performance</button>
+  <button type="button" id="loadLegacyBtn" title="Existing seatingState data remains unchanged">Original Session</button>
+  <label>Import schools (CSV; door optional; US dates supported) <input type="file" id="schoolsCsv" accept=".csv,text/csv" aria-label="Import school registrations CSV"></label>
+  <div class="performance-summary" id="performanceSummary">Original Session — existing data</div>
+</div>
+<div class="performance-load-status" id="seatingLoadStatus" role="status">Loading seating…</div>
+<div class="school-queue" id="schoolQueue" aria-live="polite" inert>
+  <div class="school-queue-head"><strong>SCHOOL REGISTRATIONS — ENTRANCE CONFIRMED AT ARRIVAL</strong><span id="schoolCount">No registrations</span></div>
+  <div class="school-queue-controls">
+    <label for="schoolSelect" class="school-dropdown-label">Select school / registration ID</label>
+    <select id="schoolSelect" aria-label="Select school by name or registration ID"><option value="">Choose a school…</option></select>
+    <select id="schoolStatusFilter" aria-label="Filter school registrations by status">
+      <option value="all">All schools</option><option value="expected">Not yet seated</option><option value="preassigned">Preassigned · awaiting arrival</option><option value="arrived">Arrived · seated</option>
+    </select>
+    <span id="schoolFilterCount" aria-live="polite"></span>
+    <span class="school-dropdown-hint">Gray = seats assigned · Arrived schools cannot be selected again · Preassigned schools can confirm arrival</span>
+  </div>
+  <div class="school-selected-actions" id="schoolQueueItems" aria-live="polite"><span class="school-empty">Choose a performance date, then select a school.</span></div>
+</div>
+
+
+<!-- v33: dialog is outside scrolling registration list and preserves existing seating workflow. -->
+<div class="v33-overlay" id="schoolArrivalOverlay" hidden>
+  <div class="v33-modal" role="dialog" aria-modal="true" aria-labelledby="schoolArrivalTitle">
+    <h2 id="schoolArrivalTitle">Confirm school arrival</h2>
+    <p id="schoolArrivalDescription"></p>
+    <form id="schoolArrivalForm">
+      <div id="schoolAttendanceArea">
+        <label class="v33-field" for="schoolActualCount">Actual attendance / seats required</label>
+        <input id="schoolActualCount" type="number" min="1" max="250" step="1" inputmode="numeric" required>
+      </div>
+      <div id="schoolDoorArea">
+        <label class="v33-field">Entry door (WEST = House Right · EAST = House Left)</label>
+        <div class="v33-doors" role="group" aria-label="Entry door">
+          <button type="button" id="schoolWestBtn" data-v33door="Right" aria-pressed="false" title="WEST entrance — House Right">⬅ WEST</button>
+          <button type="button" id="schoolEastBtn" data-v33door="Left" aria-pressed="false" title="EAST entrance — House Left">EAST ➡</button>
+        </div>
+      </div>
+      <p id="schoolArrivalError" class="v33-error" role="alert"></p>
+      <div class="v33-actions">
+        <button type="button" id="schoolArrivalCancel">Cancel</button>
+        <button type="submit" class="v33-primary" id="schoolArrivalSubmit">ASSIGN SEATS</button>
+      </div>
+    </form>
+  </div>
+</div>
+<div class="v33-overlay" id="schoolReceiptOverlay" hidden>
+  <div class="v33-modal" role="dialog" aria-modal="true" aria-labelledby="schoolReceiptTitle">
+    <h2 id="schoolReceiptTitle">Seats assigned successfully</h2>
+    <div id="schoolReceiptDetails" class="v33-receipt"></div>
+    <div class="v33-actions">
+      <button type="button" id="schoolReceiptClose">Close</button>
+      <button type="button" id="schoolLocateSeats" class="v33-primary">LOCATE SEATS ON MAP</button>
+    </div>
+  </div>
+</div>
+
 <div class="stats-bar">
   <div class="stat"><span class="stat-label">Total Capacity</span><span class="stat-value" id="statTotal">—</span></div>
   <div class="stat"><span class="stat-label">Occupied</span><span class="stat-value" id="statOccupied">0</span></div>
@@ -899,7 +1025,7 @@
 </div>
 
 
-<div class="app-shell">
+<div class="app-shell" inert>
 
   <!-- ══ DESKTOP SIDEBAR ══════════════════════════════════════════════════ -->
   <div class="sidebar">
@@ -918,8 +1044,8 @@
         <div class="form-group">
           <label class="form-label">Entry Door</label>
           <div class="door-select">
-            <button class="door-btn active" id="doorLeft">⬅ EAST</button>
-            <button class="door-btn"        id="doorRight">WEST ➡</button>
+            <button class="door-btn" id="doorRight" title="WEST entrance — House Right">⬅ WEST</button>
+            <button class="door-btn active" id="doorLeft" title="EAST entrance — House Left">EAST ➡</button>
           </div>
         </div>
         <div class="form-group">
@@ -1124,7 +1250,7 @@
 </div>
 
 <!-- ══ TABLET PANEL CONTAINER ════════════════════════════════════════════════ -->
-<div id="panelContainer">
+<div id="panelContainer" inert>
 
   <!-- ADD GROUP panel -->
   <div class="tab-panel" id="panel-add">
@@ -1139,8 +1265,8 @@
     <div class="form-group">
       <label class="form-label">Entry Door</label>
       <div class="door-select">
-        <button class="door-btn active" id="doorLeft2">⬅ EAST</button>
-        <button class="door-btn"        id="doorRight2">WEST ➡</button>
+        <button class="door-btn" id="doorRight2" title="WEST entrance — House Right">⬅ WEST</button>
+        <button class="door-btn active" id="doorLeft2" title="EAST entrance — House Left">EAST ➡</button>
       </div>
     </div>
     <div class="form-group">
@@ -1241,7 +1367,7 @@
 // ── FIREBASE IMPORTS ──────────────────────────────────────────────────────────
 import { initializeApp }                          from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
 import { getDatabase, ref, set, onValue,
-         onDisconnect, runTransaction }             from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js';
+         onDisconnect, runTransaction, get, update }             from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js';
 
 // ── FIREBASE CONFIG ───────────────────────────────────────────────────────────
 const firebaseConfig = {
@@ -1258,7 +1384,24 @@ const app      = initializeApp(firebaseConfig);
 const database = getDatabase(app);
 
 // ── DATABASE REFS ─────────────────────────────────────────────────────────────
-const stateRef = ref(database, 'seatingState');   // the shared seating state
+// Keep the original session accessible; do not silently migrate or erase it.
+let stateRef = ref(database, 'seatingState');
+let currentPerformanceId = null;
+let unsubscribeSeating = null;
+let unsubscribeSchools = null;
+let pendingMutations = 0;
+let seatingReady = false;
+let registrations = {};
+let schoolsLoaded = false;
+
+function performanceKey(date, time) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || !/^\d{2}:\d{2}$/.test(time)) throw new Error('Valid date and time required.');
+  const dt = new Date(`${date}T${time}:00`);
+  if (Number.isNaN(dt.getTime()) || dt.getFullYear() !== +date.slice(0,4) || dt.getMonth()+1 !== +date.slice(5,7) || dt.getDate() !== +date.slice(8,10)) throw new Error('Invalid performance date.');
+  return `${date}_${time.replace(':','')}`;
+}
+function schoolRef(id) { return ref(database, `performances/${id}/schools`); }
+
 
 // ── SESSION ID ────────────────────────────────────────────────────────────────
 const SESSION_ID = Math.random().toString(36).substring(2, 8).toUpperCase();
@@ -1410,6 +1553,45 @@ function inferManualBlocked(blocked = {}, reserved = {}) {
 }
 function unionBlocked(manual = {}, reserved = {}) {
   return Object.assign({}, manual || {}, reserved || {});
+}
+
+// Firebase stores arrays as index-keyed objects and may return an object when
+// indexes are sparse (or omit the key entirely when the array is empty).
+// toArray() always yields a fresh dense array and drops null holes.
+function toArray(v) {
+  return Array.isArray(v) ? v.filter(Boolean) : Object.values(v || {}).filter(Boolean);
+}
+
+// Single place that turns a raw Firebase seatingState snapshot (or null) into
+// the shape the app expects. Used by the listener, transactions, and commits.
+function normalizeSeating(data) {
+  const d = data || {};
+  const reserved = d.reservedSeats ?? {};
+  const manual = d.manualBlockedSeats ?? inferManualBlocked(d.blockedSeats ?? {}, reserved);
+  return {
+    groups: toArray(d.groups),
+    seats: d.seats ?? {},
+    reservedSeats: reserved,
+    manualBlockedSeats: manual,
+    blockedSeats: unionBlocked(manual, reserved),
+    nextGroupId: d.nextGroupId ?? 1,
+  };
+}
+
+// ── #3: run an allocator against a transaction draft ─────────────────────────
+// The allocators read the global `state`. Inside a transaction they must see
+// the server-authoritative draft instead. This swaps every seating field in
+// for the duration of fn() and ALWAYS restores them, even if fn() throws.
+const SEATING_KEYS = ['groups','seats','blockedSeats','manualBlockedSeats','reservedSeats','nextGroupId'];
+function withDraftState(draft, fn) {
+  const prior = {};
+  for (const k of SEATING_KEYS) prior[k] = state[k];
+  try {
+    for (const k of SEATING_KEYS) if (k in draft) state[k] = draft[k];
+    return fn();
+  } finally {
+    for (const k of SEATING_KEYS) state[k] = prior[k];
+  }
 }
 
 // Block mode flag — local only, not synced (each user toggles independently)
@@ -1753,74 +1935,62 @@ function allocateGroup(group) {
 // authoritative snapshot is idempotent and safer than guessing which callback
 // is an "echo".
 
-async function commitState(retries = 3, undoEntry = null) {
-  const payload = {
-    groups:        state.groups,
-    seats:         state.seats,
-    blockedSeats:  state.blockedSeats,
-    manualBlockedSeats: state.manualBlockedSeats,
-    reservedSeats: state.reservedSeats,
-    nextGroupId:   state.nextGroupId,
-  };
-  for (let attempt = 1; attempt <= retries; attempt++) {
-    try {
-      await set(stateRef, payload);
-      captureBaseline(undoEntry);
-      return payload;
-    } catch(err) {
-      console.error(`Firebase write error (attempt ${attempt}/${retries}):`, err);
-      if (attempt === retries) {
-        showError('Could not save — check your connection.');
-        return null;
-      }
-      await new Promise(res => setTimeout(res, 500 * attempt));
-    }
-  }
-}
-
 // Transactional mutations are built from Firebase's current server value so
 // concurrent users cannot overwrite one another or mint duplicate group IDs.
-async function commitViaTransaction(mutator, undoEntry = null) {
+// True when the last commitViaTransaction() returned null because of a real
+// failure (not ready / network / permissions) rather than a mutator abort.
+let lastCommitFailed = false;
+
+async function commitViaTransaction(mutator, undoEntry = null, includeSchools = false) {
+  lastCommitFailed = false;
+  if (!seatingReady) { lastCommitFailed = true; return null; }
+  pendingMutations++;
+  const targetRef = includeSchools ? ref(database, `performances/${currentPerformanceId}`) : stateRef;
+  try {
   let committedDraft = null;
   let txResult;
   try {
-    txResult = await runTransaction(stateRef, (current) => {
-      const currentBlocked  = current?.blockedSeats ?? {};
-      const currentReserved = current?.reservedSeats ?? {};
-      const currentManual   = current?.manualBlockedSeats ?? inferManualBlocked(currentBlocked, currentReserved);
+    txResult = await runTransaction(targetRef, (current) => {
+      committedDraft = null;
+      // A cold parent cache can start with null. Let Firebase compare it with
+      // the server before deciding that the performance is absent.
+      if (includeSchools && current === null) return null;
+      const norm = normalizeSeating(includeSchools ? current.seatingState : current);
+      const schools = includeSchools ? {...current.schools} : null;
 
       if (undoEntry) {
-        undoEntry.groups             = JSON.parse(JSON.stringify(current?.groups ?? []));
-        undoEntry.seats              = Object.assign({}, current?.seats ?? {});
-        undoEntry.blockedSeats       = Object.assign({}, currentBlocked);
-        undoEntry.manualBlockedSeats = Object.assign({}, currentManual);
-        undoEntry.reservedSeats      = Object.assign({}, currentReserved);
-        undoEntry.nextGroupId        = current?.nextGroupId ?? 1;
+        undoEntry.groups             = JSON.parse(JSON.stringify(norm.groups));
+        undoEntry.seats              = Object.assign({}, norm.seats);
+        undoEntry.blockedSeats       = Object.assign({}, norm.blockedSeats);
+        undoEntry.manualBlockedSeats = Object.assign({}, norm.manualBlockedSeats);
+        undoEntry.reservedSeats      = Object.assign({}, norm.reservedSeats);
+        undoEntry.nextGroupId        = norm.nextGroupId;
       }
 
       const draft = {
-        groups:             current?.groups ?? [],
-        seats:              current?.seats ?? {},
-        blockedSeats:       currentBlocked,
-        manualBlockedSeats: currentManual,
-        reservedSeats:      currentReserved,
-        nextGroupId:        current?.nextGroupId ?? 1,
+        groups:             norm.groups,
+        seats:              norm.seats,
+        blockedSeats:       norm.blockedSeats,
+        manualBlockedSeats: norm.manualBlockedSeats,
+        reservedSeats:      norm.reservedSeats,
+        nextGroupId:        norm.nextGroupId,
       };
-      const proceed = mutator(draft);
+      const proceed = mutator(draft, schools);
       if (!proceed) return undefined;
 
       // Keep the legacy blockedSeats field as the exact union so existing
       // availability, rendering, reports, and older clients remain compatible.
       draft.blockedSeats = unionBlocked(draft.manualBlockedSeats, draft.reservedSeats);
       committedDraft = draft;
-      return draft;
-    });
+      return includeSchools ? {...current, seatingState: draft, schools} : draft;
+    }, {applyLocally: !includeSchools});
   } catch (err) {
+    lastCommitFailed = true;
     console.error('Transaction error:', err);
     showError('Could not save — check your connection.');
     return null;
   }
-  if (!txResult.committed) return null;
+  if (!txResult.committed || !committedDraft) return null;
 
   state.groups             = committedDraft.groups;
   state.seats              = committedDraft.seats;
@@ -1830,41 +2000,652 @@ async function commitViaTransaction(mutator, undoEntry = null) {
   state.nextGroupId        = committedDraft.nextGroupId;
   captureBaseline(undoEntry);
   return committedDraft;
+  } finally { pendingMutations--; }
 }
 
-// Subscribe: fires immediately with current data, then on every local/remote change.
-let firstLoad = true;
-onValue(stateRef, (snapshot) => {
-  const data = snapshot.val();
-  if (!data) {
-    document.getElementById('firstRowModal').classList.remove('hidden');
-    state.groups             = [];
-    state.seats              = {};
-    state.blockedSeats       = {};
-    state.manualBlockedSeats = {};
-    state.reservedSeats      = {};
-    state.nextGroupId        = 1;
-    renderAll();
-  } else {
-    state.groups        = data.groups ?? [];
-    state.seats         = data.seats ?? {};
-    state.reservedSeats = data.reservedSeats ?? {};
-    state.manualBlockedSeats = data.manualBlockedSeats ?? inferManualBlocked(data.blockedSeats ?? {}, state.reservedSeats);
-    state.blockedSeats  = unionBlocked(state.manualBlockedSeats, state.reservedSeats);
-    state.nextGroupId   = data.nextGroupId ?? 1;
-    if (!firstLoad) flashSyncBanner();
-    renderAll();
-  }
+// Load an authoritative seating snapshot after an arrival transaction.
+// Rendering alone is insufficient: renderAll() only reads the in-memory state.
+function applyCommittedPerformanceSeating(data) {
+  Object.assign(state, normalizeSeating(data));
+  renderAll();
+  renderSchoolQueue();
+}
 
-  if (firstLoad) {
-    firstLoad = false;
-    const overlay = document.getElementById('theaterLoading');
-    if (overlay) {
-      overlay.classList.add('hidden');
-      setTimeout(() => overlay.remove(), 450);
+// Confirm both the group's allocation and its seat claims in one snapshot.
+function inspectSchoolAssignment(performance, registrationId) {
+  const seatState = performance?.seatingState || {};
+  const groups = toArray(seatState.groups);
+  const group = groups.find(g => g?.registrationId === registrationId);
+  if (!group || !Array.isArray(group.allocation?.seats)) return null;
+  const allocated = group.allocation.seats;
+  if (allocated.length !== group.size || allocated.some(sid => seatState.seats?.[sid]?.groupId !== group.id)) return null;
+  return group;
+}
+
+// Subscribe to one performance at a time. Detach old listeners before switching.
+function setSeatingAvailability(ready, message = '') {
+  seatingReady = ready;
+  for (const panel of document.querySelectorAll('.app-shell, #panelContainer, #schoolQueue')) {
+    panel.inert = !ready;
+  }
+  const status = document.getElementById('seatingLoadStatus');
+  status.textContent = message;
+  status.hidden = !message;
+}
+
+function subscribeToSeating() {
+  if (unsubscribeSeating) unsubscribeSeating();
+  const targetRef = stateRef;
+  let initialSnapshot = true;
+  unsubscribeSeating = onValue(targetRef, (snapshot) => {
+    if (targetRef !== stateRef) return;
+    const data = snapshot.val();
+    Object.assign(state, normalizeSeating(data));
+    if (initialSnapshot || !data) {
+      const firstRowModal = document.getElementById('firstRowModal');
+      if (!data) {
+        firstRowModal.querySelectorAll('.frm-checkbox').forEach(cb => {
+          cb.checked = cb.defaultChecked;
+          cb.closest('.frm-check-row').classList.toggle('checked', cb.checked);
+        });
+      }
+      firstRowModal.classList.toggle('hidden', Boolean(data));
+    }
+    if (!initialSnapshot && data) flashSyncBanner();
+    initialSnapshot = false;
+    renderAll();
+    renderSchoolQueue();
+    document.getElementById('theaterLoading')?.remove();
+    setSeatingAvailability(true);
+  }, err => {
+    if (targetRef !== stateRef) return;
+    document.getElementById('theaterLoading')?.remove();
+    document.getElementById('firstRowModal').classList.add('hidden');
+    setSeatingAvailability(false, `Could not load seating: ${err.message}. Use Load Performance or Original Session to retry.`);
+  });
+}
+
+function subscribeToSchools() {
+  if (unsubscribeSchools) { unsubscribeSchools(); unsubscribeSchools = null; }
+  registrations = {};
+  schoolsLoaded = false;
+  renderSchoolQueue();
+  if (!currentPerformanceId) { schoolsLoaded = true; return; }
+  unsubscribeSchools = onValue(schoolRef(currentPerformanceId), snap => {
+    registrations = snap.val() || {};
+    schoolsLoaded = true;
+    if (seatingReady) {
+      renderGroupList();
+      window._syncTabletPanels?.();
+    }
+    renderSchoolQueue();
+  }, err => showError(`Could not load schools: ${err.message}`));
+}
+
+function switchPerformance(id, label) {
+  if (pendingMutations || isDraggingBlock) { alert('A seating edit is in progress. Try again after it finishes.'); return; }
+  // Force exit from editing modes before loading a different show's seats.
+  if (typeof moveModeActive !== 'undefined' && moveModeActive) {
+    alert('Exit Move Mode before changing performances.'); return;
+  }
+  if (typeof v33CloseArrival==='function' && !v33ArrivalOverlay.hidden) v33CloseArrival();
+  v33ReceiptOverlay.hidden=true;
+  document.getElementById('schoolSelect').replaceChildren(new Option('Choose a school…', ''));
+  document.getElementById('schoolStatusFilter').value='all';
+  setSeatingAvailability(false, 'Loading seating…');
+  document.getElementById('firstRowModal').classList.add('hidden');
+  Object.assign(state, normalizeSeating(null));
+  currentPerformanceId = id;
+  stateRef = id ? ref(database, `performances/${id}/seatingState`) : ref(database, 'seatingState');
+  undoStack.length = 0;
+  for (const elId of ['undoBtn','undoBtn2']) { const el = document.getElementById(elId); if (el) el.disabled = true; }
+  document.getElementById('performanceSummary').textContent = label;
+  clearError();
+  subscribeToSeating();
+  subscribeToSchools();
+  renderAll();
+}
+
+subscribeToSeating();
+subscribeToSchools();
+
+// School CSV expected: performance_date,performance_time,registration_id,school_name,students (door optional). Dates ISO or US MM/DD/YYYY; time HH:MM, HH:MM:SS, or AM/PM.
+// Header aliases are accepted; CSV values may be quoted and contain commas.
+function readCsv(text) {
+  const rows = []; let row = [], field = '', quoted = false;
+  text = text.replace(/^\uFEFF/, '');
+  for (let i=0; i<text.length; i++) {
+    const ch=text[i];
+    if (ch==='"') {
+      if (quoted && text[i+1]==='"') { field+='"'; i++; } else quoted=!quoted;
+    } else if (ch===',' && !quoted) { row.push(field); field=''; }
+    else if ((ch==='\n' || ch==='\r') && !quoted) {
+      if (ch==='\r' && text[i+1]==='\n') i++;
+      row.push(field); if (row.some(c=>c.trim())) rows.push(row);
+      row=[]; field='';
+    } else field+=ch;
+  }
+  if (quoted) throw new Error('Unclosed quote in CSV.');
+  row.push(field); if (row.some(c=>c.trim())) rows.push(row);
+  return rows;
+}
+function normalizeHeader(h) { return h.trim().toLowerCase().replace(/[^a-z0-9]/g,''); }
+// Accept common Excel/CSV representations, but store all performance keys as YYYY-MM-DD_HHMM.
+// Slash dates are explicitly US month/day/year; ambiguous day/month values cannot be inferred.
+function normalizeCsvDate(value, rowNumber) {
+  const raw=String(value||'').trim();
+  let y,m,d,match;
+  if ((match=raw.match(/^(\d{4})-(\d{1,2})-(\d{1,2})(?:[ T].*)?$/))) {
+    [,y,m,d]=match;
+  } else if ((match=raw.match(/^(\d{1,2})[\/-](\d{1,2})[\/-](\d{4})$/))) {
+    [,m,d,y]=match;
+  } else if (/^\d{5}(?:\.0+)?$/.test(raw)) {
+    // Excel's 1900 date system: serial 25569 is 1970-01-01.
+    const serial=Number(raw);
+    const dt=new Date(Date.UTC(1899,11,30)+Math.round(serial)*86400000);
+    if (!Number.isFinite(dt.getTime())) throw new Error(`CSV row ${rowNumber}: invalid Excel date serial "${raw}".`);
+    y=String(dt.getUTCFullYear()); m=String(dt.getUTCMonth()+1); d=String(dt.getUTCDate());
+  } else {
+    throw new Error(`CSV row ${rowNumber}: performance_date "${raw}" is invalid. Use YYYY-MM-DD or US MM/DD/YYYY.`);
+  }
+  const formatted=`${String(y).padStart(4,'0')}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+  const dt=new Date(`${formatted}T12:00:00`);
+  if (Number.isNaN(dt.getTime()) || dt.getFullYear()!==Number(y) || dt.getMonth()+1!==Number(m) || dt.getDate()!==Number(d)) {
+    throw new Error(`CSV row ${rowNumber}: impossible performance_date "${raw}".`);
+  }
+  return formatted;
+}
+function normalizeCsvTime(value, rowNumber) {
+  const raw=String(value||'').trim();
+  let h,min,sec=0,match;
+  // Excel sometimes exports times as a fraction of a day (e.g. 0.4166667 = 10 AM).
+  if (/^0?\.\d+$/.test(raw)) {
+    const v=Number(raw);
+    if (!(v>=0 && v<1)) throw new Error(`CSV row ${rowNumber}: invalid time "${raw}".`);
+    const minutes=Math.round(v*1440);
+    if (minutes>=1440) throw new Error(`CSV row ${rowNumber}: invalid Excel time "${raw}".`);
+    h=Math.floor(minutes/60); min=minutes%60;
+  } else if ((match=raw.match(/^(\d{1,2})(?::(\d{2}))?(?::(\d{2}))?\s*(AM|PM)$/i))) {
+    h=Number(match[1]); min=Number(match[2]||0); sec=Number(match[3]||0);
+    if (h<1 || h>12) throw new Error(`CSV row ${rowNumber}: invalid 12-hour time "${raw}".`);
+    h=(h%12)+(match[4].toUpperCase()==='PM'?12:0);
+  } else if ((match=raw.match(/^(\d{1,2}):(\d{2})(?::(\d{2}))?$/))) {
+    h=Number(match[1]); min=Number(match[2]); sec=Number(match[3]||0);
+  } else {
+    throw new Error(`CSV row ${rowNumber}: performance_time "${raw}" is invalid. Use 10:00, 10:00 AM, or 10:00:00.`);
+  }
+  if (h>23 || min>59 || sec>59) throw new Error(`CSV row ${rowNumber}: invalid performance_time "${raw}".`);
+  if (sec!==0) throw new Error(`CSV row ${rowNumber}: performance_time "${raw}" includes nonzero seconds. Use the scheduled minute.`);
+  return `${String(h).padStart(2,'0')}:${String(min).padStart(2,'0')}`;
+}
+function parseSchoolCsv(text) {
+  const rows=readCsv(text);
+  if (rows.length<2) throw new Error('The CSV has no registration rows.');
+  const headings=rows[0].map(normalizeHeader);
+  const col=(...aliases)=>headings.findIndex(h=>aliases.includes(h));
+  const cols={date:col('performancedate','date'),time:col('performancetime','time','showtime'),
+    id:col('registrationid','registration','id'),name:col('schoolname','school','groupname'),
+    size:col('students','expectedstudents','groupsize','size','attendance'),door:col('door','entrance','entrydoor')};
+  if (['date','time','id','name','size'].some(k=>cols[k]<0)) throw new Error('Required CSV columns: performance_date, performance_time, registration_id, school_name, students. Door is optional.');
+  const batches=new Map(); const seen=new Set();
+  rows.slice(1).forEach((r,idx)=>{
+    const get=k=>cols[k]<0 ? '' : (r[cols[k]]||'').trim();
+    const date=normalizeCsvDate(get('date'),idx+2);
+    const time=normalizeCsvTime(get('time'),idx+2);
+    const key=performanceKey(date,time);
+    const id=get('id'), name=get('name'), size=Number(get('size'));
+    const d=get('door').toLowerCase();
+    const door=['east','left','e'].includes(d) ? 'Left' : ['west','right','w'].includes(d) ? 'Right' : (!d || ['unknown','tbd','pending'].includes(d) ? 'Unknown' : null);
+    if (!id || !/^[a-zA-Z0-9_-]{1,80}$/.test(id)) throw new Error(`CSV row ${idx+2}: registration_id must be 1–80 letters, digits, hyphens or underscores.`);
+    if (!name || name.length>80 || !Number.isInteger(size) || size<1 || size>250 || !door) throw new Error(`CSV row ${idx+2}: invalid school, students (1–250), or door (blank, Unknown, East, West).`);
+    if (seen.has(`${key}|${id}`)) throw new Error(`CSV row ${idx+2}: duplicate registration ID for this performance.`);
+    seen.add(`${key}|${id}`);
+    if (!batches.has(key)) batches.set(key,{});
+    batches.get(key)[id]={registrationId:id,name,expectedStudents:size,door};
+  });
+  return batches;
+}
+
+async function importSchoolsCsv(file) {
+  if (!file) return;
+  const input=document.getElementById('schoolsCsv');
+  input.disabled=true;
+  pendingMutations++;
+  try {
+    const batches=parseSchoolCsv(await file.text());
+    const count=[...batches.values()].reduce((n,b)=>n+Object.keys(b).length,0);
+    if (!confirm(`Import ${count} registrations across ${batches.size} performances?\n\nUnseated registration details can be updated. Existing seat assignments and arrival confirmations are preserved. Other registrations and all seating stay unchanged.`)) return;
+    let total=0;
+    for (const [key,batch] of batches) {
+      // Each registration update checks current seated groups in the SAME performance,
+      // avoiding edits to registration details after a school has already been seated.
+      const perfRef=ref(database,`performances/${key}`);
+      const tx=await runTransaction(perfRef,current=>{
+        const next=current||{};
+        const seated=new Set(toArray(next.seatingState?.groups).map(g=>g?.registrationId).filter(Boolean));
+        const schools={...(next.schools||{})};
+        for (const [id,school] of Object.entries(batch)) {
+          if (!seated.has(id)) schools[id]={...school,arrivalConfirmed:schools[id]?.arrivalConfirmed===true};
+        }
+        return {...next,schools};
+      });
+      if (!tx.committed) throw new Error(`Could not save registrations for ${key}.`);
+      total+=Object.keys(batch).length;
+    }
+    alert(`Import processed ${total} registrations. Seated records were left unchanged.`);
+  } catch(err) { console.error('School import failed',err); alert(`School import failed: ${err.message}\nIf the error happened while saving, earlier performance batches may already have been saved. A CSV validation error saves nothing.`); }
+  finally { pendingMutations--; input.value=''; input.disabled=false; }
+}
+
+// v33 shared dialog: collect user input before entering unchanged v32 transaction.
+let v33ArrivalRequest=null, v33ReceiptGroup=null, v33SpotlightTimer=null;
+const v33ArrivalOverlay=document.getElementById('schoolArrivalOverlay');
+const v33ReceiptOverlay=document.getElementById('schoolReceiptOverlay');
+function v33CloseArrival(result=null) {
+  v33ArrivalOverlay.hidden=true;
+  if (v33ArrivalRequest) { const r=v33ArrivalRequest;v33ArrivalRequest=null;r.resolve(result); }
+}
+function v33AskSchoolDetails(school,mode) {
+  if (v33ArrivalRequest) return Promise.resolve(null);
+  const arriving=mode==='arrival', confirmOnly=mode==='confirm';
+  document.getElementById('schoolArrivalTitle').textContent=confirmOnly?'Confirm preassigned school arrival':arriving?'Confirm arrival & assign seats':'Preassign school seats';
+  document.getElementById('schoolArrivalDescription').textContent=school.name+' · '+school.expectedStudents+' students expected'+(confirmOnly?' · Seats already reserved. They will not be reassigned.':'');
+  document.getElementById('schoolAttendanceArea').hidden=confirmOnly;
+  document.getElementById('schoolDoorArea').hidden=!arriving&&!confirmOnly;
+  const input=document.getElementById('schoolActualCount');input.value=String(school.expectedStudents);
+  document.querySelectorAll('[data-v33door]').forEach(btn=>btn.setAttribute('aria-pressed','false'));
+  document.getElementById('schoolArrivalError').textContent='';
+  document.getElementById('schoolArrivalSubmit').textContent=confirmOnly?'CONFIRM ARRIVAL':arriving?'ASSIGN SEATS':'PREASSIGN SEATS';
+  v33ArrivalOverlay.hidden=false;
+  requestAnimationFrame(()=> (confirmOnly?document.getElementById('schoolEastBtn'):input).focus());
+  return new Promise(resolve=>{v33ArrivalRequest={mode,resolve};});
+}
+document.querySelectorAll('[data-v33door]').forEach(btn=>btn.addEventListener('click',()=>{
+  document.querySelectorAll('[data-v33door]').forEach(b=>b.setAttribute('aria-pressed',String(b===btn)));
+  document.getElementById('schoolArrivalError').textContent='';
+}));
+document.getElementById('schoolArrivalCancel').addEventListener('click',()=>v33CloseArrival());
+document.getElementById('schoolArrivalForm').addEventListener('submit',e=>{
+  e.preventDefault();
+  if (!v33ArrivalRequest) return;
+  const mode=v33ArrivalRequest.mode;
+  const size=Number(document.getElementById('schoolActualCount').value);
+  if (mode!=='confirm'&&(!Number.isInteger(size)||size<1||size>250)) {
+    document.getElementById('schoolArrivalError').textContent='Enter a whole number from 1 to 250.';return;
+  }
+  const selected=document.querySelector('[data-v33door][aria-pressed="true"]');
+  if ((mode==='arrival'||mode==='confirm')&&!selected) {
+    document.getElementById('schoolArrivalError').textContent='Select EAST or WEST before continuing.';return;
+  }
+  v33CloseArrival({size:mode==='confirm'?null:size,door:selected?.dataset.v33door||'Unknown'});
+});
+document.addEventListener('keydown',e=>{
+  if(e.key!=='Escape')return;
+  if(!v33ArrivalOverlay.hidden) v33CloseArrival();
+  else if(!v33ReceiptOverlay.hidden) v33ReceiptOverlay.hidden=true;
+});
+function v33SeatRanges(seats) {
+  const sections=new Map();
+  for(const sid of seats) {
+    const match=/^(.+)_([^_]+)_(\d+)$/.exec(sid);if(!match)continue;
+    const [,section,row,num]=match;
+    const key=section+'|'+row;
+    if(!sections.has(key))sections.set(key,[]);
+    sections.get(key).push(Number(num));
+  }
+  return [...sections.entries()].map(([key,nums])=>{
+    const [section,row]=key.split('|');nums.sort((a,b)=>a-b);
+    const runs=[];let start=nums[0],last=nums[0];
+    for(let i=1;i<=nums.length;i++){
+      if(i<nums.length&&nums[i]===last+1){last=nums[i];continue;}
+      runs.push(start===last?String(start):start+'–'+last);
+      start=last=nums[i];
+    }
+    return (typeof SEC_NAMES!=='undefined'&&SEC_NAMES[section]?SEC_NAMES[section]:section)+' · Row '+row+' · Seats '+runs.join(', ');
+  });
+}
+function v33ShowReceipt(group,doorOverride=null,title='Seats assigned successfully') {
+  if(!group||!group.allocation) return;
+  v33ReceiptGroup=group;
+  document.getElementById('schoolReceiptTitle').textContent=title;
+  const door=doorOverride||groupEntrance(group);
+  const details=document.getElementById('schoolReceiptDetails');details.replaceChildren();
+  const fields=[['School',group.name],['Attendance / seats',group.size],['Entry door',door==='Left'?'EAST':door==='Right'?'WEST':'Not yet confirmed'],['Location',group.allocation.location||'Assigned'],['Rows and seats',v33SeatRanges(group.allocation.seats||[]).join('\n')||'See theater chart']];
+  for(const [label,value] of fields){const row=document.createElement('div');const b=document.createElement('strong');b.textContent=label+': ';row.append(b,document.createTextNode(String(value)));if(label==='Rows and seats')row.style.whiteSpace='pre-line';details.append(row);}
+  v33ReceiptOverlay.hidden=false;
+  document.getElementById('schoolReceiptClose').focus();
+}
+document.getElementById('schoolReceiptClose').addEventListener('click',()=>v33ReceiptOverlay.hidden=true);
+document.getElementById('schoolLocateSeats').addEventListener('click',()=>{
+  const group=v33ReceiptGroup;v33ReceiptOverlay.hidden=true;
+  if(!group||!group.allocation)return;
+  document.querySelectorAll('.seat.v33-spotlight').forEach(el=>el.classList.remove('v33-spotlight'));
+  const ids=new Set(group.allocation.seats||[]);
+  const els=[...document.querySelectorAll('.seat[data-seat-id]')].filter(el=>ids.has(el.dataset.seatId));
+  els.forEach(el=>el.classList.add('v33-spotlight'));
+  if(els[0])els[0].scrollIntoView({behavior:'smooth',block:'center',inline:'center'});
+  clearTimeout(v33SpotlightTimer);
+  v33SpotlightTimer=setTimeout(()=>els.forEach(el=>el.classList.remove('v33-spotlight')),12000);
+});
+document.getElementById('schoolSelect').addEventListener('change',renderSchoolQueue);
+document.getElementById('schoolStatusFilter').addEventListener('change',renderSchoolQueue);
+
+function schoolText(v) { return document.createTextNode(String(v)); }
+function renderSchoolQueue() {
+  const panel=document.getElementById('schoolQueueItems');
+  if (!panel) return;
+  panel.replaceChildren();
+  const count=document.getElementById('schoolCount');
+  const dropdown=document.getElementById('schoolSelect');
+  const filterCount=document.getElementById('schoolFilterCount');
+  if (!currentPerformanceId) {
+    count.textContent='Original Session';
+    dropdown.replaceChildren(new Option('Choose a school…',''));
+    filterCount.textContent='';
+    panel.append(schoolText('Select a performance date to load school registrations.'));
+    return;
+  }
+  if (!schoolsLoaded) {
+    count.textContent='Loading…';
+    panel.append(schoolText('Loading school registrations…'));
+    return;
+  }
+  const schools=Object.values(registrations).sort((a,b)=>a.name.localeCompare(b.name));
+  const seated=new Map(state.groups.filter(g=>g.registrationId).map(g=>[g.registrationId,g]));
+  const unseated=schools.filter(s=>!seated.has(s.registrationId));
+  const preassigned=schools.filter(s=>seated.has(s.registrationId) && !s.arrivalConfirmed);
+  const arrived=schools.filter(s=>seated.has(s.registrationId) && !!s.arrivalConfirmed);
+  count.textContent=`${unseated.length} unseated · ${preassigned.length} preassigned · ${arrived.length} arrived`;
+  if (!schools.length) {
+    dropdown.replaceChildren(new Option('Choose a school…',''));
+    filterCount.textContent='';
+    panel.append(schoolText('No schools loaded for this performance. Import a CSV above.'));
+    return;
+  }
+  const filter=document.getElementById('schoolStatusFilter').value;
+  const previousSelection=dropdown.value;
+  const eligible=schools.filter(s=>{
+    const g=seated.get(s.registrationId);
+    const status=!g?'expected':s.arrivalConfirmed?'arrived':'preassigned';
+    return filter==='all'||status===filter;
+  });
+  dropdown.replaceChildren(new Option('Choose a school…',''));
+  eligible.forEach(s=>{
+    const group=seated.get(s.registrationId);
+    const arrived=!!group && !!s.arrivalConfirmed;
+    const preassigned=!!group && !s.arrivalConfirmed;
+    const suffix=arrived?' — SEATED':preassigned?' — PREASSIGNED':'';
+    const option=new Option(`${s.name} — ${s.registrationId}${suffix}`,s.registrationId);
+    if (group) {
+      option.style.color='#999';
+      option.style.backgroundColor='#333';
+      option.title=arrived?'Already seated and arrived': 'Seats preassigned; choose to confirm arrival';
+    }
+    if (preassigned) option.dataset.preassigned='true';
+    // A preassigned school must remain selectable so staff can confirm arrival
+    // using the existing no-reallocation confirmation workflow.
+    if (arrived) option.disabled=true;
+    dropdown.add(option);
+  });
+  dropdown.value=eligible.some(s=>s.registrationId===previousSelection && !(seated.has(s.registrationId) && s.arrivalConfirmed))?previousSelection:'';
+  filterCount.textContent=`${eligible.length} schools · ${eligible.filter(s=>seated.has(s.registrationId)).length} seated`;
+  if (!dropdown.value) {
+    panel.append(schoolText(eligible.length?'Select a school above to view its seating actions.':'No schools match the selected status.'));
+    return;
+  }
+  // Only the selected registration appears here: no repeated school-card list.
+  const school=eligible.find(s=>s.registrationId===dropdown.value);
+  if (!school) return;
+  const group=seated.get(school.registrationId);
+  const heading=document.createElement('div'); heading.className='school-selected-summary';
+  const name=document.createElement('strong');name.textContent=school.name;
+  const description=document.createElement('span');
+  const status=group ? (school.arrivalConfirmed?'ARRIVED · SEATED':'PREASSIGNED · AWAITING ARRIVAL'):'NOT YET SEATED';
+  const door=group ? displayDoor(groupEntrance(group)) : 'ENTRANCE UNKNOWN';
+  description.textContent=`${school.registrationId} · ${school.expectedStudents} expected · ${door} · ${status}`;
+  heading.append(name,description);panel.append(heading);
+  const actions=document.createElement('div'); actions.className='school-selected-buttons';
+  if (!group) {
+    const advance=document.createElement('button');advance.type='button';advance.textContent='PREASSIGN SEATS';
+    advance.title='Reserve seats now, before the school arrives';
+    advance.addEventListener('click',()=>seatRegisteredSchool(school.registrationId,advance,'advance'));
+    const arrival=document.createElement('button');arrival.type='button';arrival.textContent='ARRIVED — SEAT';
+    arrival.title='Confirm actual attendance and entry door, then assign seats';
+    arrival.addEventListener('click',()=>seatRegisteredSchool(school.registrationId,arrival,'arrival'));
+    actions.append(advance,arrival);
+  } else if (!school.arrivalConfirmed) {
+    const confirm=document.createElement('button');confirm.type='button';confirm.textContent='CONFIRM ARRIVAL';
+    confirm.title='Mark preassigned school as arrived without assigning seats again';
+    confirm.addEventListener('click',()=>confirmPreassignedArrival(school.registrationId,confirm));
+    actions.append(confirm);
+  } else {
+    const done=document.createElement('button');done.type='button';done.disabled=true;done.textContent='ARRIVED · SEATED';
+    actions.append(done);
+  }
+  panel.append(actions);
+}
+
+// Entry doors are not known from school registration data. Advance seating must
+// never silently treat an unknown door as EAST or WEST. Prefer center seating,
+// then the larger available side, independent of an actual entrance; fall back
+// to the existing allocation waterfall using a capacity-based planning side.
+// This planning preference does NOT set or imply the school's arrival door.
+function allocateDoorNeutral(group) {
+  const size=group.size;
+  const centerAvailable=calcAllocAvail('OC');
+  if (centerAvailable>=size && !(centerAvailable<OC_LARGE_GROUP_MIN && size>=OC_LARGE_GROUP_MIN)) {
+    const center=tryAlloc(['OC'],size,group);
+    if (center) return center;
+  }
+  const sides=[{section:'OL',door:'Left'},{section:'OR',door:'Right'}]
+    .sort((a,b)=>calcAllocAvail(b.section)-calcAllocAvail(a.section));
+  for (const choice of sides) {
+    if (calcAllocAvail(choice.section)>=size) {
+      const result=tryAlloc([choice.section],size,group);
+      if (result) return result;
     }
   }
+  // The door here is only an internal search order; group.door remains Unknown.
+  return allocateGroup({...group,door:sides[0].door});
+}
+
+// Prompt separately on arrival, not at import or advance assignment.
+function askArrivalDoor(schoolName) {
+  const answer=prompt(`Which entrance did ${schoolName} use?\nEnter EAST or WEST:`, '');
+  if (answer===null) return null;
+  const d=answer.trim().toLowerCase();
+  if (['east','e','left'].includes(d)) return 'Left';
+  if (['west','w','right'].includes(d)) return 'Right';
+  alert('Please enter EAST or WEST. The school was not marked as arrived.');
+  return null;
+}
+
+// v32: Seat assignments transact on the seatingState CHILD, which is already
+// independently subscribed and is the canonical source for occupied seats.
+// A parent transaction can receive a null local snapshot even after a get(),
+// causing v32 to abort with a misleading "registration changed" error.
+// Registration arrival metadata is updated AFTER successful seat allocation.
+// The registrationId on a seated group is the authoritative duplicate guard.
+async function updateWithRetry(path, data, tries = 3) {
+  for (let i = 0; i < tries; i++) {
+    try { return await update(path, data); }
+    catch (e) {
+      if (i === tries - 1) throw e;
+      await new Promise(r => setTimeout(r, 400 * (i + 1)));
+    }
+  }
+}
+
+async function seatRegisteredSchoolInner(registrationId,button,mode='arrival') {
+  if (!seatingReady || !currentPerformanceId || !schoolsLoaded || pendingMutations) return;
+  if (mode!=='arrival' && mode!=='advance') return;
+  const id=currentPerformanceId;
+  const school=registrations[registrationId];
+  if (!school) { alert('Registration no longer exists.'); return; }
+  const details=await v33AskSchoolDetails(school,mode);
+  if (!details) return;
+  const {size}=details;
+  const arrivalDoor=details.door;
+  // The v32 Firebase seatingState transaction below remains unchanged.
+  button.disabled=true;
+  pendingMutations++;
+  try {
+    const schoolPath=ref(database,`performances/${id}/schools/${registrationId}`);
+    const seatingPath=ref(database,`performances/${id}/seatingState`);
+    const savedSchool=(await get(schoolPath)).val();
+    if (!savedSchool) {
+      alert(`Registration ${registrationId} is not present in saved performance ${id}. No seats were assigned.`);
+      return;
+    }
+    // Prime the canonical child state. A null state is valid for a newly
+    // initialized performance (an empty theater), unlike a missing school.
+    await get(seatingPath);
+    let reason='Could not allocate seats for this group.';
+    const tx=await runTransaction(seatingPath,current=>{
+      const seatedGroups=toArray(current?.groups);
+      if (seatedGroups.some(g=>g?.registrationId===registrationId)) {
+        reason='This registration already has assigned seats. Reload the performance to view them.';
+        return;
+      }
+      const seating=current || {};
+      const reserved=seating.reservedSeats||{};
+      const manual=seating.manualBlockedSeats||inferManualBlocked(seating.blockedSeats||{},reserved);
+      const draft={groups:[...seatedGroups],seats:{...(seating.seats||{})},
+        reservedSeats:{...reserved},manualBlockedSeats:{...manual},
+        blockedSeats:unionBlocked(manual,reserved),nextGroupId:seating.nextGroupId||1};
+      const group={id:draft.nextGroupId,registrationId,name:savedSchool.name,size,
+        door:arrivalDoor,preferParterre:false,sectionPref:'auto',orchSubPref:'orch_auto',
+        seatingMode:mode,color:GROUP_COLORS[draft.groups.length%GROUP_COLORS.length],allocation:null};
+      const allocation=withDraftState(draft,()=>
+        mode==='advance' ? allocateDoorNeutral(group) : allocateGroup(group));
+      if (!allocation) {
+        reason='Not enough seats are available for that attendance count under the existing seating and buffer rules.';
+        return;
+      }
+      group.allocation=allocation;
+      draft.groups.push(group);
+      draft.nextGroupId++;
+      return draft;
+    }, {applyLocally:false});
+    if (!tx.committed) { alert(reason); return; }
+    const committedState=tx.snapshot.val();
+    const assigned=inspectSchoolAssignment({seatingState:committedState},registrationId);
+    if (!assigned) {
+      alert('SEATING VERIFICATION FAILED: Firebase returned a completed transaction, but the assigned group or seat records are inconsistent. Check the performance before retrying.');
+      console.error('Inconsistent school seating transaction', {id,registrationId,committedState});
+      return;
+    }
+    if (currentPerformanceId===id) applyCommittedPerformanceSeating(committedState);
+    // A school never becomes unseated if this metadata update fails. Its group
+    // and seat claims have already been safely saved and cannot be duplicated.
+    try {
+      await updateWithRetry(schoolPath, {door:arrivalDoor,arrivalConfirmed:mode==='arrival'});
+    } catch(metadataErr) {
+      console.error('Seating saved, but school arrival metadata failed to save',metadataErr);
+      alert(`Seats were successfully assigned to ${savedSchool.name}, but its arrival status could not be saved. Reload the performance and use CONFIRM ARRIVAL if required. Details: ${metadataErr.message}`);
+    }
+    // Independent verification uses the SEATING CHILD, never an in-memory
+    // ancestor snapshot that may be incomplete on first transaction pass.
+    const remote=(await get(seatingPath)).val();
+    const verified=inspectSchoolAssignment({seatingState:remote},registrationId);
+    if (!verified) {
+      alert('SEATING SAVE WARNING: Seats were assigned, but a follow-up read could not verify them. Do not retry until the performance database is checked.');
+      return;
+    }
+    if (currentPerformanceId===id) {
+      applyCommittedPerformanceSeating(remote);
+      v33ShowReceipt(verified, mode==='arrival'?arrivalDoor:null,
+        mode==='advance'?'Seats preassigned successfully':'Seats assigned successfully');
+    }
+  } catch(err) {
+    console.error('Could not assign registered school',err);
+    alert(`Could not assign school seats: ${err.message}`);
+  } finally {
+    pendingMutations--;
+    button.disabled=false;
+    renderSchoolQueue();
+  }
+}
+
+async function confirmPreassignedArrivalInner(registrationId,button) {
+  if (!seatingReady || !currentPerformanceId || !schoolsLoaded || pendingMutations) return;
+  const id=currentPerformanceId;
+  const school=registrations[registrationId];
+  if (!school) return;
+  const seatedGroup=state.groups.find(g=>g.registrationId===registrationId);
+  if (!seatedGroup) { alert('Seats are not assigned to this school. Reload the performance.'); return; }
+  const details=await v33AskSchoolDetails(school,'confirm');
+  if (!details) return;
+  const arrivalDoor=details.door;
+  button.disabled=true;
+  pendingMutations++;
+  try {
+    const path = ref(database, `performances/${id}`);
+    await get(path);
+    let reason = 'The registration is missing.';
+    const tx = await runTransaction(path, current => {
+      // The SDK can initially pass null before it has the parent snapshot.
+      // A null proposal lets Firebase retry against the server's value.
+      if (current === null) {
+        reason = 'The registration is missing.';
+        return null;
+      }
+      const registration = current?.schools?.[registrationId];
+      if (!registration) {
+        reason = 'The registration is missing.';
+        return;
+      }
+      const assignment = inspectSchoolAssignment(current, registrationId);
+      if (!assignment) {
+        reason = 'The school no longer has a valid seat assignment. Reload the performance before confirming arrival.';
+        return;
+      }
+      if (registration.arrivalConfirmed) {
+        reason = 'Arrival was already confirmed by another staff member.';
+        return;
+      }
+      return {
+        ...current,
+        schools: {
+          ...current.schools,
+          [registrationId]: {...registration, door: arrivalDoor, arrivalConfirmed: true},
+        },
+      };
+    }, {applyLocally: false});
+    const performance = tx.committed ? tx.snapshot.val() : null;
+    if (!performance) alert(reason);
+    else if (currentPerformanceId === id) {
+      const assignment = inspectSchoolAssignment(performance, registrationId);
+      v33ShowReceipt(assignment, arrivalDoor, 'Arrival confirmed — preassigned seats retained');
+    }
+  } catch(err) {console.error(err);alert(`Could not confirm school arrival: ${err.message}`);}
+  finally {pendingMutations--;button.disabled=false;renderSchoolQueue();}
+}
+
+// Serialize school actions: the flag is set synchronously, before any await,
+// so two quick clicks can never both open the details dialog.
+let schoolActionBusy = false;
+function guardSchoolAction(fn) {
+  return async (...args) => {
+    if (schoolActionBusy) return;
+    schoolActionBusy = true;
+    try { return await fn(...args); }
+    finally { schoolActionBusy = false; }
+  };
+}
+const seatRegisteredSchool      = guardSchoolAction(seatRegisteredSchoolInner);
+const confirmPreassignedArrival = guardSchoolAction(confirmPreassignedArrivalInner);
+
+const localNow = new Date();
+document.getElementById('performanceDate').value = `${localNow.getFullYear()}-${String(localNow.getMonth()+1).padStart(2,'0')}-${String(localNow.getDate()).padStart(2,'0')}`;
+document.getElementById('loadPerformanceBtn').addEventListener('click',()=>{
+  try {
+    const date=document.getElementById('performanceDate').value,time=document.getElementById('performanceTime').value;
+    switchPerformance(performanceKey(date,time),`${date} · ${time} — school registrations`);
+  } catch(err) { alert(err.message); }
 });
+document.getElementById('loadLegacyBtn').addEventListener('click',()=>switchPerformance(null,'Original Session — existing data'));
+document.getElementById('schoolsCsv').addEventListener('change',e=>importSchoolsCsv(e.target.files[0]));
 
 // ── ONLINE USER COUNTER ───────────────────────────────────────────────────────
 // Presence tracking: each session writes its own node and removes it on
@@ -1928,8 +2709,13 @@ function flashSyncBanner() {
 // issue that caused "X is not defined" errors is completely eliminated.
 
 // Keep stored Left/Right values compatible with existing Firebase seating data.
+function groupEntrance(group) {
+  const school = group.registrationId && registrations[group.registrationId];
+  return school?.arrivalConfirmed ? school.door ?? group.door : group.door;
+}
+
 function displayDoor(door) {
-  return door === 'Left' ? 'EAST' : door === 'Right' ? 'WEST' : String(door ?? '').toUpperCase();
+  return door === 'Left' ? 'EAST' : door === 'Right' ? 'WEST' : 'UNKNOWN';
 }
 
 function selectDoor(door) {
@@ -1983,15 +2769,7 @@ async function addGroup() {
       };
 
       // Run allocation against the draft (== authoritative server snapshot)
-      const savedSeats   = state.seats;
-      const savedBlocked = state.blockedSeats;
-      state.seats        = draft.seats;
-      state.blockedSeats = draft.blockedSeats;
-
-      const result = allocateGroup(group);
-
-      state.seats        = savedSeats;
-      state.blockedSeats = savedBlocked;
+      const result = withDraftState(draft, () => allocateGroup(group));
 
       if (!result) {
         allocationResult = null;
@@ -2008,7 +2786,9 @@ async function addGroup() {
     if (!committed || !allocationResult) {
       discardUndoEntry(undoEntry); // discard the snapshot — no mutation occurred
       if (undoStack.length === 0) document.getElementById('undoBtn').disabled = true;
-      showError(`Could not seat ${size} with four empty seats between groups sharing a row.`);
+      if (!lastCommitFailed) {
+        showError(`Could not seat ${size} with four empty seats between groups sharing a row.`);
+      }
     } else {
       // state has already been updated by commitViaTransaction — just render.
       renderAll();
@@ -2036,41 +2816,72 @@ async function addGroup() {
 }
 
 async function removeGroup(id) {
-  if (!state.groups.find(g => g.id === id)) return;
+  if (!seatingReady || pendingMutations) return;
+  const removedGroup = state.groups.find(g => g.id === id);
+  if (!removedGroup) return;
+  const includeSchools = Boolean(currentPerformanceId && removedGroup.registrationId);
   const undoEntry = pushUndo();
-  const committed = await commitViaTransaction((draft) => {
-    if (!draft.groups.find(g => g.id === id)) return false; // already gone server-side
+  const committed = await commitViaTransaction((draft, schools) => {
+    const group = draft.groups.find(g => g.id === id);
+    if (!group || !deepEqual(group, removedGroup)) return false;
+
+    if (schools && Object.prototype.hasOwnProperty.call(schools, group.registrationId)) {
+      const before = schools[group.registrationId];
+      if (before?.arrivalConfirmed === true) {
+        const after = {...before, arrivalConfirmed: false};
+        schools[group.registrationId] = after;
+        undoEntry.schoolChange = {id: group.registrationId, before, after};
+      } else {
+        delete undoEntry.schoolChange;
+      }
+    } else {
+      delete undoEntry.schoolChange;
+    }
+
     const seats = {...draft.seats};
     for (const sid of Object.keys(seats)) {
       if (seats[sid]?.groupId === id) delete seats[sid];
     }
-    draft.seats  = seats;
+    draft.seats = seats;
     draft.groups = draft.groups.filter(g => g.id !== id);
     return true;
-  }, undoEntry);
+  }, undoEntry, includeSchools);
   if (!committed) {
     discardUndoEntry(undoEntry);
-    if (undoStack.length === 0) document.getElementById('undoBtn').disabled = true;
+    if (!undoStack.length) document.getElementById('undoBtn').disabled = true;
   }
   renderAll();
 }
 
 async function resetAll() {
-  if (!confirm('Reset all seating for ALL users? This cannot be undone.')) return;
-  state.groups       = [];
-  state.seats        = {};
-  state.blockedSeats = {};
-  state.manualBlockedSeats = {};
-  state.reservedSeats = {};
-  state.nextGroupId  = 1;
-  undoStack.length   = 0; // prior history is irrelevant after a full reset
+  if (!seatingReady || pendingMutations) return;
+  if (!confirm(`Reset seating for ${currentPerformanceId || 'the original session'} for ALL users? Registered schools will be kept. This cannot be undone.`)) return;
+  // Reset goes through a transaction so it is ordered against in-flight seat
+  // changes from other users, and local state is cleared ONLY after the server
+  // accepts it. On failure the screen keeps showing the real (unchanged) data.
+  const empty = { groups: [], seats: {}, blockedSeats: {}, manualBlockedSeats: {},
+                  reservedSeats: {}, nextGroupId: 1 };
+  const target = currentPerformanceId ? ref(database, `performances/${currentPerformanceId}`) : stateRef;
+  pendingMutations++;
+  try {
+    const tx = await runTransaction(target, current => {
+      if (!currentPerformanceId) return empty;
+      const schools = {...current?.schools};
+      for (const [id, school] of Object.entries(schools)) {
+        if (school?.arrivalConfirmed === true) schools[id] = {...school, arrivalConfirmed: false};
+      }
+      return {...current, seatingState: empty, schools};
+    }, {applyLocally: false});
+    if (!tx.committed) { showError('Reset was not saved.'); return; }
+  } catch (err) {
+    console.error('Reset error:', err);
+    showError('Could not reset — check your connection.');
+    return;
+  } finally { pendingMutations--; }
+
+  Object.assign(state, empty);
+  undoStack.length = 0; // prior history is irrelevant after a full reset
   document.getElementById('undoBtn').disabled = true;
-  // Awaited (previously fire-and-forget): resetAll() passes no undo entry to
-  // commitState(), so captureBaseline() is a no-op for this call regardless —
-  // but awaiting it still keeps this action from straddling other actions
-  // that run after it returns, which is good practice now that other actions
-  // rely on holding their own undo-entry reference across an await boundary.
-  await commitState(3, null);
   renderAll();
   // Re-open the first-row modal so users reconfigure reserved rows after reset
   document.querySelectorAll('.frm-checkbox').forEach(cb => {
@@ -2193,11 +3004,13 @@ const ADA_SEATS = new Set([
   'OC-ZZ-1', 'OC-ZZ-2', 'OC-ZZ-3', 'OC-ZZ-4',
   'OC-ZZ-18', 'OC-ZZ-19', 'OC-ZZ-20', 'OC-ZZ-21',
   'DCL-E-1', 'DCL-E-2', 'DCL-E-3', 'DCL-E-4',
-  'DCR-E-1', 'DCR-E-2', 'DCR-E-3', 'DCR-E-4',
+  // Right-bank displayed numbers changed; keep ADA on the same internal E-row seats.
+  'DCR-E-9', 'DCR-E-8', 'DCR-E-7', 'DCR-E-6',
+  // Preserve the same physical ADA seats after reversing the center-bank labels.
   'DCC-E-19', 'DCC-E-18', 'DCC-E-17', 'DCC-E-16',
-  'DCC-E-4', 'DCC-E-3', 'DCC-E-2', 'DCC-E-1',
+  'DCC-E-2', 'DCC-E-1',
   'GL-E-1', 'GL-E-2', 'GL-E-3', 'GL-E-4',
-  'GR-E-1', 'GR-E-2', 'GR-E-3', 'GR-E-4',
+  'GR-E-9', 'GR-E-8', 'GR-E-7', 'GR-E-6',
   'GC-E-21', 'GC-E-20', 'GC-E-19', 'GC-E-18',
   'GC-E-4', 'GC-E-3', 'GC-E-2', 'GC-E-1',
 ]);
@@ -2237,34 +3050,30 @@ const ADA_SEAT_LABELS = {
   'DCL-E-2': 'Companion Seat',
   'DCL-E-3': 'Wheelchair Space',
   'DCL-E-4': 'Companion Seat',
-  'DCR-E-1': 'Wheelchair Space',
-  'DCR-E-2': 'Companion Seat',
-  'DCR-E-3': 'Wheelchair Space',
-  'DCR-E-4': 'Companion Seat',
+  'DCR-E-9': 'Wheelchair Space',
+  'DCR-E-8': 'Companion Seat',
+  'DCR-E-7': 'Wheelchair Space',
+  'DCR-E-6': 'Companion Seat',
   'DCC-E-19': 'Wheelchair Space',
   'DCC-E-18': 'Companion Seat',
   'DCC-E-17': 'Wheelchair Space',
   'DCC-E-16': 'Companion Seat',
-  'DCC-E-4': 'Wheelchair Space',
-  'DCC-E-3': 'Companion Seat',
   'DCC-E-2': 'Wheelchair Space',
   'DCC-E-1': 'Companion Seat',
   'GL-E-1': 'Wheelchair Space',
   'GL-E-2': 'Companion Seat',
   'GL-E-3': 'Wheelchair Space',
   'GL-E-4': 'Companion Seat',
-  'GR-E-1': 'Wheelchair Space',
-  'GR-E-2': 'Companion Seat',
-  'GR-E-3': 'Wheelchair Space',
-  'GR-E-4': 'Companion Seat',
+  'GR-E-9': 'Wheelchair Space',
+  'GR-E-8': 'Companion Seat',
+  'GR-E-7': 'Wheelchair Space',
+  'GR-E-6': 'Companion Seat',
   'GC-E-21': 'Wheelchair Space',
   'GC-E-20': 'Companion Seat',
   'GC-E-19': 'Wheelchair Space',
   'GC-E-18': 'Companion Seat',
   'GC-E-4': 'Wheelchair Space',
   'GC-E-3': 'Companion Seat',
-  'GC-E-2': 'Wheelchair Space',
-  'GC-E-1': 'Companion Seat',
 };
 const ADA_DEFAULT_LABEL = 'Wheelchair Accessible';
 function isAdaSeat(seatId) { return ADA_SEATS.has(formatSeatId(seatId)); }
@@ -2617,7 +3426,7 @@ let renderGroupList = function() {
     sizeEl.textContent = `${g.size} seats`;
     const doorEl = document.createElement('div');
     doorEl.className = 'group-door';
-    doorEl.textContent = `${displayDoor(g.door)} DOOR`;
+    doorEl.textContent = `${displayDoor(groupEntrance(g))} DOOR`;
     meta.appendChild(sizeEl);
     meta.appendChild(doorEl);
 
@@ -2737,8 +3546,8 @@ let renderAll = function() {
 
 function buildPdfReport() {
   const now       = new Date();
-  const dateStr   = now.toLocaleDateString('en-US', {weekday:'long', year:'numeric', month:'long', day:'numeric'});
-  const timeStr   = now.toLocaleTimeString('en-US', {hour:'2-digit', minute:'2-digit'});
+  const dateStr   = currentPerformanceId ? currentPerformanceId.slice(0,10) : now.toLocaleDateString('en-US', {weekday:'long', year:'numeric', month:'long', day:'numeric'});
+  const timeStr   = currentPerformanceId ? `Performance ${currentPerformanceId.slice(11,13)}:${currentPerformanceId.slice(13,15)}` : now.toLocaleTimeString('en-US', {hour:'2-digit', minute:'2-digit'});
   const occupied  = Object.values(state.seats).filter(Boolean).length;
   const blocked   = Object.keys(state.blockedSeats).length;
   const unavailableIds = new Set([
@@ -2805,7 +3614,7 @@ function buildPdfReport() {
             ${escHtml(g.name)}
           </td>
           <td>${g.size}</td>
-          <td>${displayDoor(g.door)} Door</td>
+          <td>${displayDoor(groupEntrance(g))} Door</td>
           <td>${location}${parterre}</td>
         </tr>`;
     });
@@ -2995,7 +3804,7 @@ function captureBaseline(entry) {
 // own change on top of whatever else happened) is a real follow-up, not
 // something papered over here.
 function performUndo() {
-  if (!undoStack.length) return;
+  if (pendingMutations || !undoStack.length) return;
   const snap = undoStack[undoStack.length - 1]; // peek — only discard on success
   const undoBtn = document.getElementById('undoBtn');
   undoBtn.disabled = true; // prevent double-clicks while this is in flight
@@ -3007,19 +3816,22 @@ function performUndo() {
   // message with a misleading "someone else changed it" one.
   let conflict = false;
 
-  commitViaTransaction((draft) => {
-    if (!snap.baselineAfter || !seatingStatesEqual(draft, snap.baselineAfter)) {
+  const schoolChange = snap.schoolChange;
+  commitViaTransaction((draft, schools) => {
+    if (!snap.baselineAfter || !seatingStatesEqual(draft, snap.baselineAfter) ||
+        (schoolChange && !deepEqual(schools[schoolChange.id], schoolChange.after))) {
       conflict = true;
       return false; // abort — shared state has moved since this snapshot
     }
     conflict = false;
+    if (schoolChange) schools[schoolChange.id] = schoolChange.before;
     draft.groups        = snap.groups;
     draft.seats         = snap.seats;
     draft.manualBlockedSeats = snap.manualBlockedSeats ?? inferManualBlocked(snap.blockedSeats, snap.reservedSeats);
     draft.reservedSeats      = snap.reservedSeats;
     draft.nextGroupId   = snap.nextGroupId;
     return true;
-  }).then((committed) => {
+  }, null, Boolean(schoolChange)).then((committed) => {
     if (committed) {
       // Remove by reference, not by popping "the top" — another action may
       // have pushed a newer entry onto the stack while this undo was in
@@ -3159,11 +3971,6 @@ async function handleMoveTargetClick(sectionsStr) {
     draft.seats = seats;
 
     // Run allocation against the draft (== authoritative server snapshot)
-    const savedSeats   = state.seats;
-    const savedBlocked = state.blockedSeats;
-    state.seats        = draft.seats;
-    state.blockedSeats = draft.blockedSeats;
-
     // Use row-across allocation for DC and Gallery. For a plain Orch
     // Left/Right target, allow overflow into the paired Parterre side (same
     // rule the automatic allocator uses) instead of requiring the whole
@@ -3172,14 +3979,12 @@ async function handleMoveTargetClick(sectionsStr) {
     const isGal = targetSections.length > 0 && targetSections.every(s => s === 'GL' || s === 'GC' || s === 'GR');
     const isOL  = targetSections.length === 1 && targetSections[0] === 'OL';
     const isOR  = targetSections.length === 1 && targetSections[0] === 'OR';
-    const result = isDC  ? tryAllocRows(DC_ROWS,  DC_SECTIONS,  group.size, group)
+    const result = withDraftState(draft, () =>
+                   isDC  ? tryAllocRows(DC_ROWS,  DC_SECTIONS,  group.size, group)
                  : isGal ? tryAllocRows(GAL_ROWS, GAL_SECTIONS, group.size, group)
                  : isOL  ? tryOrchSideWithOverflow('OL', 'PL', group.size, group)
                  : isOR  ? tryOrchSideWithOverflow('OR', 'PR', group.size, group)
-                 : tryAlloc(targetSections, group.size, group);
-
-    state.seats        = savedSeats;
-    state.blockedSeats = savedBlocked;
+                 : tryAlloc(targetSections, group.size, group));
 
     if (!result) { allocationResult = null; return false; }
 
