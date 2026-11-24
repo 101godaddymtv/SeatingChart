@@ -109,6 +109,7 @@
 .seat.v33-spotlight { outline:2px solid #fff; outline-offset:2px; box-shadow:0 0 12px 4px #e8c44a !important; z-index:15; transform:scale(1.3); }
 @media(max-width:600px) { .school-queue{max-height:210px;} .v33-modal{padding:16px;} .v33-actions button{flex:1;} }
 
+
   /* ── SYNC BANNER ────────────────────────────────────────────────────────── */
   #syncBanner {
     display: none;
@@ -861,7 +862,11 @@
 .school-selected-buttons { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
 .school-selected-buttons button { min-height:44px; }
 .school-selected-actions .school-empty { color:var(--text-secondary); font-size:12px; }
-
+#performanceDate::-webkit-calendar-picker-indicator,
+#performanceTime::-webkit-calendar-picker-indicator {
+  filter: invert(1);
+  cursor: pointer;
+}
 </style>
 </head>
 <body>
@@ -1108,10 +1113,6 @@
         </div>
         <button class="btn-block-mode ada-btn" id="adaHighlightBtn" style="margin-top:8px;">♿ Highlight ADA Seats</button>
         <div style="margin-top:10px; display:flex; flex-direction:column; gap:8px;">
-          <button class="btn-primary" id="undoBtn"
-            style="background:linear-gradient(135deg,#3a2a1a,#6b4a20);" disabled>
-            ↩ UNDO LAST ACTION
-          </button>
           <button class="btn-primary" id="configFirstRowBtn"
             style="background:linear-gradient(135deg,#2a2a5a,#3a3a8a);">
             ⊘ CONFIGURE RESERVED ROWS
@@ -1326,10 +1327,6 @@
         Click seats to block · Drag to block a range · Click row label to block entire row
       </div>
       <button class="btn-block-mode ada-btn" id="adaHighlightBtn2">♿ Highlight ADA Seats</button>
-      <button class="btn-primary" id="undoBtn2"
-        style="background:linear-gradient(135deg,#3a2a1a,#6b4a20);" disabled>
-        ↩ UNDO LAST ACTION
-      </button>
       <button class="btn-primary" id="configFirstRowBtn2"
         style="background:linear-gradient(135deg,#2a2a5a,#3a3a8a);">
         ⊘ CONFIGURE RESERVED ROWS
@@ -1941,7 +1938,7 @@ function allocateGroup(group) {
 // failure (not ready / network / permissions) rather than a mutator abort.
 let lastCommitFailed = false;
 
-async function commitViaTransaction(mutator, undoEntry = null, includeSchools = false) {
+async function commitViaTransaction(mutator, includeSchools = false) {
   lastCommitFailed = false;
   if (!seatingReady) { lastCommitFailed = true; return null; }
   pendingMutations++;
@@ -1957,15 +1954,6 @@ async function commitViaTransaction(mutator, undoEntry = null, includeSchools = 
       if (includeSchools && current === null) return null;
       const norm = normalizeSeating(includeSchools ? current.seatingState : current);
       const schools = includeSchools ? {...current.schools} : null;
-
-      if (undoEntry) {
-        undoEntry.groups             = JSON.parse(JSON.stringify(norm.groups));
-        undoEntry.seats              = Object.assign({}, norm.seats);
-        undoEntry.blockedSeats       = Object.assign({}, norm.blockedSeats);
-        undoEntry.manualBlockedSeats = Object.assign({}, norm.manualBlockedSeats);
-        undoEntry.reservedSeats      = Object.assign({}, norm.reservedSeats);
-        undoEntry.nextGroupId        = norm.nextGroupId;
-      }
 
       const draft = {
         groups:             norm.groups,
@@ -1998,7 +1986,6 @@ async function commitViaTransaction(mutator, undoEntry = null, includeSchools = 
   state.manualBlockedSeats = committedDraft.manualBlockedSeats;
   state.reservedSeats      = committedDraft.reservedSeats;
   state.nextGroupId        = committedDraft.nextGroupId;
-  captureBaseline(undoEntry);
   return committedDraft;
   } finally { pendingMutations--; }
 }
@@ -2097,8 +2084,6 @@ function switchPerformance(id, label) {
   Object.assign(state, normalizeSeating(null));
   currentPerformanceId = id;
   stateRef = id ? ref(database, `performances/${id}/seatingState`) : ref(database, 'seatingState');
-  undoStack.length = 0;
-  for (const elId of ['undoBtn','undoBtn2']) { const el = document.getElementById(elId); if (el) el.disabled = true; }
   document.getElementById('performanceSummary').textContent = label;
   clearError();
   subscribeToSeating();
@@ -2490,72 +2475,74 @@ async function seatRegisteredSchoolInner(registrationId,button,mode='arrival') {
   button.disabled=true;
   pendingMutations++;
   try {
-    const schoolPath=ref(database,`performances/${id}/schools/${registrationId}`);
-    const seatingPath=ref(database,`performances/${id}/seatingState`);
-    const savedSchool=(await get(schoolPath)).val();
-    if (!savedSchool) {
-      alert(`Registration ${registrationId} is not present in saved performance ${id}. No seats were assigned.`);
-      return;
-    }
-    // Prime the canonical child state. A null state is valid for a newly
-    // initialized performance (an empty theater), unlike a missing school.
-    await get(seatingPath);
-    let reason='Could not allocate seats for this group.';
-    const tx=await runTransaction(seatingPath,current=>{
-      const seatedGroups=toArray(current?.groups);
-      if (seatedGroups.some(g=>g?.registrationId===registrationId)) {
-        reason='This registration already has assigned seats. Reload the performance to view them.';
+    const perfPath = ref(database, `performances/${id}`);
+    await get(perfPath); // prime the SDK cache, same as confirmPreassignedArrivalInner
+    let reason = 'Could not allocate seats for this group.';
+
+    // One transaction writes the seating AND the school's arrival status, so a
+    // dropped connection can never leave a school seated but not marked arrived.
+    const tx = await runTransaction(perfPath, current => {
+      // Cold cache: let Firebase retry against the server's real value.
+      if (current === null) { reason = 'Performance not found.'; return null; }
+
+      const savedSchool = current.schools?.[registrationId];
+      if (!savedSchool) {
+        reason = `Registration ${registrationId} is not present in saved performance ${id}.`;
         return;
       }
-      const seating=current || {};
-      const reserved=seating.reservedSeats||{};
-      const manual=seating.manualBlockedSeats||inferManualBlocked(seating.blockedSeats||{},reserved);
-      const draft={groups:[...seatedGroups],seats:{...(seating.seats||{})},
-        reservedSeats:{...reserved},manualBlockedSeats:{...manual},
-        blockedSeats:unionBlocked(manual,reserved),nextGroupId:seating.nextGroupId||1};
-      const group={id:draft.nextGroupId,registrationId,name:savedSchool.name,size,
-        door:arrivalDoor,preferParterre:false,sectionPref:'auto',orchSubPref:'orch_auto',
-        seatingMode:mode,color:GROUP_COLORS[draft.groups.length%GROUP_COLORS.length],allocation:null};
-      const allocation=withDraftState(draft,()=>
-        mode==='advance' ? allocateDoorNeutral(group) : allocateGroup(group));
+
+      const seating = current.seatingState || {};
+      const seatedGroups = toArray(seating.groups);
+      if (seatedGroups.some(g => g?.registrationId === registrationId)) {
+        reason = 'This registration already has assigned seats. Reload the performance to view them.';
+        return;
+      }
+
+      const reserved = seating.reservedSeats || {};
+      const manual = seating.manualBlockedSeats || inferManualBlocked(seating.blockedSeats || {}, reserved);
+      const draft = {
+        groups: [...seatedGroups], seats: {...(seating.seats || {})},
+        reservedSeats: {...reserved}, manualBlockedSeats: {...manual},
+        blockedSeats: unionBlocked(manual, reserved), nextGroupId: seating.nextGroupId || 1,
+      };
+      const group = {
+        id: draft.nextGroupId, registrationId, name: savedSchool.name, size,
+        door: arrivalDoor, preferParterre: false, sectionPref: 'auto', orchSubPref: 'orch_auto',
+        seatingMode: mode, color: GROUP_COLORS[draft.groups.length % GROUP_COLORS.length], allocation: null,
+      };
+      const allocation = withDraftState(draft, () =>
+        mode === 'advance' ? allocateDoorNeutral(group) : allocateGroup(group));
       if (!allocation) {
-        reason='Not enough seats are available for that attendance count under the existing seating and buffer rules.';
+        reason = 'Not enough seats are available for that attendance count under the existing seating and buffer rules.';
         return;
       }
-      group.allocation=allocation;
+      group.allocation = allocation;
       draft.groups.push(group);
       draft.nextGroupId++;
-      return draft;
-    }, {applyLocally:false});
-    if (!tx.committed) { alert(reason); return; }
-    const committedState=tx.snapshot.val();
-    const assigned=inspectSchoolAssignment({seatingState:committedState},registrationId);
-    if (!assigned) {
-      alert('SEATING VERIFICATION FAILED: Firebase returned a completed transaction, but the assigned group or seat records are inconsistent. Check the performance before retrying.');
-      console.error('Inconsistent school seating transaction', {id,registrationId,committedState});
-      return;
-    }
-    if (currentPerformanceId===id) applyCommittedPerformanceSeating(committedState);
-    // A school never becomes unseated if this metadata update fails. Its group
-    // and seat claims have already been safely saved and cannot be duplicated.
-    try {
-      await updateWithRetry(schoolPath, {door:arrivalDoor,arrivalConfirmed:mode==='arrival'});
-    } catch(metadataErr) {
-      console.error('Seating saved, but school arrival metadata failed to save',metadataErr);
-      alert(`Seats were successfully assigned to ${savedSchool.name}, but its arrival status could not be saved. Reload the performance and use CONFIRM ARRIVAL if required. Details: ${metadataErr.message}`);
-    }
-    // Independent verification uses the SEATING CHILD, never an in-memory
-    // ancestor snapshot that may be incomplete on first transaction pass.
-    const remote=(await get(seatingPath)).val();
-    const verified=inspectSchoolAssignment({seatingState:remote},registrationId);
+
+      return {
+        ...current,
+        seatingState: draft,
+        schools: {
+          ...current.schools,
+          [registrationId]: {...savedSchool, door: arrivalDoor, arrivalConfirmed: mode === 'arrival'},
+        },
+      };
+    }, {applyLocally: false});
+
+    const performance = tx.committed ? tx.snapshot.val() : null;
+    if (!performance) { alert(reason); return; }
+
+    const verified = inspectSchoolAssignment(performance, registrationId);
     if (!verified) {
-      alert('SEATING SAVE WARNING: Seats were assigned, but a follow-up read could not verify them. Do not retry until the performance database is checked.');
+      alert('SEATING VERIFICATION FAILED: the transaction completed but the group or seat records are inconsistent. Check the performance before retrying.');
+      console.error('Inconsistent school seating transaction', {id, registrationId, performance});
       return;
     }
-    if (currentPerformanceId===id) {
-      applyCommittedPerformanceSeating(remote);
-      v33ShowReceipt(verified, mode==='arrival'?arrivalDoor:null,
-        mode==='advance'?'Seats preassigned successfully':'Seats assigned successfully');
+    if (currentPerformanceId === id) {
+      applyCommittedPerformanceSeating(performance.seatingState);
+      v33ShowReceipt(verified, mode === 'arrival' ? arrivalDoor : null,
+        mode === 'advance' ? 'Seats preassigned successfully' : 'Seats assigned successfully');
     }
   } catch(err) {
     console.error('Could not assign registered school',err);
@@ -2746,7 +2733,6 @@ async function addGroup() {
   // Lock the Seat Group button while the transaction is in flight
   const btn = document.getElementById('seatGroupBtn');
   btn.disabled = true;
-  const undoEntry = pushUndo(); // snapshot before mutation so the action can be undone
 
   try {
     // commitViaTransaction guarantees atomicity: if two users submit
@@ -2781,11 +2767,9 @@ async function addGroup() {
       draft.groups      = [...draft.groups, group];
       draft.nextGroupId = draft.nextGroupId + 1;
       return true;
-    }, undoEntry);
+    });
 
     if (!committed || !allocationResult) {
-      discardUndoEntry(undoEntry); // discard the snapshot — no mutation occurred
-      if (undoStack.length === 0) document.getElementById('undoBtn').disabled = true;
       if (!lastCommitFailed) {
         showError(`Could not seat ${size} with four empty seats between groups sharing a row.`);
       }
@@ -2800,8 +2784,6 @@ async function addGroup() {
       if (window._clearTabletForm) window._clearTabletForm();
     }
   } catch(err) {
-    discardUndoEntry(undoEntry); // discard snapshot on error too
-    if (undoStack.length === 0) document.getElementById('undoBtn').disabled = true;
     console.error('Add group error:', err);
     showError('Could not save — check your connection.');
   } finally {
@@ -2820,22 +2802,15 @@ async function removeGroup(id) {
   const removedGroup = state.groups.find(g => g.id === id);
   if (!removedGroup) return;
   const includeSchools = Boolean(currentPerformanceId && removedGroup.registrationId);
-  const undoEntry = pushUndo();
-  const committed = await commitViaTransaction((draft, schools) => {
+  await commitViaTransaction((draft, schools) => {
     const group = draft.groups.find(g => g.id === id);
     if (!group || !deepEqual(group, removedGroup)) return false;
 
     if (schools && Object.prototype.hasOwnProperty.call(schools, group.registrationId)) {
-      const before = schools[group.registrationId];
-      if (before?.arrivalConfirmed === true) {
-        const after = {...before, arrivalConfirmed: false};
-        schools[group.registrationId] = after;
-        undoEntry.schoolChange = {id: group.registrationId, before, after};
-      } else {
-        delete undoEntry.schoolChange;
+      const school = schools[group.registrationId];
+      if (school?.arrivalConfirmed === true) {
+        schools[group.registrationId] = {...school, arrivalConfirmed: false};
       }
-    } else {
-      delete undoEntry.schoolChange;
     }
 
     const seats = {...draft.seats};
@@ -2845,11 +2820,7 @@ async function removeGroup(id) {
     draft.seats = seats;
     draft.groups = draft.groups.filter(g => g.id !== id);
     return true;
-  }, undoEntry, includeSchools);
-  if (!committed) {
-    discardUndoEntry(undoEntry);
-    if (!undoStack.length) document.getElementById('undoBtn').disabled = true;
-  }
+  }, includeSchools);
   renderAll();
 }
 
@@ -2880,8 +2851,6 @@ async function resetAll() {
   } finally { pendingMutations--; }
 
   Object.assign(state, empty);
-  undoStack.length = 0; // prior history is irrelevant after a full reset
-  document.getElementById('undoBtn').disabled = true;
   renderAll();
   // Re-open the first-row modal so users reconfigure reserved rows after reset
   document.querySelectorAll('.frm-checkbox').forEach(cb => {
@@ -3170,8 +3139,7 @@ function makeRow(pfx, label, count, align = 'center', curve = 0) {
     if (!blockModeActive || count === 0) return;
     const rowSeatIds = [];
     for (let i = 1; i <= count; i++) rowSeatIds.push(`${pfx}_${label}_${i}`);
-    const undoEntry = pushUndo();
-    const committed = await commitViaTransaction((draft) => {
+    await commitViaTransaction((draft) => {
       // Only toggle seats that are not occupied and not reserved via the
       // first-row modal, evaluated against the authoritative server
       // snapshot rather than possibly-stale local state.
@@ -3185,11 +3153,7 @@ function makeRow(pfx, label, count, align = 'center', curve = 0) {
       });
       draft.manualBlockedSeats = manual;
       return true;
-    }, undoEntry);
-    if (!committed) {
-      discardUndoEntry(undoEntry);
-      if (undoStack.length === 0) document.getElementById('undoBtn').disabled = true;
-    }
+    });
     renderAll();
   });
 
@@ -3232,18 +3196,13 @@ let dragBlockAction  = null;    // 'block' | 'unblock' — set on mousedown
 
 async function toggleBlock(seatId) {
   if (state.seats[seatId] || state.reservedSeats[seatId]) return; // occupied/reserved seats cannot be toggled here
-  const undoEntry = pushUndo();
-  const committed = await commitViaTransaction((draft) => {
+  await commitViaTransaction((draft) => {
     if (draft.seats[seatId] || draft.reservedSeats[seatId]) return false; // became occupied/reserved server-side — abort
     const manual = {...draft.manualBlockedSeats};
     if (manual[seatId]) delete manual[seatId]; else manual[seatId] = true;
     draft.manualBlockedSeats = manual;
     return true;
-  }, undoEntry);
-  if (!committed) {
-    discardUndoEntry(undoEntry);
-    if (undoStack.length === 0) document.getElementById('undoBtn').disabled = true;
-  }
+  });
   renderAll();
 }
 
@@ -3255,7 +3214,6 @@ async function toggleBlock(seatId) {
 // once, on mouseup, and it's reapplied as a delta onto the current server
 // state via commitViaTransaction rather than overwriting the whole document.
 let dragChanges    = null;
-let dragUndoEntry  = null; // the specific undo entry for the CURRENT drag gesture, if any mutation has happened yet
 let dragPreBlocked = null;
 let dragPreManual  = null;
 let suppressBlockClickSeatId = null;
@@ -3266,13 +3224,6 @@ function applyBlockDrag(seatId) {
   const willBlock   = dragBlockAction === 'block'   && !state.manualBlockedSeats[seatId];
   const willUnblock = dragBlockAction === 'unblock' &&  state.manualBlockedSeats[seatId];
   if (!willBlock && !willUnblock) return;
-  // Snapshot once, lazily, on the first seat actually touched by this drag —
-  // avoids a redundant duplicate snapshot when the gesture turns out to be a
-  // plain click (which is already snapshotted by toggleBlock() itself).
-  // Hold on to the returned entry (not just a boolean) so mouseup can pass
-  // the SAME entry through to commitViaTransaction() and discardUndoEntry(),
-  // regardless of what else gets pushed onto the stack during the drag.
-  if (!dragUndoEntry) { dragUndoEntry = pushUndo(); }
   if (willBlock) {
     state.manualBlockedSeats[seatId] = true;
     state.blockedSeats[seatId] = true;
@@ -3676,61 +3627,6 @@ function buildPdfReport() {
   `;
 }
 
-// ── UNDO STACK ────────────────────────────────────────────────────────────────
-// Each entry is a deep snapshot of {groups, seats, blockedSeats, manualBlockedSeats,
-// reservedSeats, nextGroupId} taken before a user-initiated mutation ("restore"), plus a
-// second snapshot of the same shape stamped on right after that mutation
-// commits ("baselineAfter", see captureBaseline() below). Undo compares
-// baselineAfter against live server state before restoring, so it can detect
-// — and refuse — a rollback that would silently discard a change another
-// user made in the meantime. Max depth is capped at 20 to keep memory use
-// bounded.
-//
-// pushUndo() below seeds the "restore" snapshot from local `state` purely as
-// a placeholder — it's immediately overwritten inside commitViaTransaction()
-// with the authoritative pre-mutation value Firebase itself hands back (see
-// the FIX comment there). Local `state` at click time isn't trustworthy for
-// this: if a second action is pushed before an earlier one has finished
-// mirroring into local `state`, the placeholder can predate that earlier
-// commit, which used to make undo roll back both actions at once instead of
-// just the one being undone.
-const UNDO_MAX = 20;
-const undoStack = [];
-
-function snapshotState() {
-  return {
-    groups:        JSON.parse(JSON.stringify(state.groups)),
-    seats:         Object.assign({}, state.seats),
-    blockedSeats:       Object.assign({}, state.blockedSeats),
-    manualBlockedSeats: Object.assign({}, state.manualBlockedSeats),
-    reservedSeats:      Object.assign({}, state.reservedSeats),
-    nextGroupId:   state.nextGroupId,
-  };
-}
-
-// pushUndo() returns the exact entry object it pushed. Callers MUST hold on
-// to this reference and pass it through to commitState()/commitViaTransaction()
-// (so the right entry gets its baseline stamped) and to discardUndoEntry()
-// (so the right entry gets removed on failure). Relying on "top of stack" for
-// either of those, as earlier versions did, breaks as soon as two actions are
-// in flight at once — see the FIX comment above captureBaseline() below.
-function pushUndo() {
-  const entry = snapshotState();
-  undoStack.push(entry);
-  if (undoStack.length > UNDO_MAX) undoStack.shift();
-  document.getElementById('undoBtn').disabled = false;
-  return entry;
-}
-
-// Removes a specific entry from the undo stack by reference rather than by
-// position. Safe to call even if `entry` is no longer at the top (or is no
-// longer in the stack at all, e.g. it was already discarded by a conflict).
-function discardUndoEntry(entry) {
-  if (!entry) return;
-  const idx = undoStack.indexOf(entry);
-  if (idx !== -1) undoStack.splice(idx, 1);
-}
-
 // Order-independent deep equality for plain JSON-ish data (objects/arrays of
 // primitives). Used instead of JSON.stringify comparison because two
 // structurally-identical `seats`/`blockedSeats` objects can have their keys
@@ -3748,106 +3644,6 @@ function deepEqual(a, b) {
   }
   return true;
 }
-
-function seatingStatesEqual(a, b) {
-  return deepEqual(a.groups, b.groups)
-      && deepEqual(a.seats, b.seats)
-      && deepEqual(a.blockedSeats, b.blockedSeats)
-      && deepEqual(a.manualBlockedSeats ?? inferManualBlocked(a.blockedSeats, a.reservedSeats),
-                   b.manualBlockedSeats ?? inferManualBlocked(b.blockedSeats, b.reservedSeats))
-      && deepEqual(a.reservedSeats, b.reservedSeats)
-      && a.nextGroupId === b.nextGroupId;
-}
-
-// FIX: MULTI-USER-SAFE UNDO ───────────────────────────────────────────────
-// Called right after every successful write to shared state (from both
-// commitState() and commitViaTransaction()). It stamps the SPECIFIC undo
-// entry passed in — the one pushUndo() returned to that action — with a
-// snapshot of what shared state looks like immediately afterward, a
-// "baselineAfter". performUndo() later compares this against the live
-// server content to tell whether anyone else has written since, instead of
-// trusting this browser's possibly-stale copy.
-//
-// PRIOR BUG: this used to be captureBaselineForLatestAction(), which stamped
-// whatever entry happened to be on TOP of undoStack at the moment a commit
-// resolved. That's only correct if actions are strictly serialized — but
-// nothing enforced that. Two overlapping actions (e.g. clicking "Remove
-// Group" then immediately toggling a seat block before the removal's
-// transaction resolved), or resetAll()'s un-awaited commitState() call,
-// could result in action A's baseline being stamped onto action B's stack
-// entry, corrupting B's conflict detection. Taking the entry as an explicit
-// parameter — a direct object reference handed back by pushUndo() — makes
-// the stamp correct regardless of what else is pushed onto or popped off
-// the stack in the meantime.
-function captureBaseline(entry) {
-  if (entry) entry.baselineAfter = snapshotState();
-}
-
-// performUndo() now goes through commitViaTransaction() rather than
-// commitState()'s blind overwrite. The mutator first checks the entry's
-// baselineAfter against the live server draft: if they match, nothing has
-// changed since this browser's own last action and it's safe to restore the
-// pre-action snapshot. If they don't match, some other user has written to
-// shared state since then, and forcing this browser's old snapshot back
-// would silently discard that change — so we abort instead.
-//
-// A mismatch also invalidates every OLDER entry still in the stack: they
-// were all captured on the assumption that nothing outside this browser's
-// own actions had touched shared state, and that assumption is now false.
-// Restoring any of them would discard the same external change just as
-// surely, so the whole history is cleared rather than left to fail one
-// silent click at a time.
-//
-// This does not attempt to merge — if another user's edit and this
-// browser's undo don't touch the same data, undo still gets blocked. A
-// finer-grained fix (per-action delta undo, replaying just this browser's
-// own change on top of whatever else happened) is a real follow-up, not
-// something papered over here.
-function performUndo() {
-  if (pendingMutations || !undoStack.length) return;
-  const snap = undoStack[undoStack.length - 1]; // peek — only discard on success
-  const undoBtn = document.getElementById('undoBtn');
-  undoBtn.disabled = true; // prevent double-clicks while this is in flight
-
-  // commitViaTransaction() returns null both when the mutator rejects the
-  // change AND when a real connection/transaction error occurs — and in the
-  // latter case it has already shown its own "check your connection"
-  // message. This flag lets us tell the two apart so we don't stomp that
-  // message with a misleading "someone else changed it" one.
-  let conflict = false;
-
-  const schoolChange = snap.schoolChange;
-  commitViaTransaction((draft, schools) => {
-    if (!snap.baselineAfter || !seatingStatesEqual(draft, snap.baselineAfter) ||
-        (schoolChange && !deepEqual(schools[schoolChange.id], schoolChange.after))) {
-      conflict = true;
-      return false; // abort — shared state has moved since this snapshot
-    }
-    conflict = false;
-    if (schoolChange) schools[schoolChange.id] = schoolChange.before;
-    draft.groups        = snap.groups;
-    draft.seats         = snap.seats;
-    draft.manualBlockedSeats = snap.manualBlockedSeats ?? inferManualBlocked(snap.blockedSeats, snap.reservedSeats);
-    draft.reservedSeats      = snap.reservedSeats;
-    draft.nextGroupId   = snap.nextGroupId;
-    return true;
-  }, null, Boolean(schoolChange)).then((committed) => {
-    if (committed) {
-      // Remove by reference, not by popping "the top" — another action may
-      // have pushed a newer entry onto the stack while this undo was in
-      // flight, in which case `snap` (the entry we actually just undid) is
-      // no longer on top.
-      discardUndoEntry(snap);
-    } else if (conflict) {
-      undoStack.length = 0; // rest of the history is no longer safe to replay
-      showError("Can't undo — someone else made changes since your last edit.");
-    } // else: a real error occurred and commitViaTransaction already reported it
-    undoBtn.disabled = undoStack.length === 0;
-    renderAll();
-  });
-}
-
-document.getElementById('undoBtn').addEventListener('click', performUndo);
 
 // ── BUTTON WIRING ─────────────────────────────────────────────────────────────
 document.getElementById('doorLeft').addEventListener('click',  () => selectDoor('Left'));
@@ -3918,7 +3714,6 @@ async function handleMoveTargetClick(sectionsStr) {
   const groupTemplate  = movePendingGroup;
   const isNewPlacement = movePendingIsNew; // set explicitly by enterMoveMode(), not inferred from id collision
 
-  const undoEntry = pushUndo();
 
   let allocationResult = null;
   let groupMissing      = false; // existing group no longer exists server-side
@@ -3998,11 +3793,9 @@ async function handleMoveTargetClick(sectionsStr) {
       draft.groups = draft.groups.map(g => g.id === group.id ? group : g);
     }
     return true;
-  }, undoEntry);
+  });
 
   if (!committed || !allocationResult) {
-    discardUndoEntry(undoEntry);
-    if (undoStack.length === 0) document.getElementById('undoBtn').disabled = true;
     showError(groupMissing || groupChanged
       ? 'Could not move — that group was changed or removed by another user.'
       : `Could not fit ${groupTemplate.size} seats there with four empty seats between groups.`);
@@ -4091,7 +3884,6 @@ document.addEventListener('mousedown', e => {
   if (!seatId || state.seats[seatId] || state.reservedSeats[seatId]) return; // ignore occupied/reserved seats
   isDraggingBlock  = true;
   dragChanges      = {};
-  dragUndoEntry    = null; // pushUndo() happens lazily, in applyBlockDrag, on first real mutation
   dragPreBlocked   = Object.assign({}, state.blockedSeats);
   dragPreManual    = Object.assign({}, state.manualBlockedSeats);
   dragStartSeatId  = seatId;
@@ -4108,8 +3900,6 @@ document.addEventListener('mouseup', async () => {
   dragBlockAction = null;
   const changes = dragChanges || {};
   dragChanges = null;
-  const undoEntry = dragUndoEntry;
-  dragUndoEntry = null;
   const preBlocked = dragPreBlocked;
   const preManual  = dragPreManual;
   const startSeatId = dragStartSeatId;
@@ -4131,13 +3921,11 @@ document.addEventListener('mouseup', async () => {
     }
     draft.manualBlockedSeats = manual;
     return true;
-  }, undoEntry);
+  });
   if (!committed) {
     // Restore the optimistic local gesture if Firebase rejected/failed it.
     state.blockedSeats       = preBlocked || {};
     state.manualBlockedSeats = preManual || {};
-    discardUndoEntry(undoEntry);
-    if (undoStack.length === 0) document.getElementById('undoBtn').disabled = true;
   }
   renderAll();
 });
@@ -4220,9 +4008,6 @@ document.addEventListener('selectstart', e => {
   document.getElementById('adaHighlightBtn2').addEventListener('click', () => {
     document.getElementById('adaHighlightBtn').click();
   });
-  document.getElementById('undoBtn2').addEventListener('click', () => {
-    document.getElementById('undoBtn').click();
-  });
   document.getElementById('configFirstRowBtn2').addEventListener('click', () => {
     document.getElementById('configFirstRowBtn').click();
   });
@@ -4285,10 +4070,6 @@ document.addEventListener('selectstart', e => {
     const ss = document.getElementById('summaryGrid');
     const sd = document.getElementById('summaryGridMobile');
     if (ss && sd) sd.innerHTML = ss.innerHTML;
-    // Undo button
-    const u1 = document.getElementById('undoBtn');
-    const u2 = document.getElementById('undoBtn2');
-    if (u1 && u2) u2.disabled = u1.disabled;
     // Block mode
     syncBlockModeUI();
   }
@@ -4385,9 +4166,8 @@ document.querySelectorAll('.frm-check-row').forEach(label => {
 });
 
 async function applyFirstRowSelections() {
-  const undoEntry = pushUndo();
   const checkboxes = [...document.querySelectorAll('.frm-checkbox')];
-  const committed = await commitViaTransaction((draft) => {
+  await commitViaTransaction((draft) => {
     const reserved = {...draft.reservedSeats};
     checkboxes.forEach(cb => {
       const ids = getFirstRowSeatIds(cb.dataset.section, cb.dataset.row);
@@ -4401,11 +4181,7 @@ async function applyFirstRowSelections() {
     });
     draft.reservedSeats = reserved;
     return true;
-  }, undoEntry);
-  if (!committed) {
-    discardUndoEntry(undoEntry);
-    if (undoStack.length === 0) document.getElementById('undoBtn').disabled = true;
-  }
+  });
   renderAll();
 }
 
